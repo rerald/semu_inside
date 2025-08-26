@@ -1,0 +1,29 @@
+{
+  "name": "semu-inside-exam-platform",
+  "version": "1.0.0",
+  "description": "세무법인 세무인사이드 사내 시험 플랫폼",
+  "main": "index.html",
+  "scripts": {
+    "dev": "python -m http.server 8080 || python3 -m http.server 8080",
+    "build": "echo 'No build step required for static site'",
+    "deploy": "vercel --prod"
+  },
+  "keywords": [
+    "exam",
+    "platform",
+    "education",
+    "tax",
+    "accounting"
+  ],
+  "author": "세무법인 세무인사이드",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

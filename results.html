@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>시험 결과 - 세무인사이드</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="./assets/css/common.css">
+    <style>
+        .results-container {
+            display: flex;
+            flex-direction: column;
+            min-height: 600px;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            background: #f8f9fa;
+        }
+
+        .result-header {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .result-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+
+        .result-icon.excellent {
+            color: #28a745;
+        }
+
+        .result-icon.good {
+            color: #17a2b8;
+        }
+
+        .result-icon.average {
+            color: #ffc107;
+        }
+
+        .result-icon.poor {
+            color: #dc3545;
+        }
+
+        .result-title {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: var(--dark-gray);
+        }
+
+        .result-subtitle {
+            color: var(--medium-gray);
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+        }
+
+        .score-display {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin: 20px 0;
+        }
+
+        .score-number {
+            font-size: 4rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .score-label {
+            text-align: center;
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .stat-item {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: var(--shadow);
+        }
+
+        .stat-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--dark-gray);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: var(--medium-gray);
+            font-size: 0.9rem;
+        }
+
+        .detailed-results {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow);
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            color: var(--dark-gray);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .question-result {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 2px solid #f8f9fa;
+        }
+
+        .question-result.correct {
+            border-color: #28a745;
+            background: #f8fff9;
+        }
+
+        .question-result.incorrect {
+            border-color: #dc3545;
+            background: #fff8f8;
+        }
+
+        .question-info {
+            flex: 1;
+        }
+
+        .question-number {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .question-preview {
+            color: var(--medium-gray);
+            font-size: 0.9rem;
+        }
+
+        .question-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+        }
+
+        .status-icon {
+            font-size: 1.2rem;
+        }
+
+        .status-icon.correct {
+            color: #28a745;
+        }
+
+        .status-icon.incorrect {
+            color: #dc3545;
+        }
+
+        .recommendations {
+            background: #e3f2fd;
+            border: 2px solid #2196f3;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .recommendations h3 {
+            color: #1976d2;
+            margin-bottom: 15px;
+        }
+
+        .recommendation-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        .recommendation-icon {
+            color: #2196f3;
+            margin-top: 2px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 30px;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+
+        .progress-circle {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            border: 10px solid #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            position: relative;
+            background: conic-gradient(var(--primary-color) 0deg, #e9ecef 0deg);
+        }
+
+        .circle-content {
+            background: white;
+            border-radius: 50%;
+            width: 110px;
+            height: 110px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .circle-score {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .circle-label {
+            font-size: 0.8rem;
+            color: var(--medium-gray);
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 20px;
+            }
+            
+            .result-header {
+                padding: 30px 20px;
+            }
+            
+            .score-number {
+                font-size: 3rem;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .question-result {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <div class="container">
+            <div class="results-container">
+                <!-- 헤더 -->
+                <div class="header">
+                    <div class="logo">
+                        <i class="fas fa-graduation-cap"></i>
+                        <h2>세무인사이드</h2>
+                    </div>
+                    <div class="nav-menu">
+                        <a href="./dashboard.html" class="nav-link">
+                            <i class="fas fa-home"></i> 대시보드
+                        </a>
+                        <a href="./exam.html" class="nav-link">
+                            <i class="fas fa-clipboard-list"></i> 시험
+                        </a>
+                        <a href="./results.html" class="nav-link active">
+                            <i class="fas fa-chart-bar"></i> 결과
+                        </a>
+                        <a href="./profile.html" class="nav-link">
+                            <i class="fas fa-user"></i> 프로필
+                        </a>
+                    </div>
+                    <div class="user-menu">
+                        <span class="user-name" id="userName">사용자님</span>
+                        <button class="btn btn-outline btn-small logout-btn">
+                            <i class="fas fa-sign-out-alt"></i> 로그아웃
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 메인 콘텐츠 -->
+                <div class="main-content">
+                    <!-- 결과 헤더 -->
+                    <div class="result-header">
+                        <div class="result-icon" id="resultIcon">
+                            <i class="fas fa-trophy"></i>
+                        </div>
+                        <h1 class="result-title" id="resultTitle">시험 완료!</h1>
+                        <p class="result-subtitle" id="resultSubtitle">수고하셨습니다.</p>
+                        
+                        <div class="score-display">
+                            <div class="score-number" id="scoreNumber">85</div>
+                            <div class="score-label">점</div>
+                        </div>
+                    </div>
+
+                    <!-- 성과 차트 -->
+                    <div class="chart-container">
+                        <h3 class="section-title">
+                            <i class="fas fa-chart-pie"></i>
+                            성과 요약
+                        </h3>
+                        <div class="progress-circle" id="progressCircle">
+                            <div class="circle-content">
+                                <div class="circle-score" id="circleScore">85</div>
+                                <div class="circle-label">점</div>
+                            </div>
+                        </div>
+                        <p style="color: var(--medium-gray);">전체 평균보다 <strong id="comparison">15점 높음</strong></p>
+                    </div>
+
+                    <!-- 통계 -->
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-icon" style="color: #28a745;">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <div class="stat-value" id="correctCount">17</div>
+                            <div class="stat-label">정답</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-icon" style="color: #dc3545;">
+                                <i class="fas fa-times-circle"></i>
+                            </div>
+                            <div class="stat-value" id="incorrectCount">3</div>
+                            <div class="stat-label">오답</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-icon" style="color: #17a2b8;">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="stat-value" id="timeUsed">45</div>
+                            <div class="stat-label">소요 시간(분)</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-icon" style="color: #ffc107;">
+                                <i class="fas fa-percentage"></i>
+                            </div>
+                            <div class="stat-value" id="accuracy">85</div>
+                            <div class="stat-label">정답률(%)</div>
+                        </div>
+                    </div>
+
+                    <!-- 상세 결과 -->
+                    <div class="detailed-results">
+                        <h3 class="section-title">
+                            <i class="fas fa-list"></i>
+                            문항별 결과
+                        </h3>
+                        <div id="questionResults">
+                            <!-- 문항별 결과가 여기에 표시됩니다 -->
+                        </div>
+                    </div>
+
+                    <!-- 추천사항 -->
+                    <div class="recommendations">
+                        <h3>
+                            <i class="fas fa-lightbulb"></i>
+                            학습 추천사항
+                        </h3>
+                        <div id="recommendationsList">
+                            <!-- 추천사항들이 여기에 표시됩니다 -->
+                        </div>
+                    </div>
+
+                    <!-- 액션 버튼들 -->
+                    <div class="action-buttons">
+                        <button class="btn btn-primary btn-large" onclick="retakeExam()">
+                            <i class="fas fa-redo"></i> 다시 응시
+                        </button>
+                        <button class="btn btn-secondary btn-large" onclick="viewDetails()">
+                            <i class="fas fa-search"></i> 상세 분석
+                        </button>
+                        <a href="./dashboard.html" class="btn btn-outline btn-large">
+                            <i class="fas fa-home"></i> 대시보드로
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Supabase -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    
+    <!-- 공통 스크립트 -->
+    <script src="./assets/js/common.js"></script>
+    
+    <script>
+        // 결과 페이지 전용 스크립트
+        class ResultsPage {
+            constructor() {
+                this.score = 0;
+                this.totalQuestions = 0;
+                this.examData = null;
+                
+                this.init();
+            }
+
+            async init() {
+                console.log('📊 결과 페이지 초기화');
+                
+                // 인증 확인
+                if (!window.semuApp || !window.semuApp.requireAuth()) {
+                    return;
+                }
+
+                // 사용자 정보 표시
+                this.updateUserInfo();
+                
+                // URL 파라미터에서 결과 정보 가져오기
+                this.loadResultData();
+                
+                // UI 업데이트
+                this.updateUI();
+            }
+
+            updateUserInfo() {
+                const user = window.semuApp.currentUser;
+                if (user) {
+                    document.getElementById('userName').textContent = user.name + '님';
+                }
+            }
+
+            loadResultData() {
+                const urlParams = new URLSearchParams(window.location.search);
+                this.score = parseInt(urlParams.get('score')) || 85;
+                this.totalQuestions = parseInt(urlParams.get('total')) || 20;
+                
+                // Mock 시험 데이터 (실제로는 서버에서 가져와야 함)
+                this.examData = {
+                    title: '2024년 1분기 부가가치세 평가',
+                    correctAnswers: Math.round(this.totalQuestions * this.score / 100),
+                    incorrectAnswers: this.totalQuestions - Math.round(this.totalQuestions * this.score / 100),
+                    timeUsed: 45, // 분
+                    questions: [
+                        { id: 1, correct: true, text: '부가가치세 과세표준은 다음 중 어떤 것을 기준으로...' },
+                        { id: 2, correct: true, text: '부가가치세 면세 사업에 해당하지 않는 것은?' },
+                        { id: 3, correct: false, text: '부가가치세 신고기한은 다음 중 언제입니까?' },
+                        // ... 더 많은 문제들
+                    ]
+                };
+                
+                console.log('✅ 결과 데이터 로드:', { score: this.score, total: this.totalQuestions });
+            }
+
+            updateUI() {
+                // 점수 표시
+                document.getElementById('scoreNumber').textContent = this.score;
+                document.getElementById('circleScore').textContent = this.score;
+                
+                // 결과 아이콘 및 제목 업데이트
+                this.updateResultIcon();
+                
+                // 통계 업데이트
+                this.updateStats();
+                
+                // 원형 차트 업데이트
+                this.updateProgressCircle();
+                
+                // 문항별 결과 표시
+                this.displayQuestionResults();
+                
+                // 추천사항 표시
+                this.displayRecommendations();
+            }
+
+            updateResultIcon() {
+                const iconElement = document.getElementById('resultIcon');
+                const titleElement = document.getElementById('resultTitle');
+                const subtitleElement = document.getElementById('resultSubtitle');
+                
+                if (this.score >= 90) {
+                    iconElement.className = 'result-icon excellent';
+                    iconElement.innerHTML = '<i class="fas fa-trophy"></i>';
+                    titleElement.textContent = '우수한 성과입니다!';
+                    subtitleElement.textContent = '뛰어난 실력을 보여주셨습니다.';
+                } else if (this.score >= 80) {
+                    iconElement.className = 'result-icon good';
+                    iconElement.innerHTML = '<i class="fas fa-medal"></i>';
+                    titleElement.textContent = '좋은 결과입니다!';
+                    subtitleElement.textContent = '성실한 학습의 결과입니다.';
+                } else if (this.score >= 70) {
+                    iconElement.className = 'result-icon average';
+                    iconElement.innerHTML = '<i class="fas fa-star"></i>';
+                    titleElement.textContent = '보통 수준입니다';
+                    subtitleElement.textContent = '조금 더 노력하면 더 좋은 결과가 있을 것입니다.';
+                } else {
+                    iconElement.className = 'result-icon poor';
+                    iconElement.innerHTML = '<i class="fas fa-book"></i>';
+                    titleElement.textContent = '추가 학습이 필요합니다';
+                    subtitleElement.textContent = '포기하지 마세요. 다시 도전해보세요!';
+                }
+            }
+
+            updateStats() {
+                document.getElementById('correctCount').textContent = this.examData.correctAnswers;
+                document.getElementById('incorrectCount').textContent = this.examData.incorrectAnswers;
+                document.getElementById('timeUsed').textContent = this.examData.timeUsed;
+                document.getElementById('accuracy').textContent = this.score;
+                
+                // 평균과 비교
+                const averageScore = 70; // Mock 평균 점수
+                const difference = this.score - averageScore;
+                const comparisonElement = document.getElementById('comparison');
+                
+                if (difference > 0) {
+                    comparisonElement.textContent = `${difference}점 높음`;
+                    comparisonElement.style.color = '#28a745';
+                } else if (difference < 0) {
+                    comparisonElement.textContent = `${Math.abs(difference)}점 낮음`;
+                    comparisonElement.style.color = '#dc3545';
+                } else {
+                    comparisonElement.textContent = '평균과 동일';
+                    comparisonElement.style.color = '#6c757d';
+                }
+            }
+
+            updateProgressCircle() {
+                const circle = document.getElementById('progressCircle');
+                const percentage = this.score;
+                const degrees = (percentage / 100) * 360;
+                
+                circle.style.background = `conic-gradient(var(--primary-color) ${degrees}deg, #e9ecef ${degrees}deg)`;
+            }
+
+            displayQuestionResults() {
+                const container = document.getElementById('questionResults');
+                container.innerHTML = '';
+                
+                // Mock 데이터로 첫 5개 문제만 표시
+                const sampleQuestions = [
+                    { id: 1, correct: true, text: '부가가치세 과세표준은 다음 중 어떤 것을 기준으로 계산됩니까?' },
+                    { id: 2, correct: true, text: '부가가치세 면세 사업에 해당하지 않는 것은?' },
+                    { id: 3, correct: false, text: '부가가치세 신고기한은 다음 중 언제입니까?' },
+                    { id: 4, correct: true, text: '간이과세자의 기준은 무엇입니까?' },
+                    { id: 5, correct: false, text: '부가가치세 영세율과 면세의 차이점은?' }
+                ];
+                
+                sampleQuestions.forEach(question => {
+                    const questionDiv = document.createElement('div');
+                    questionDiv.className = `question-result ${question.correct ? 'correct' : 'incorrect'}`;
+                    
+                    questionDiv.innerHTML = `
+                        <div class="question-info">
+                            <div class="question-number">문제 ${question.id}</div>
+                            <div class="question-preview">${question.text}</div>
+                        </div>
+                        <div class="question-status">
+                            <span class="status-icon ${question.correct ? 'correct' : 'incorrect'}">
+                                <i class="fas fa-${question.correct ? 'check' : 'times'}-circle"></i>
+                            </span>
+                            <span>${question.correct ? '정답' : '오답'}</span>
+                        </div>
+                    `;
+                    
+                    container.appendChild(questionDiv);
+                });
+                
+                // 더 보기 버튼 (실제로는 전체 문제 수에 따라)
+                if (this.totalQuestions > 5) {
+                    const moreBtn = document.createElement('button');
+                    moreBtn.className = 'btn btn-outline';
+                    moreBtn.innerHTML = `<i class="fas fa-chevron-down"></i> 나머지 ${this.totalQuestions - 5}개 문제 보기`;
+                    moreBtn.onclick = () => this.showAllQuestions();
+                    container.appendChild(moreBtn);
+                }
+            }
+
+            displayRecommendations() {
+                const container = document.getElementById('recommendationsList');
+                const recommendations = this.generateRecommendations();
+                
+                container.innerHTML = '';
+                
+                recommendations.forEach(rec => {
+                    const recDiv = document.createElement('div');
+                    recDiv.className = 'recommendation-item';
+                    recDiv.innerHTML = `
+                        <i class="fas fa-${rec.icon} recommendation-icon"></i>
+                        <span>${rec.text}</span>
+                    `;
+                    container.appendChild(recDiv);
+                });
+            }
+
+            generateRecommendations() {
+                const recommendations = [];
+                
+                if (this.score >= 90) {
+                    recommendations.push(
+                        { icon: 'trophy', text: '우수한 성과입니다! 다음 단계의 고급 과정에 도전해보세요.' },
+                        { icon: 'graduation-cap', text: '동료들에게 지식을 공유하는 것을 고려해보세요.' }
+                    );
+                } else if (this.score >= 80) {
+                    recommendations.push(
+                        { icon: 'book', text: '틀린 문제들을 다시 한번 복습해보세요.' },
+                        { icon: 'clock', text: '정기적인 복습으로 지식을 더욱 공고히 하세요.' }
+                    );
+                } else if (this.score >= 70) {
+                    recommendations.push(
+                        { icon: 'study', text: '기본 개념을 더 확실히 익혀보세요.' },
+                        { icon: 'practice', text: '추가 연습 문제를 통해 실력을 향상시키세요.' },
+                        { icon: 'clock', text: '충분한 학습 시간을 확보하세요.' }
+                    );
+                } else {
+                    recommendations.push(
+                        { icon: 'book-open', text: '기초부터 차근차근 다시 학습하는 것을 권장합니다.' },
+                        { icon: 'users', text: '스터디 그룹에 참여하거나 멘토의 도움을 받아보세요.' },
+                        { icon: 'calendar-alt', text: '체계적인 학습 계획을 세워보세요.' },
+                        { icon: 'redo', text: '포기하지 마시고 꾸준히 재도전하세요.' }
+                    );
+                }
+                
+                return recommendations;
+            }
+
+            showAllQuestions() {
+                showAlert('전체 문항별 상세 분석 기능은 곧 구현될 예정입니다.', 'info');
+            }
+        }
+
+        // 전역 함수들
+        let resultsPage;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            resultsPage = new ResultsPage();
+        });
+
+        function retakeExam() {
+            if (confirm('같은 시험을 다시 응시하시겠습니까?')) {
+                // 실제로는 시험 ID를 기반으로 해야 함
+                window.location.href = './exam.html?id=tax-2024-q1';
+            }
+        }
+
+        function viewDetails() {
+            showAlert('상세 분석 페이지는 곧 구현될 예정입니다.', 'info');
+        }
+    </script>
+</body>
+</html>

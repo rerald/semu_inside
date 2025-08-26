@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>프로필 - 세무인사이드</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="./assets/css/common.css">
+    <style>
+        .profile-container {
+            display: flex;
+            flex-direction: column;
+            min-height: 600px;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            background: #f8f9fa;
+        }
+
+        .profile-header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+
+        .profile-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 3rem;
+            color: white;
+        }
+
+        .profile-name {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--dark-gray);
+            margin-bottom: 10px;
+        }
+
+        .profile-email {
+            color: var(--medium-gray);
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+        }
+
+        .profile-stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        .profile-stat {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--medium-gray);
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        .section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: var(--shadow);
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            color: var(--dark-gray);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f8f9fa;
+        }
+
+        .info-item:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: var(--medium-gray);
+            font-weight: 500;
+        }
+
+        .info-value {
+            color: var(--dark-gray);
+            font-weight: 600;
+        }
+
+        .recent-activity {
+            list-style: none;
+            padding: 0;
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px 0;
+            border-bottom: 1px solid #f8f9fa;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        .activity-icon.exam {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .activity-icon.achievement {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .activity-icon.login {
+            background: #e8f5e8;
+            color: #388e3c;
+        }
+
+        .activity-content {
+            flex: 1;
+        }
+
+        .activity-text {
+            color: var(--dark-gray);
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+
+        .activity-time {
+            color: var(--medium-gray);
+            font-size: 0.8rem;
+        }
+
+        .edit-form {
+            display: none;
+        }
+
+        .edit-form.active {
+            display: block;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .achievements {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .achievement-card {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .achievement-card.earned {
+            background: linear-gradient(135deg, #fff9c4, #fff3a0);
+            border-color: #ffc107;
+        }
+
+        .achievement-icon {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .achievement-icon.earned {
+            color: #f57c00;
+        }
+
+        .achievement-icon.locked {
+            color: #adb5bd;
+        }
+
+        .achievement-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .achievement-desc {
+            font-size: 0.8rem;
+            color: var(--medium-gray);
+        }
+
+        .progress-section {
+            margin-bottom: 25px;
+        }
+
+        .progress-item {
+            margin-bottom: 15px;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+
+        .progress-bar-container {
+            background: #e9ecef;
+            border-radius: 10px;
+            height: 8px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-bar-fill.excellent {
+            background: #28a745;
+        }
+
+        .progress-bar-fill.good {
+            background: #17a2b8;
+        }
+
+        .progress-bar-fill.average {
+            background: #ffc107;
+        }
+
+        .progress-bar-fill.poor {
+            background: #dc3545;
+        }
+
+        @media (max-width: 968px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .main-content {
+                padding: 20px;
+            }
+            
+            .profile-stats {
+                gap: 20px;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .achievements {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .profile-stats {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .achievements {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <div class="container">
+            <div class="profile-container">
+                <!-- 헤더 -->
+                <div class="header">
+                    <div class="logo">
+                        <i class="fas fa-graduation-cap"></i>
+                        <h2>세무인사이드</h2>
+                    </div>
+                    <div class="nav-menu">
+                        <a href="./dashboard.html" class="nav-link">
+                            <i class="fas fa-home"></i> 대시보드
+                        </a>
+                        <a href="./exam.html" class="nav-link">
+                            <i class="fas fa-clipboard-list"></i> 시험
+                        </a>
+                        <a href="./results.html" class="nav-link">
+                            <i class="fas fa-chart-bar"></i> 결과
+                        </a>
+                        <a href="./profile.html" class="nav-link active">
+                            <i class="fas fa-user"></i> 프로필
+                        </a>
+                    </div>
+                    <div class="user-menu">
+                        <span class="user-name" id="userName">사용자님</span>
+                        <button class="btn btn-outline btn-small logout-btn">
+                            <i class="fas fa-sign-out-alt"></i> 로그아웃
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 메인 콘텐츠 -->
+                <div class="main-content">
+                    <!-- 프로필 헤더 -->
+                    <div class="profile-header">
+                        <div class="profile-avatar" id="profileAvatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="profile-name" id="profileName">사용자명</div>
+                        <div class="profile-email" id="profileEmail">user@example.com</div>
+                        
+                        <div class="profile-stats">
+                            <div class="profile-stat">
+                                <div class="stat-number" id="totalExamsCompleted">12</div>
+                                <div class="stat-label">완료한 시험</div>
+                            </div>
+                            <div class="profile-stat">
+                                <div class="stat-number" id="averageScore">85</div>
+                                <div class="stat-label">평균 점수</div>
+                            </div>
+                            <div class="profile-stat">
+                                <div class="stat-number" id="ranking">3</div>
+                                <div class="stat-label">팀 내 순위</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 콘텐츠 그리드 -->
+                    <div class="content-grid">
+                        <!-- 개인 정보 -->
+                        <div class="section">
+                            <h3 class="section-title">
+                                <i class="fas fa-id-card"></i>
+                                개인 정보
+                                <button class="btn btn-outline btn-small" onclick="toggleEdit()" style="margin-left: auto;">
+                                    <i class="fas fa-edit"></i> 수정
+                                </button>
+                            </h3>
+                            
+                            <!-- 보기 모드 -->
+                            <div id="viewMode">
+                                <div class="info-item">
+                                    <span class="info-label">이름</span>
+                                    <span class="info-value" id="displayName">김세무</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">이메일</span>
+                                    <span class="info-value" id="displayEmail">kjtsori@gmail.com</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">부서</span>
+                                    <span class="info-value" id="displayDepartment">세무팀</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">직급</span>
+                                    <span class="info-value" id="displayPosition">주임</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">입사일</span>
+                                    <span class="info-value" id="displayJoinDate">2023-03-15</span>
+                                </div>
+                            </div>
+
+                            <!-- 편집 모드 -->
+                            <div id="editMode" class="edit-form">
+                                <form id="profileForm">
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label>이름</label>
+                                            <input type="text" id="editName" class="form-control" value="김세무">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>직급</label>
+                                            <select id="editPosition" class="form-control">
+                                                <option value="사원">사원</option>
+                                                <option value="주임" selected>주임</option>
+                                                <option value="대리">대리</option>
+                                                <option value="과장">과장</option>
+                                                <option value="차장">차장</option>
+                                                <option value="부장">부장</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>이메일</label>
+                                        <input type="email" id="editEmail" class="form-control" value="kjtsori@gmail.com">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>부서</label>
+                                        <select id="editDepartment" class="form-control">
+                                            <option value="세무팀" selected>세무팀</option>
+                                            <option value="회계팀">회계팀</option>
+                                            <option value="경영지원팀">경영지원팀</option>
+                                            <option value="법무팀">법무팀</option>
+                                        </select>
+                                    </div>
+                                    <div style="text-align: right; margin-top: 20px; gap: 10px; display: flex; justify-content: flex-end;">
+                                        <button type="button" class="btn btn-secondary" onclick="cancelEdit()">취소</button>
+                                        <button type="submit" class="btn btn-primary">저장</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- 학습 진행률 -->
+                        <div class="section">
+                            <h3 class="section-title">
+                                <i class="fas fa-chart-line"></i>
+                                학습 진행률
+                            </h3>
+                            
+                            <div class="progress-section">
+                                <div class="progress-item">
+                                    <div class="progress-label">
+                                        <span>부가가치세법</span>
+                                        <span>85%</span>
+                                    </div>
+                                    <div class="progress-bar-container">
+                                        <div class="progress-bar-fill excellent" style="width: 85%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="progress-item">
+                                    <div class="progress-label">
+                                        <span>소득세법</span>
+                                        <span>72%</span>
+                                    </div>
+                                    <div class="progress-bar-container">
+                                        <div class="progress-bar-fill good" style="width: 72%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="progress-item">
+                                    <div class="progress-label">
+                                        <span>법인세법</span>
+                                        <span>58%</span>
+                                    </div>
+                                    <div class="progress-bar-container">
+                                        <div class="progress-bar-fill average" style="width: 58%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="progress-item">
+                                    <div class="progress-label">
+                                        <span>상속증여세법</span>
+                                        <span>33%</span>
+                                    </div>
+                                    <div class="progress-bar-container">
+                                        <div class="progress-bar-fill poor" style="width: 33%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 최근 활동 -->
+                        <div class="section">
+                            <h3 class="section-title">
+                                <i class="fas fa-clock"></i>
+                                최근 활동
+                            </h3>
+                            
+                            <ul class="recent-activity">
+                                <li class="activity-item">
+                                    <div class="activity-icon exam">
+                                        <i class="fas fa-clipboard-check"></i>
+                                    </div>
+                                    <div class="activity-content">
+                                        <div class="activity-text">부가가치세 평가 완료</div>
+                                        <div class="activity-time">85점 • 2시간 전</div>
+                                    </div>
+                                </li>
+                                
+                                <li class="activity-item">
+                                    <div class="activity-icon achievement">
+                                        <i class="fas fa-trophy"></i>
+                                    </div>
+                                    <div class="activity-content">
+                                        <div class="activity-text">연속 출석 7일 달성</div>
+                                        <div class="activity-time">1일 전</div>
+                                    </div>
+                                </li>
+                                
+                                <li class="activity-item">
+                                    <div class="activity-icon exam">
+                                        <i class="fas fa-file-alt"></i>
+                                    </div>
+                                    <div class="activity-content">
+                                        <div class="activity-text">소득세법 기본 응시</div>
+                                        <div class="activity-time">78점 • 3일 전</div>
+                                    </div>
+                                </li>
+                                
+                                <li class="activity-item">
+                                    <div class="activity-icon login">
+                                        <i class="fas fa-sign-in-alt"></i>
+                                    </div>
+                                    <div class="activity-content">
+                                        <div class="activity-text">플랫폼 첫 로그인</div>
+                                        <div class="activity-time">1주 전</div>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- 성취 배지 -->
+                        <div class="section">
+                            <h3 class="section-title">
+                                <i class="fas fa-medal"></i>
+                                성취 배지
+                            </h3>
+                            
+                            <div class="achievements">
+                                <div class="achievement-card earned">
+                                    <div class="achievement-icon earned">
+                                        <i class="fas fa-star"></i>
+                                    </div>
+                                    <div class="achievement-name">첫 시험 완주</div>
+                                    <div class="achievement-desc">첫 번째 시험 완료</div>
+                                </div>
+                                
+                                <div class="achievement-card earned">
+                                    <div class="achievement-icon earned">
+                                        <i class="fas fa-fire"></i>
+                                    </div>
+                                    <div class="achievement-name">연속 학습</div>
+                                    <div class="achievement-desc">7일 연속 접속</div>
+                                </div>
+                                
+                                <div class="achievement-card">
+                                    <div class="achievement-icon locked">
+                                        <i class="fas fa-trophy"></i>
+                                    </div>
+                                    <div class="achievement-name">고득점자</div>
+                                    <div class="achievement-desc">평균 90점 이상</div>
+                                </div>
+                                
+                                <div class="achievement-card">
+                                    <div class="achievement-icon locked">
+                                        <i class="fas fa-crown"></i>
+                                    </div>
+                                    <div class="achievement-name">마스터</div>
+                                    <div class="achievement-desc">모든 영역 80점 이상</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Supabase -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    
+    <!-- 공통 스크립트 -->
+    <script src="./assets/js/common.js"></script>
+    
+    <script>
+        // 프로필 페이지 전용 스크립트
+        class ProfilePage {
+            constructor() {
+                this.editMode = false;
+                this.init();
+            }
+
+            async init() {
+                console.log('👤 프로필 페이지 초기화');
+                
+                // 인증 확인
+                if (!window.semuApp || !window.semuApp.requireAuth()) {
+                    return;
+                }
+
+                // 사용자 정보 로드
+                this.loadUserProfile();
+                
+                // 이벤트 리스너 설정
+                this.setupEventListeners();
+            }
+
+            loadUserProfile() {
+                const user = window.semuApp.currentUser;
+                if (!user) return;
+
+                // 헤더 정보
+                document.getElementById('userName').textContent = user.name + '님';
+                
+                // 프로필 헤더
+                document.getElementById('profileName').textContent = user.name;
+                document.getElementById('profileEmail').textContent = user.email;
+                
+                // 아바타 (이름의 첫 글자)
+                const avatarElement = document.getElementById('profileAvatar');
+                avatarElement.textContent = user.name.charAt(0);
+                
+                // 개인 정보 표시
+                document.getElementById('displayName').textContent = user.name;
+                document.getElementById('displayEmail').textContent = user.email;
+                document.getElementById('displayDepartment').textContent = user.department || '세무팀';
+                document.getElementById('displayPosition').textContent = '주임'; // Mock data
+                document.getElementById('displayJoinDate').textContent = '2023-03-15'; // Mock data
+                
+                // 편집 폼에도 값 설정
+                document.getElementById('editName').value = user.name;
+                document.getElementById('editEmail').value = user.email;
+                
+                console.log('✅ 사용자 프로필 로드 완료');
+            }
+
+            setupEventListeners() {
+                // 프로필 수정 폼
+                const profileForm = document.getElementById('profileForm');
+                profileForm.addEventListener('submit', (e) => this.handleProfileUpdate(e));
+            }
+
+            async handleProfileUpdate(e) {
+                e.preventDefault();
+                
+                const formData = {
+                    name: document.getElementById('editName').value.trim(),
+                    email: document.getElementById('editEmail').value.trim(),
+                    department: document.getElementById('editDepartment').value,
+                    position: document.getElementById('editPosition').value
+                };
+                
+                // 유효성 검사
+                if (!formData.name || !formData.email) {
+                    showAlert('이름과 이메일은 필수 입력 항목입니다.', 'error');
+                    return;
+                }
+                
+                if (!window.semuApp.isValidEmail(formData.email)) {
+                    showAlert('올바른 이메일 형식이 아닙니다.', 'error');
+                    return;
+                }
+                
+                try {
+                    showAlert('프로필을 업데이트하는 중...', 'info');
+                    
+                    // Supabase 업데이트 (실제 구현 시)
+                    if (window.semuApp.supabaseClient) {
+                        // const { error } = await window.semuApp.supabaseClient
+                        //     .from('profiles')
+                        //     .update(formData)
+                        //     .eq('id', window.semuApp.currentUser.id);
+                        
+                        // if (error) throw error;
+                    }
+                    
+                    // 로컬 사용자 정보 업데이트
+                    Object.assign(window.semuApp.currentUser, formData);
+                    localStorage.setItem('semu_user', JSON.stringify(window.semuApp.currentUser));
+                    
+                    // UI 업데이트
+                    this.loadUserProfile();
+                    this.toggleEdit();
+                    
+                    showAlert('프로필이 성공적으로 업데이트되었습니다!', 'success');
+                    
+                } catch (error) {
+                    console.error('프로필 업데이트 실패:', error);
+                    showAlert('프로필 업데이트 중 오류가 발생했습니다.', 'error');
+                }
+            }
+        }
+
+        // 전역 함수들
+        let profilePage;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            profilePage = new ProfilePage();
+        });
+
+        function toggleEdit() {
+            const viewMode = document.getElementById('viewMode');
+            const editMode = document.getElementById('editMode');
+            
+            if (viewMode.style.display === 'none') {
+                // 편집 모드 -> 보기 모드
+                viewMode.style.display = 'block';
+                editMode.style.display = 'none';
+            } else {
+                // 보기 모드 -> 편집 모드
+                viewMode.style.display = 'none';
+                editMode.style.display = 'block';
+            }
+        }
+
+        function cancelEdit() {
+            // 원래 값으로 되돌리기
+            if (window.semuApp && window.semuApp.currentUser) {
+                const user = window.semuApp.currentUser;
+                document.getElementById('editName').value = user.name;
+                document.getElementById('editEmail').value = user.email;
+            }
+            
+            toggleEdit();
+        }
+    </script>
+</body>
+</html>

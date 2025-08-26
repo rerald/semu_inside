@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로그인 - 세무인사이드</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="./assets/css/common.css">
+    <style>
+        .login-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 40px;
+            text-align: center;
+            min-height: 600px;
+        }
+
+        .logo {
+            font-size: 3rem;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+
+        .title {
+            font-size: 2rem;
+            color: var(--dark-gray);
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            color: var(--medium-gray);
+            margin-bottom: 40px;
+            font-size: 1.1rem;
+        }
+
+        .login-form {
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .form-group input {
+            padding: 16px;
+            font-size: 16px;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 16px;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+
+        .test-accounts {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            font-size: 14px;
+            color: var(--medium-gray);
+        }
+
+        .test-accounts h4 {
+            margin-bottom: 10px;
+            color: var(--dark-gray);
+        }
+
+        .test-account {
+            background: white;
+            padding: 8px 12px;
+            margin: 5px 0;
+            border-radius: 6px;
+            font-family: monospace;
+            border: 1px solid #e9ecef;
+        }
+
+        .quick-login {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .quick-login button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.3s;
+        }
+
+        .quick-login button:hover {
+            background: var(--primary-dark);
+        }
+
+        @media (max-width: 768px) {
+            .login-container {
+                padding: 40px 20px;
+            }
+            
+            .logo {
+                font-size: 2.5rem;
+            }
+            
+            .title {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <div class="container">
+            <div class="login-container">
+                <div class="logo">
+                    <i class="fas fa-graduation-cap"></i>
+                </div>
+                <h1 class="title">세무인사이드</h1>
+                <p class="subtitle">사내 시험 플랫폼</p>
+                
+                <form id="loginForm" class="login-form">
+                    <div class="form-group">
+                        <label for="email">이메일</label>
+                        <input type="email" id="email" name="email" class="form-control" required 
+                               placeholder="이메일을 입력하세요">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="password">비밀번호</label>
+                        <input type="password" id="password" name="password" class="form-control" required 
+                               placeholder="비밀번호를 입력하세요">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary btn-large login-btn">
+                        <i class="fas fa-sign-in-alt"></i> 로그인
+                    </button>
+                </form>
+                
+                <div class="test-accounts">
+                    <h4><i class="fas fa-vial"></i> 테스트 계정</h4>
+                    <div class="test-account">admin@semu.com / 123456</div>
+                    <div class="test-account">kjtsori@gmail.com / 123456</div>
+                    <div class="test-account">rerald293@gmail.com / 123456</div>
+                    
+                    <div class="quick-login">
+                        <button type="button" onclick="quickLogin('admin@semu.com', '123456')">
+                            관리자 로그인
+                        </button>
+                        <button type="button" onclick="quickLogin('kjtsori@gmail.com', '123456')">
+                            사용자 로그인
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Supabase -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    
+    <!-- 공통 스크립트 -->
+    <script src="./assets/js/common.js"></script>
+    
+    <script>
+        // 로그인 페이지 전용 스크립트
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📋 로그인 페이지 로드됨');
+            
+            // 이미 로그인된 경우 대시보드로 리다이렉트
+            setTimeout(() => {
+                if (window.semuApp && window.semuApp.currentUser) {
+                    console.log('✅ 이미 로그인됨, 대시보드로 이동');
+                    window.location.href = './dashboard.html';
+                }
+            }, 500);
+            
+            // 로그인 폼 이벤트
+            const loginForm = document.getElementById('loginForm');
+            loginForm.addEventListener('submit', handleLogin);
+        });
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value.trim();
+            
+            if (!email || !password) {
+                showAlert('이메일과 비밀번호를 입력해주세요.', 'error');
+                return;
+            }
+            
+            // 로딩 상태
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 로그인 중...';
+            submitBtn.disabled = true;
+            
+            try {
+                const result = await window.semuApp.login(email, password);
+                
+                if (result.success) {
+                    showAlert('로그인 성공!', 'success');
+                    
+                    // 대시보드로 이동
+                    setTimeout(() => {
+                        window.location.href = './dashboard.html';
+                    }, 1000);
+                } else {
+                    showAlert(result.error, 'error');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showAlert('로그인 중 오류가 발생했습니다.', 'error');
+            } finally {
+                // 로딩 상태 해제
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        }
+
+        function quickLogin(email, password) {
+            document.getElementById('email').value = email;
+            document.getElementById('password').value = password;
+            
+            // 폼 제출
+            const loginForm = document.getElementById('loginForm');
+            loginForm.dispatchEvent(new Event('submit'));
+        }
+    </script>
+</body>
+</html>

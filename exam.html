@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>시험 응시 - 세무인사이드</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="./assets/css/common.css">
+    <style>
+        .exam-container {
+            display: flex;
+            flex-direction: column;
+            min-height: 600px;
+        }
+
+        .exam-header {
+            background: var(--primary-color);
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .exam-info h2 {
+            margin-bottom: 5px;
+            font-size: 1.5rem;
+        }
+
+        .exam-meta {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .timer-section {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .timer {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px 20px;
+            border-radius: 10px;
+            text-align: center;
+            min-width: 120px;
+        }
+
+        .timer-label {
+            font-size: 0.8rem;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+
+        .timer-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            font-family: 'Courier New', monospace;
+        }
+
+        .timer.warning {
+            background: rgba(255, 193, 7, 0.3);
+            animation: pulse 1s infinite;
+        }
+
+        .timer.danger {
+            background: rgba(220, 53, 69, 0.3);
+            animation: pulse 0.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .exam-progress {
+            background: white;
+            padding: 15px 30px;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            margin: 0 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--primary-color);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .question-nav {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .question-btn {
+            width: 35px;
+            height: 35px;
+            border: 2px solid #dee2e6;
+            background: white;
+            color: #6c757d;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .question-btn.current {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .question-btn.answered {
+            background: #28a745;
+            color: white;
+            border-color: #28a745;
+        }
+
+        .question-btn.flagged {
+            background: #ffc107;
+            color: #212529;
+            border-color: #ffc107;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            padding: 30px;
+            gap: 30px;
+            background: #f8f9fa;
+        }
+
+        .question-section {
+            flex: 2;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: var(--shadow);
+        }
+
+        .question-header {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f8f9fa;
+        }
+
+        .question-number {
+            color: var(--primary-color);
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .question-text {
+            font-size: 1.1rem;
+            line-height: 1.7;
+            color: var(--dark-gray);
+            margin-bottom: 20px;
+        }
+
+        .question-options {
+            margin: 25px 0;
+        }
+
+        .option {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            padding: 15px;
+            margin: 10px 0;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .option:hover {
+            border-color: var(--primary-color);
+            background: #f8f9ff;
+        }
+
+        .option.selected {
+            border-color: var(--primary-color);
+            background: #e6f3ff;
+        }
+
+        .option-radio {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #dee2e6;
+            border-radius: 50%;
+            position: relative;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .option.selected .option-radio {
+            border-color: var(--primary-color);
+        }
+
+        .option.selected .option-radio::after {
+            content: '';
+            width: 10px;
+            height: 10px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .option-text {
+            flex: 1;
+            line-height: 1.6;
+        }
+
+        .question-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #f8f9fa;
+        }
+
+        .sidebar {
+            flex: 1;
+            max-width: 300px;
+        }
+
+        .sidebar-section {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .sidebar-title {
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--dark-gray);
+        }
+
+        .exam-info-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            font-size: 0.9rem;
+        }
+
+        .flag-btn {
+            background: transparent;
+            border: 2px solid #ffc107;
+            color: #ffc107;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .flag-btn.flagged {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .submit-section {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .submit-warning {
+            font-size: 0.9rem;
+            color: #856404;
+            margin-bottom: 15px;
+        }
+
+        @media (max-width: 968px) {
+            .main-content {
+                flex-direction: column;
+                padding: 20px;
+            }
+            
+            .sidebar {
+                max-width: none;
+            }
+            
+            .exam-progress {
+                flex-direction: column;
+                gap: 15px;
+                align-items: stretch;
+            }
+            
+            .progress-bar {
+                margin: 0;
+            }
+            
+            .question-nav {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <div class="container">
+            <div class="exam-container">
+                <!-- 시험 헤더 -->
+                <div class="exam-header">
+                    <div class="exam-info">
+                        <h2 id="examTitle">시험 제목</h2>
+                        <div class="exam-meta">
+                            <span id="examMeta">문항 수 • 제한 시간</span>
+                        </div>
+                    </div>
+                    <div class="timer-section">
+                        <div class="timer" id="timer">
+                            <div class="timer-label">남은 시간</div>
+                            <div class="timer-value" id="timerValue">60:00</div>
+                        </div>
+                        <button class="btn btn-outline btn-small" onclick="confirmExit()">
+                            <i class="fas fa-times"></i> 나가기
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 진행률 및 문제 네비게이션 -->
+                <div class="exam-progress">
+                    <div style="font-size: 0.9rem; color: var(--medium-gray);">
+                        진행률: <span id="progressText">1/20</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="question-nav" id="questionNav">
+                        <!-- 문제 번호 버튼들이 여기에 생성됩니다 -->
+                    </div>
+                </div>
+
+                <!-- 메인 콘텐츠 -->
+                <div class="main-content">
+                    <!-- 문제 섹션 -->
+                    <div class="question-section">
+                        <div class="question-header">
+                            <div class="question-number" id="questionNumber">문제 1</div>
+                            <div class="question-text" id="questionText">
+                                문제가 로딩 중입니다...
+                            </div>
+                        </div>
+
+                        <div class="question-options" id="questionOptions">
+                            <!-- 선택지들이 여기에 생성됩니다 -->
+                        </div>
+
+                        <div class="question-actions">
+                            <button class="btn btn-secondary" id="prevBtn" onclick="previousQuestion()">
+                                <i class="fas fa-chevron-left"></i> 이전
+                            </button>
+                            <button class="flag-btn" id="flagBtn" onclick="toggleFlag()">
+                                <i class="fas fa-flag"></i> 표시
+                            </button>
+                            <button class="btn btn-primary" id="nextBtn" onclick="nextQuestion()">
+                                다음 <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 사이드바 -->
+                    <div class="sidebar">
+                        <!-- 시험 정보 -->
+                        <div class="sidebar-section">
+                            <h4 class="sidebar-title">
+                                <i class="fas fa-info-circle"></i> 시험 정보
+                            </h4>
+                            <div class="exam-info-item">
+                                <span>전체 문항</span>
+                                <span id="totalQuestions">20</span>
+                            </div>
+                            <div class="exam-info-item">
+                                <span>답변 완료</span>
+                                <span id="answeredCount">0</span>
+                            </div>
+                            <div class="exam-info-item">
+                                <span>표시한 문항</span>
+                                <span id="flaggedCount">0</span>
+                            </div>
+                            <div class="exam-info-item">
+                                <span>남은 문항</span>
+                                <span id="remainingCount">20</span>
+                            </div>
+                        </div>
+
+                        <!-- 제출 섹션 -->
+                        <div class="sidebar-section submit-section">
+                            <h4 class="sidebar-title">
+                                <i class="fas fa-paper-plane"></i> 시험 제출
+                            </h4>
+                            <div class="submit-warning">
+                                모든 문제를 검토한 후 제출하세요.
+                                제출 후에는 수정할 수 없습니다.
+                            </div>
+                            <button class="btn btn-success btn-large" onclick="submitExam()">
+                                <i class="fas fa-check"></i> 시험 제출
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Supabase -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    
+    <!-- 공통 스크립트 -->
+    <script src="./assets/js/common.js"></script>
+    
+    <script>
+        // 시험 응시 페이지 전용 스크립트
+        class ExamPage {
+            constructor() {
+                this.currentQuestion = 0;
+                this.answers = {};
+                this.flaggedQuestions = new Set();
+                this.timeRemaining = 3600; // 60분
+                this.timer = null;
+                this.examData = null;
+                
+                this.init();
+            }
+
+            async init() {
+                console.log('📝 시험 페이지 초기화');
+                
+                // 인증 확인
+                if (!window.semuApp || !window.semuApp.requireAuth()) {
+                    return;
+                }
+
+                // URL 파라미터에서 시험 ID 가져오기
+                const urlParams = new URLSearchParams(window.location.search);
+                const examId = urlParams.get('id');
+                
+                await this.loadExamData(examId);
+                this.setupUI();
+                this.startTimer();
+            }
+
+            async loadExamData(examId) {
+                // Mock 시험 데이터
+                const mockExams = {
+                    'tax-2024-q1': {
+                        title: '2024년 1분기 부가가치세 평가',
+                        duration: 3600, // 60분
+                        questions: [
+                            {
+                                id: 1,
+                                text: '부가가치세 과세표준은 다음 중 어떤 것을 기준으로 계산됩니까?',
+                                options: [
+                                    '공급가액',
+                                    '매출액',
+                                    '소득금액',
+                                    '과세소득'
+                                ],
+                                correct: 0
+                            },
+                            {
+                                id: 2,
+                                text: '부가가치세 면세 사업에 해당하지 않는 것은?',
+                                options: [
+                                    '의료보건서비스',
+                                    '교육서비스',
+                                    '금융보험서비스', 
+                                    '음식점 서비스'
+                                ],
+                                correct: 3
+                            },
+                            {
+                                id: 3,
+                                text: '부가가치세 신고기한은 다음 중 언제입니까?',
+                                options: [
+                                    '과세기간 종료일로부터 15일 이내',
+                                    '과세기간 종료일로부터 25일 이내',
+                                    '과세기간 종료일로부터 30일 이내',
+                                    '과세기간 종료일로부터 45일 이내'
+                                ],
+                                correct: 1
+                            }
+                        ]
+                    },
+                    'income-basic': {
+                        title: '소득세법 기본 평가',
+                        duration: 2700, // 45분
+                        questions: [
+                            {
+                                id: 1,
+                                text: '소득세법상 거주자의 정의는?',
+                                options: [
+                                    '국내에 주소를 두거나 183일 이상 거소를 둔 개인',
+                                    '국내에 주소를 두거나 1년 이상 거소를 둔 개인',
+                                    '국내에서 소득이 발생하는 개인',
+                                    '국내에 주소를 둔 개인'
+                                ],
+                                correct: 0
+                            },
+                            {
+                                id: 2,
+                                text: '근로소득에 포함되지 않는 것은?',
+                                options: [
+                                    '상여금',
+                                    '수당',
+                                    '이자소득',
+                                    '성과급'
+                                ],
+                                correct: 2
+                            }
+                        ]
+                    }
+                };
+
+                this.examData = mockExams[examId] || mockExams['tax-2024-q1'];
+                this.timeRemaining = this.examData.duration;
+                
+                console.log('✅ 시험 데이터 로드 완료:', this.examData.title);
+            }
+
+            setupUI() {
+                // 시험 제목 및 메타 정보
+                document.getElementById('examTitle').textContent = this.examData.title;
+                document.getElementById('examMeta').textContent = 
+                    `${this.examData.questions.length}문항 • ${Math.floor(this.examData.duration / 60)}분`;
+                
+                // 문제 네비게이션 버튼 생성
+                this.createQuestionNavigation();
+                
+                // 첫 번째 문제 표시
+                this.showQuestion(0);
+                
+                // 통계 업데이트
+                this.updateStats();
+            }
+
+            createQuestionNavigation() {
+                const nav = document.getElementById('questionNav');
+                nav.innerHTML = '';
+                
+                this.examData.questions.forEach((_, index) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'question-btn';
+                    btn.textContent = index + 1;
+                    btn.onclick = () => this.showQuestion(index);
+                    nav.appendChild(btn);
+                });
+            }
+
+            showQuestion(index) {
+                if (index < 0 || index >= this.examData.questions.length) return;
+                
+                this.currentQuestion = index;
+                const question = this.examData.questions[index];
+                
+                // 문제 내용 표시
+                document.getElementById('questionNumber').textContent = `문제 ${index + 1}`;
+                document.getElementById('questionText').textContent = question.text;
+                
+                // 선택지 생성
+                const optionsContainer = document.getElementById('questionOptions');
+                optionsContainer.innerHTML = '';
+                
+                question.options.forEach((option, optionIndex) => {
+                    const optionDiv = document.createElement('div');
+                    optionDiv.className = 'option';
+                    optionDiv.onclick = () => this.selectAnswer(optionIndex);
+                    
+                    if (this.answers[index] === optionIndex) {
+                        optionDiv.classList.add('selected');
+                    }
+                    
+                    optionDiv.innerHTML = `
+                        <div class="option-radio"></div>
+                        <div class="option-text">${String.fromCharCode(65 + optionIndex)}. ${option}</div>
+                    `;
+                    
+                    optionsContainer.appendChild(optionDiv);
+                });
+                
+                // 네비게이션 버튼 업데이트
+                this.updateNavigation();
+                
+                // 진행률 업데이트
+                this.updateProgress();
+                
+                // 표시 버튼 상태 업데이트
+                this.updateFlagButton();
+            }
+
+            selectAnswer(optionIndex) {
+                this.answers[this.currentQuestion] = optionIndex;
+                this.showQuestion(this.currentQuestion); // 화면 새로고침
+                this.updateStats();
+            }
+
+            toggleFlag() {
+                if (this.flaggedQuestions.has(this.currentQuestion)) {
+                    this.flaggedQuestions.delete(this.currentQuestion);
+                } else {
+                    this.flaggedQuestions.add(this.currentQuestion);
+                }
+                this.updateFlagButton();
+                this.updateNavigation();
+                this.updateStats();
+            }
+
+            updateNavigation() {
+                const buttons = document.querySelectorAll('.question-btn');
+                
+                buttons.forEach((btn, index) => {
+                    btn.className = 'question-btn';
+                    
+                    if (index === this.currentQuestion) {
+                        btn.classList.add('current');
+                    } else if (this.answers.hasOwnProperty(index)) {
+                        btn.classList.add('answered');
+                    }
+                    
+                    if (this.flaggedQuestions.has(index)) {
+                        btn.classList.add('flagged');
+                    }
+                });
+                
+                // 이전/다음 버튼 상태
+                document.getElementById('prevBtn').disabled = this.currentQuestion === 0;
+                document.getElementById('nextBtn').disabled = 
+                    this.currentQuestion === this.examData.questions.length - 1;
+            }
+
+            updateProgress() {
+                const progress = ((this.currentQuestion + 1) / this.examData.questions.length) * 100;
+                document.getElementById('progressFill').style.width = `${progress}%`;
+                document.getElementById('progressText').textContent = 
+                    `${this.currentQuestion + 1}/${this.examData.questions.length}`;
+            }
+
+            updateFlagButton() {
+                const flagBtn = document.getElementById('flagBtn');
+                if (this.flaggedQuestions.has(this.currentQuestion)) {
+                    flagBtn.classList.add('flagged');
+                    flagBtn.innerHTML = '<i class="fas fa-flag"></i> 표시됨';
+                } else {
+                    flagBtn.classList.remove('flagged');
+                    flagBtn.innerHTML = '<i class="fas fa-flag"></i> 표시';
+                }
+            }
+
+            updateStats() {
+                const answeredCount = Object.keys(this.answers).length;
+                const flaggedCount = this.flaggedQuestions.size;
+                const remainingCount = this.examData.questions.length - answeredCount;
+                
+                document.getElementById('totalQuestions').textContent = this.examData.questions.length;
+                document.getElementById('answeredCount').textContent = answeredCount;
+                document.getElementById('flaggedCount').textContent = flaggedCount;
+                document.getElementById('remainingCount').textContent = remainingCount;
+            }
+
+            startTimer() {
+                this.updateTimerDisplay();
+                
+                this.timer = setInterval(() => {
+                    this.timeRemaining--;
+                    this.updateTimerDisplay();
+                    
+                    if (this.timeRemaining <= 0) {
+                        this.timeUp();
+                    }
+                }, 1000);
+            }
+
+            updateTimerDisplay() {
+                const minutes = Math.floor(this.timeRemaining / 60);
+                const seconds = this.timeRemaining % 60;
+                const timerValue = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                
+                document.getElementById('timerValue').textContent = timerValue;
+                
+                const timerElement = document.getElementById('timer');
+                timerElement.className = 'timer';
+                
+                if (this.timeRemaining <= 300) { // 5분 이하
+                    timerElement.classList.add('danger');
+                } else if (this.timeRemaining <= 600) { // 10분 이하
+                    timerElement.classList.add('warning');
+                }
+            }
+
+            timeUp() {
+                clearInterval(this.timer);
+                showAlert('시험 시간이 종료되었습니다. 자동으로 제출됩니다.', 'warning');
+                setTimeout(() => this.submitExam(), 2000);
+            }
+
+            previousQuestion() {
+                if (this.currentQuestion > 0) {
+                    this.showQuestion(this.currentQuestion - 1);
+                }
+            }
+
+            nextQuestion() {
+                if (this.currentQuestion < this.examData.questions.length - 1) {
+                    this.showQuestion(this.currentQuestion + 1);
+                }
+            }
+
+            submitExam() {
+                const answeredCount = Object.keys(this.answers).length;
+                const totalQuestions = this.examData.questions.length;
+                
+                if (answeredCount < totalQuestions) {
+                    const confirmed = confirm(
+                        `${totalQuestions - answeredCount}개의 문제가 미답변 상태입니다.\n` +
+                        '정말로 시험을 제출하시겠습니까?'
+                    );
+                    if (!confirmed) return;
+                }
+                
+                clearInterval(this.timer);
+                
+                // 채점 수행
+                const score = this.calculateScore();
+                
+                showAlert('시험이 제출되었습니다!', 'success');
+                
+                setTimeout(() => {
+                    // 결과 페이지로 이동 (실제로는 결과 데이터와 함께)
+                    window.location.href = `./results.html?score=${score}&total=${totalQuestions}`;
+                }, 1500);
+            }
+
+            calculateScore() {
+                let correctCount = 0;
+                
+                this.examData.questions.forEach((question, index) => {
+                    if (this.answers[index] === question.correct) {
+                        correctCount++;
+                    }
+                });
+                
+                return Math.round((correctCount / this.examData.questions.length) * 100);
+            }
+        }
+
+        // 전역 함수들
+        let examPage;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            examPage = new ExamPage();
+        });
+
+        function previousQuestion() {
+            examPage.previousQuestion();
+        }
+
+        function nextQuestion() {
+            examPage.nextQuestion();
+        }
+
+        function toggleFlag() {
+            examPage.toggleFlag();
+        }
+
+        function submitExam() {
+            examPage.submitExam();
+        }
+
+        function confirmExit() {
+            if (confirm('정말로 시험을 종료하시겠습니까?\n진행 상황이 저장되지 않습니다.')) {
+                window.location.href = './dashboard.html';
+            }
+        }
+
+        // 브라우저 뒤로가기/새로고침 방지
+        window.addEventListener('beforeunload', function(e) {
+            e.preventDefault();
+            e.returnValue = '시험 중입니다. 페이지를 떠나시겠습니까?';
+        });
+    </script>
+</body>
+</html>
