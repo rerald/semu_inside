@@ -129,6 +129,32 @@
             line-height: 1.4;
         }
 
+        .auth-links {
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .auth-links p {
+            color: rgba(255, 255, 255, 0.8);
+            margin: 0;
+            font-size: 0.95rem;
+        }
+
+        .register-link {
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .register-link:hover {
+            background: rgba(255, 255, 255, 0.2);
+            text-decoration: none;
+        }
+
         @media (max-width: 768px) {
             .welcome-container {
                 margin: 20px;
@@ -164,9 +190,13 @@
         </p>
         
         <a href="./login.html" class="start-btn">
-            <i class="fas fa-play"></i>
-            시작하기
+            <i class="fas fa-sign-in-alt"></i>
+            로그인
         </a>
+        
+        <div class="auth-links">
+            <p>계정이 없으신가요? <a href="./register.html" class="register-link">회원가입</a></p>
+        </div>
         
         <div class="features">
             <div class="feature">

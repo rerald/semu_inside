@@ -99,6 +99,28 @@
             background: var(--primary-dark);
         }
 
+        .auth-links {
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .auth-links p {
+            color: var(--medium-gray);
+            margin: 0;
+        }
+
+        .register-link {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+
+        .register-link:hover {
+            color: var(--primary-dark);
+            text-decoration: underline;
+        }
+
         @media (max-width: 768px) {
             .login-container {
                 padding: 40px 20px;
@@ -141,6 +163,10 @@
                         <i class="fas fa-sign-in-alt"></i> 로그인
                     </button>
                 </form>
+                
+                <div class="auth-links">
+                    <p>계정이 없으신가요? <a href="./register.html" class="register-link">회원가입</a></p>
+                </div>
                 
                 <div class="test-accounts">
                     <h4><i class="fas fa-vial"></i> 테스트 계정</h4>

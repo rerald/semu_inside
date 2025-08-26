@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>회원가입 - 세무인사이드</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="./assets/css/common.css">
+    <link rel="stylesheet" href="./styles/password-validation.css">
+    <style>
+        .register-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            text-align: center;
+            min-height: 100vh;
+        }
+
+        .logo {
+            font-size: 3rem;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+
+        .title {
+            font-size: 2rem;
+            color: var(--dark-gray);
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            color: var(--medium-gray);
+            margin-bottom: 40px;
+            font-size: 1.1rem;
+        }
+
+        .register-form {
+            width: 100%;
+            max-width: 500px;
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e9ecef;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--dark-gray);
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+            background: white;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .register-btn {
+            width: 100%;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: 600;
+            margin-top: 20px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .register-btn:hover:not(:disabled) {
+            background: var(--primary-dark);
+        }
+
+        .register-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .auth-links {
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .auth-links p {
+            color: var(--medium-gray);
+            margin: 0;
+        }
+
+        .login-link {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+
+        .login-link:hover {
+            color: var(--primary-dark);
+            text-decoration: underline;
+        }
+
+        .required {
+            color: #e74c3c;
+        }
+
+        .alert {
+            padding: 12px;
+            margin: 20px 0;
+            border-radius: 8px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .alert.alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert.alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert.alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        @media (max-width: 768px) {
+            .register-container {
+                padding: 20px 10px;
+            }
+            
+            .logo {
+                font-size: 2.5rem;
+            }
+            
+            .title {
+                font-size: 1.5rem;
+            }
+            
+            .register-form {
+                padding: 30px 20px;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+                gap: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <div class="container">
+            <div class="register-container">
+                <div class="logo">
+                    <i class="fas fa-graduation-cap"></i>
+                </div>
+                <h1 class="title">회원가입</h1>
+                <p class="subtitle">세무인사이드 사내 시험 플랫폼</p>
+                
+                <form id="register-form" class="register-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="name">이름 <span class="required">*</span></label>
+                            <input type="text" id="name" name="name" class="form-control" required 
+                                   placeholder="이름을 입력하세요">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="email">이메일 <span class="required">*</span></label>
+                            <input type="email" id="email" name="email" class="form-control" required 
+                                   placeholder="이메일을 입력하세요">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="password">비밀번호 <span class="required">*</span></label>
+                        <input type="password" id="password" name="password" class="form-control" required 
+                               placeholder="비밀번호를 입력하세요">
+                        <div id="password-validation" class="password-validation"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="password-confirm">비밀번호 확인 <span class="required">*</span></label>
+                        <input type="password" id="password-confirm" name="password-confirm" class="form-control" required 
+                               placeholder="비밀번호를 다시 입력하세요">
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="department">부서 <span class="required">*</span></label>
+                            <select id="department" name="department" class="form-control" required>
+                                <option value="">부서를 선택하세요</option>
+                                <option value="TAX">세무팀</option>
+                                <option value="AUDIT">감사팀</option>
+                                <option value="CONSULTING">컨설팅팀</option>
+                                <option value="ADMIN">관리팀</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="hire_date">입사일 <span class="required">*</span></label>
+                            <input type="date" id="hire_date" name="hire_date" class="form-control" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="phone">연락처</label>
+                        <input type="tel" id="phone" name="phone" class="form-control" 
+                               placeholder="연락처를 입력하세요 (선택사항)">
+                    </div>
+                    
+                    <button type="submit" class="register-btn">
+                        <i class="fas fa-user-plus"></i> 회원가입
+                    </button>
+                </form>
+                
+                <div class="auth-links">
+                    <p>이미 계정이 있으신가요? <a href="./login.html" class="login-link">로그인</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Supabase -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    
+    <!-- 공통 스크립트 -->
+    <script src="./assets/js/common.js"></script>
+    <script src="./js/password-validation.js"></script>
+    
+    <script>
+        // 회원가입 페이지 전용 스크립트
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📋 회원가입 페이지 로드됨');
+            
+            // 비밀번호 검증 초기화
+            if (window.initPasswordValidation) {
+                window.initPasswordValidation();
+            }
+            
+            // 이미 로그인된 경우 대시보드로 리다이렉트
+            setTimeout(() => {
+                if (window.semuApp && window.semuApp.currentUser) {
+                    console.log('✅ 이미 로그인됨, 대시보드로 이동');
+                    window.location.href = './dashboard.html';
+                }
+            }, 500);
+            
+            // 회원가입 폼 이벤트
+            const registerForm = document.getElementById('register-form');
+            registerForm.addEventListener('submit', handleRegister);
+        });
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const password = formData.get('password');
+            const passwordConfirm = formData.get('password-confirm');
+            
+            // 비밀번호 확인
+            if (password !== passwordConfirm) {
+                showAlert('비밀번호가 일치하지 않습니다.', 'error');
+                return;
+            }
+            
+            // 비밀번호 검증
+            if (window.passwordValidator && !window.passwordValidator.isPasswordValid()) {
+                const errors = window.passwordValidator.getValidationErrors();
+                showAlert('비밀번호 조건을 만족하지 않습니다:\n' + errors.join('\n'), 'error');
+                return;
+            }
+            
+            const userData = {
+                name: formData.get('name').trim(),
+                email: formData.get('email').trim(),
+                password: password,
+                department: formData.get('department'),
+                hire_date: formData.get('hire_date'),
+                phone: formData.get('phone').trim()
+            };
+            
+            // 필수 필드 검증
+            if (!userData.name || !userData.email || !userData.password || !userData.department || !userData.hire_date) {
+                showAlert('필수 항목을 모두 입력해주세요.', 'error');
+                return;
+            }
+            
+            // 로딩 상태
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 회원가입 중...';
+            submitBtn.disabled = true;
+            
+            try {
+                const result = await window.semuApp.register(userData);
+                
+                if (result.success) {
+                    showAlert('회원가입이 완료되었습니다! 로그인 페이지로 이동합니다.', 'success');
+                    
+                    // 로그인 페이지로 이동
+                    setTimeout(() => {
+                        window.location.href = './login.html';
+                    }, 2000);
+                } else {
+                    showAlert(result.error || '회원가입에 실패했습니다.', 'error');
+                }
+            } catch (error) {
+                console.error('Register error:', error);
+                showAlert('회원가입 중 오류가 발생했습니다.', 'error');
+            } finally {
+                // 로딩 상태 해제
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        }
+
+        function showAlert(message, type = 'info') {
+            // 기존 알림 제거
+            const existingAlert = document.querySelector('.alert');
+            if (existingAlert) {
+                existingAlert.remove();
+            }
+
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.innerHTML = `
+                <i class="fas fa-${type === 'error' ? 'exclamation-triangle' : type === 'success' ? 'check-circle' : 'info-circle'}"></i>
+                ${message.replace(/\n/g, '<br>')}
+            `;
+
+            const container = document.querySelector('.register-form');
+            container.insertBefore(alertDiv, container.firstChild);
+
+            // 3초 후 자동 제거
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
