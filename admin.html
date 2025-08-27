@@ -1702,6 +1702,23 @@
 
                 console.log('Supabase에서 문제 목록 가져오는 중...');
                 
+                // 먼저 카테고리 정보를 가져와서 ID-이름 매핑 생성
+                const { data: categories, error: categoryError } = await window.supabaseClient
+                    .from('categories')
+                    .select('id, name');
+                
+                if (categoryError) {
+                    console.error('카테고리 정보 가져오기 오류:', categoryError);
+                }
+                
+                const categoryMap = {};
+                if (categories) {
+                    categories.forEach(cat => {
+                        categoryMap[cat.id] = cat.name;
+                    });
+                }
+                console.log('카테고리 매핑:', categoryMap);
+                
                 const { data: supabaseQuestions, error } = await window.supabaseClient
                     .from('questions')
                     .select('*')
@@ -1715,41 +1732,66 @@
                 if (supabaseQuestions && supabaseQuestions.length > 0) {
                     console.log('Supabase에서 가져온 문제 수:', supabaseQuestions.length);
                     
-                    // localStorage의 기존 문제들과 병합
-                    const localQuestions = JSON.parse(localStorage.getItem('questions') || '[]');
-                    const mergedQuestions = [...localQuestions];
-                    
-                    supabaseQuestions.forEach(supabaseQuestion => {
-                        // 이미 localStorage에 있는지 확인 (supabase_id로)
-                        const existingIndex = localQuestions.findIndex(q => q.supabase_id === supabaseQuestion.id);
-                        
-                        if (existingIndex === -1) {
-                            // 새로운 문제: Supabase에서 가져온 데이터를 localStorage 형식으로 변환
-                            const convertedQuestion = {
-                                id: Date.now() + Math.random(), // 고유 ID 생성
-                                title: supabaseQuestion.title,
-                                content: supabaseQuestion.content,
-                                type: supabaseQuestion.type,
-                                difficulty: supabaseQuestion.difficulty,
-                                category: supabaseQuestion.category,
-                                explanation: supabaseQuestion.explanation,
-                                choices: supabaseQuestion.choices ? JSON.parse(supabaseQuestion.choices) : [],
-                                correctAnswerCount: supabaseQuestion.correct_answer_count,
-                                correctAnswerIndices: supabaseQuestion.correct_answer_indices ? JSON.parse(supabaseQuestion.correct_answer_indices) : [],
-                                created_at: supabaseQuestion.created_at,
-                                updated_at: supabaseQuestion.updated_at,
-                                supabase_id: supabaseQuestion.id
-                            };
-                            
-                            mergedQuestions.push(convertedQuestion);
+                    // Supabase 데이터를 localStorage 형식으로 변환
+                    const convertedQuestions = supabaseQuestions.map(supabaseQuestion => {
+                        // 유형 매핑 수정
+                        let displayType = '기타';
+                        if (supabaseQuestion.type === 'multiple_choice') {
+                            displayType = '객관식';
+                        } else if (supabaseQuestion.type === 'subjective') {
+                            displayType = '단답형';
+                        } else if (supabaseQuestion.type === 'group') {
+                            displayType = '그룹형';
                         }
+                        
+                        // 카테고리 ID를 이름으로 변환
+                        const categoryName = categoryMap[supabaseQuestion.category_id] || '미설정';
+                        
+                        // JSONB 필드 파싱 (문자열로 올 수도 있음)
+                        let parsedChoices = [];
+                        if (Array.isArray(supabaseQuestion.choices)) {
+                            parsedChoices = supabaseQuestion.choices;
+                        } else if (typeof supabaseQuestion.choices === 'string') {
+                            try { parsedChoices = JSON.parse(supabaseQuestion.choices); } catch (_) { parsedChoices = []; }
+                        }
+                        let parsedAnswerIndices = [];
+                        if (Array.isArray(supabaseQuestion.correct_answer_indices)) {
+                            parsedAnswerIndices = supabaseQuestion.correct_answer_indices;
+                        } else if (typeof supabaseQuestion.correct_answer_indices === 'string') {
+                            try { parsedAnswerIndices = JSON.parse(supabaseQuestion.correct_answer_indices); } catch (_) { parsedAnswerIndices = []; }
+                        }
+
+                        const parsedAnswerCount = typeof supabaseQuestion.correct_answer_count === 'number'
+                            ? supabaseQuestion.correct_answer_count
+                            : (Array.isArray(parsedChoices) ? parsedChoices.filter(c => c && (c.isCorrect || c.is_correct)).length : 0);
+
+                        return {
+                            id: supabaseQuestion.id,
+                            title: supabaseQuestion.title || supabaseQuestion.content?.substring(0, 50) || '제목 없음',
+                            content: supabaseQuestion.content,
+                            type: displayType,  // 표시용 유형
+                            originalType: supabaseQuestion.type,  // 원본 유형 보존
+                            difficulty: supabaseQuestion.difficulty,
+                            category: categoryName,  // 카테고리 이름으로 변환
+                            categoryId: supabaseQuestion.category_id,  // 원본 카테고리 ID 보존
+                            explanation: supabaseQuestion.explanation,
+                            choices: parsedChoices,
+                            correctAnswerCount: parsedAnswerCount,
+                            correctAnswerIndices: parsedAnswerIndices,
+                            created_at: supabaseQuestion.created_at,
+                            updated_at: supabaseQuestion.updated_at,
+                            supabase_id: supabaseQuestion.id
+                        };
                     });
                     
-                    // 병합된 문제들을 localStorage에 저장
-                    localStorage.setItem('questions', JSON.stringify(mergedQuestions));
-                    console.log('Supabase와 localStorage 병합 완료. 총 문제 수:', mergedQuestions.length);
+                    // Supabase 데이터만 사용 (로컬 데이터 병합 제거)
+                    localStorage.setItem('questions', JSON.stringify(convertedQuestions));
+                    console.log('Supabase 데이터만 사용. 총 문제 수:', convertedQuestions.length);
                 } else {
                     console.log('Supabase에 문제가 없습니다.');
+                    // Supabase에 문제가 없으면 빈 배열로 초기화
+                    localStorage.setItem('questions', JSON.stringify([]));
+                    console.log('로컬 스토리지 초기화 완료.');
                 }
             } catch (error) {
                 console.error('Supabase 동기화 오류:', error);
@@ -1787,17 +1829,11 @@
             `;
             
             savedQuestions.forEach((question, index) => {
-                const questionTypeText = {
-                    'multiple': '객관식',
-                    'short': '단답형',
-                    'essay': '서술형'
-                }[question.type] || '기타';
+                // 변환된 데이터의 type 필드 사용 (이미 올바른 표시 텍스트)
+                const questionTypeText = question.type || '기타';
                 
-                const difficultyText = {
-                    'easy': '쉬움',
-                    'medium': '보통',
-                    'hard': '어려움'
-                }[question.difficulty] || '미설정';
+                // 난이도는 숫자 값이므로 직접 사용
+                const difficultyText = question.difficulty ? `${question.difficulty} (${question.difficulty === 1 ? '쉬움' : question.difficulty === 3 ? '보통' : question.difficulty === 5 ? '어려움' : '보통'})` : '미설정';
                 
                 questionsHTML += `
                     <tr class="question-row">
@@ -1812,35 +1848,37 @@
                             </div>
                         </td>
                         <td class="question-choices">
-                            ${question.type === 'multiple' && question.choices ? `
+                            ${(question.type === 'multiple' || question.type === '객관식') && question.choices ? `
                                 <div class="choices-info">
                                     <div class="choices-preview">
-                                        ${question.choices.map((choice, idx) => 
-                                            `${idx + 1}. ${choice.text.substring(0, 20)}${choice.text.length > 20 ? '...' : ''}`
-                                        ).join('<br>')}
+                                        ${question.choices.map((choice, idx) => {
+                                            const text = (choice && (choice.text || choice.content || ''));
+                                            const safe = String(text);
+                                            return `${idx + 1}. ${safe.substring(0, 20)}${safe.length > 20 ? '...' : ''}`;
+                                        }).join('<br>')}
                                     </div>
                                     <div class="correct-answers">
                                         <strong>정답:</strong> ${question.choices.map((choice, idx) => 
-                                            choice.isCorrect ? `${idx + 1}번` : null
-                                        ).filter(Boolean).join(', ')} (${question.choices.filter(c => c.isCorrect).length}개)
+                                            (choice && (choice.isCorrect || choice.is_correct)) ? `${idx + 1}번` : null
+                                        ).filter(Boolean).join(', ')} (${question.choices.filter(c => c && (c.isCorrect || c.is_correct)).length}개)
                                     </div>
                                 </div>
-                            ` : question.type === 'short' ? '단답형' : '서술형'}
+                            ` : question.type === 'short' || question.type === '단답형' ? '단답형' : '서술형'}
                         </td>
                         <td class="question-difficulty">
                             <span class="difficulty-badge ${question.difficulty}">${difficultyText}</span>
                         </td>
-                        <td class="question-category">${getCategoryDisplayName(question.category)}</td>
+                        <td class="question-category">${question.category || '미설정'}</td>
                         <td class="question-date">${new Date(question.updated_at || question.created_at).toLocaleDateString('ko-KR')}</td>
                         <td class="question-actions">
                             <div class="action-buttons">
-                                <button class="btn btn-sm btn-outline" onclick="previewQuestion(${question.id})" title="미리보기">
+                                <button class="btn btn-sm btn-outline preview-btn" data-question-id="${question.id}" title="미리보기">
                                     <i class="fas fa-eye"></i>
                                 </button>
-                                <button class="btn btn-sm btn-primary" onclick="editQuestion(${question.id})" title="수정">
+                                <button class="btn btn-sm btn-primary edit-btn" data-question-id="${question.id}" title="수정">
                                     <i class="fas fa-edit"></i>
                                 </button>
-                                <button class="btn btn-sm btn-danger" onclick="deleteQuestion(${question.id})" title="삭제">
+                                <button class="btn btn-sm btn-danger delete-btn" data-question-id="${question.id}" title="삭제">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
@@ -1855,6 +1893,35 @@
                 </div>
             `;
             questionsList.innerHTML = questionsHTML;
+            
+            // 이벤트 리스너 추가
+            addQuestionEventListeners();
+        }
+        
+        function addQuestionEventListeners() {
+            // 미리보기 버튼 이벤트
+            document.querySelectorAll('.preview-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const questionId = this.getAttribute('data-question-id');
+                    previewQuestion(questionId);
+                });
+            });
+            
+            // 수정 버튼 이벤트
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const questionId = this.getAttribute('data-question-id');
+                    editQuestion(questionId);
+                });
+            });
+            
+            // 삭제 버튼 이벤트
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const questionId = this.getAttribute('data-question-id');
+                    deleteQuestion(questionId);
+                });
+            });
         }
 
         function editQuestion(questionId) {
@@ -1884,19 +1951,42 @@
                     return;
                 }
 
-                // Supabase에 저장할 데이터 형식 변환
-                const supabaseData = {
-                    title: questionData.title,
-                    content: questionData.content,
-                    type: questionData.type,
-                    difficulty: questionData.difficulty,
-                    category: questionData.category,
-                    explanation: questionData.explanation,
-                    choices: JSON.stringify(questionData.choices),
-                    correct_answer_count: questionData.correctAnswerCount,
-                    correct_answer_indices: JSON.stringify(questionData.correctAnswerIndices),
-                    updated_at: questionData.updated_at
-                };
+                                            // Supabase에 저장할 데이터 형식 변환
+                            // 유형 매핑 로직 수정
+                            let questionType = 'subjective'; // 기본값
+                            if (questionData.type === 'multiple' || questionData.type === '객관식' || questionData.type === 'multiple_choice') {
+                                questionType = 'multiple_choice';
+                            } else if (questionData.type === 'short' || questionData.type === '단답형') {
+                                questionType = 'subjective';
+                            } else if (questionData.type === 'essay' || questionData.type === '서술형') {
+                                questionType = 'subjective';
+                            }
+                            
+                            const supabaseData = {
+                                title: questionData.title || questionData.content.substring(0, 100),  // title 필드 추가 (NOT NULL)
+                                content: questionData.content,  // content 필드 (NOT NULL)
+                                type: questionType,  // 수정된 유형 매핑
+                                difficulty: questionData.difficulty || 1,  // difficulty 필드
+                                category_id: questionData.category || null,  // category_id 필드 (NULL 허용)
+                                explanation: questionData.explanation || '',  // explanation 필드
+                                tags: [],  // tags 필드 (빈 배열)
+                                group_id: null,  // group_id 필드 (NULL)
+                                // JSONB 컬럼에는 원본 배열/객체를 그대로 전달
+                                choices: Array.isArray(questionData.choices) ? questionData.choices : null,
+                                correct_answer_count: typeof questionData.correctAnswerCount === 'number' ? questionData.correctAnswerCount : (Array.isArray(questionData.choices) ? questionData.choices.filter(c => c && c.isCorrect).length : 0),
+                                correct_answer_indices: Array.isArray(questionData.correctAnswerIndices) ? questionData.correctAnswerIndices : null,
+                                // created_at, updated_at 필드 제거 (DEFAULT NOW()가 설정되어 있음)
+                                // created_by 필드 제거 (외래키 제약 조건 위반)
+                            };
+                            
+                            // 디버깅: 전송할 데이터 로그
+                            console.log('=== 유형 매핑 디버깅 ===');
+                            console.log('원본 questionData.type:', questionData.type);
+                            console.log('매핑된 questionType:', questionType);
+                            console.log('questionData.category 값:', questionData.category);
+                            console.log('최종 category_id 값:', supabaseData.category_id);
+                            console.log('Supabase에 전송할 데이터:', JSON.stringify(supabaseData, null, 2));
+                            console.log('========================');
 
                 if (operation === 'insert') {
                     supabaseData.created_at = questionData.created_at;
@@ -2095,7 +2185,7 @@
                                 <p><strong>제목:</strong> ${question.title}</p>
                                 ${question.content ? `<p><strong>설명:</strong> ${question.content}</p>` : ''}
                                 <p><strong>유형:</strong> ${question.type === 'multiple' ? '객관식' : question.type === 'short' ? '단답형' : '서술형'}</p>
-                                <p><strong>난이도:</strong> ${question.difficulty === 'easy' ? '쉬움' : question.difficulty === 'medium' ? '보통' : '어려움'}</p>
+                                <p><strong>난이도:</strong> ${question.difficulty === 1 ? '1 (쉬움)' : question.difficulty === 2 ? '2' : question.difficulty === 3 ? '3 (보통)' : question.difficulty === 4 ? '4' : question.difficulty === 5 ? '5 (어려움)' : '미설정'}</p>
                                 <p><strong>카테고리:</strong> ${getCategoryDisplayName(question.category)}</p>
                             </div>
                             
@@ -2186,17 +2276,17 @@
                             <h5>문제 유형</h5>
                             <div class="question-type-selector">
                                 <label class="radio-label">
-                                    <input type="radio" name="questionType" value="multiple" ${!editQuestion || editQuestion.type === 'multiple' ? 'checked' : ''}>
+                                    <input type="radio" name="questionType" value="multiple" ${!editQuestion || editQuestion.type === '객관식' || editQuestion.originalType === 'multiple_choice' ? 'checked' : ''}>
                                     <span class="radio-custom"></span>
                                     객관식
                                 </label>
                                 <label class="radio-label">
-                                    <input type="radio" name="questionType" value="short" ${editQuestion && editQuestion.type === 'short' ? 'checked' : ''}>
+                                    <input type="radio" name="questionType" value="short" ${editQuestion && (editQuestion.type === '단답형' || editQuestion.originalType === 'subjective') ? 'checked' : ''}>
                                     <span class="radio-custom"></span>
                                     단답형
                                 </label>
                                 <label class="radio-label">
-                                    <input type="radio" name="questionType" value="essay" ${editQuestion && editQuestion.type === 'essay' ? 'checked' : ''}>
+                                    <input type="radio" name="questionType" value="essay" ${editQuestion && (editQuestion.type === '서술형' || editQuestion.originalType === 'subjective') ? 'checked' : ''}>
                                     <span class="radio-custom"></span>
                                     서술형
                                 </label>
@@ -2304,20 +2394,22 @@
                                 <div class="form-group">
                                     <label for="difficulty">난이도</label>
                                     <select id="difficulty" name="difficulty">
-                                        <option value="easy" ${editQuestion && editQuestion.difficulty === 'easy' ? 'selected' : ''}>쉬움</option>
-                                        <option value="medium" ${!editQuestion || editQuestion.difficulty === 'medium' ? 'selected' : ''}>보통</option>
-                                        <option value="hard" ${editQuestion && editQuestion.difficulty === 'hard' ? 'selected' : ''}>어려움</option>
+                                                                            <option value="1" ${editQuestion && editQuestion.difficulty === 1 ? 'selected' : ''}>1 (쉬움)</option>
+                                    <option value="2" ${editQuestion && editQuestion.difficulty === 2 ? 'selected' : ''}>2</option>
+                                    <option value="3" ${!editQuestion || editQuestion.difficulty === 3 ? 'selected' : ''}>3 (보통)</option>
+                                    <option value="4" ${editQuestion && editQuestion.difficulty === 4 ? 'selected' : ''}>4</option>
+                                    <option value="5" ${editQuestion && editQuestion.difficulty === 5 ? 'selected' : ''}>5 (어려움)</option>
                                     </select>
                                 </div>
                                 <div class="form-group">
                                     <label for="category">카테고리</label>
                                     <select id="category" name="category">
                                         <option value="">카테고리 선택</option>
-                                        <option value="vat" ${editQuestion && editQuestion.category === 'vat' ? 'selected' : ''}>부가가치세</option>
-                                        <option value="income_tax" ${editQuestion && editQuestion.category === 'income_tax' ? 'selected' : ''}>소득세</option>
-                                        <option value="corporate_tax" ${editQuestion && editQuestion.category === 'corporate_tax' ? 'selected' : ''}>법인세</option>
-                                        <option value="withholding_tax" ${editQuestion && editQuestion.category === 'withholding_tax' ? 'selected' : ''}>원천세</option>
-                                        <option value="other" ${editQuestion && editQuestion.category === 'other' ? 'selected' : ''}>기타</option>
+                                        <option value="999337b1-f466-4619-b546-0215e7854df5" ${editQuestion && editQuestion.categoryId === '999337b1-f466-4619-b546-0215e7854df5' ? 'selected' : ''}>기타</option>
+                                        <option value="3cb71e9b-eee8-43cf-a696-4886fe0db5c0" ${editQuestion && editQuestion.categoryId === '3cb71e9b-eee8-43cf-a696-4886fe0db5c0' ? 'selected' : ''}>부가가치세</option>
+                                        <option value="9c3978b0-a58d-4ee0-a8db-257152db7e95" ${editQuestion && editQuestion.categoryId === '9c3978b0-a58d-4ee0-a8db-257152db7e95' ? 'selected' : ''}>소득세</option>
+                                        <option value="1b02a765-0b6b-421f-89b5-b0b65e0ed77d" ${editQuestion && editQuestion.categoryId === '1b02a765-0b6b-421f-89b5-b0b65e0ed77d' ? 'selected' : ''}>법인세</option>
+                                        <option value="5eb7501e-68a7-4e87-b102-a024f9c28f0e" ${editQuestion && editQuestion.categoryId === '5eb7501e-68a7-4e87-b102-a024f9c28f0e' ? 'selected' : ''}>원천세</option>
                                     </select>
                                 </div>
                             </div>
@@ -2515,6 +2607,13 @@
                 const choiceCount = formData.get('choiceCount') || '4';
                 const correctAnswerCount = formData.get('correctAnswerCount') || '1';
                 const correctAnswers = formData.getAll('correctAnswer'); // 체크박스는 여러 값 가능
+                
+                // 디버깅: questionType 값 확인
+                console.log('=== questionType 디버깅 ===');
+                console.log('formData.get("questionType"):', questionType);
+                console.log('questionType 타입:', typeof questionType);
+                console.log('questionType === "multiple":', questionType === 'multiple');
+                console.log('========================');
                 const questionTitle = formData.get('questionTitle');
                 const questionContent = formData.get('questionContent');
                 const difficulty = formData.get('difficulty');
@@ -2530,13 +2629,13 @@
                     return;
                 }
 
-                if (questionType === 'multiple' && correctAnswers.length === 0) {
+                if ((questionType === 'multiple' || questionType === 'multiple_choice') && correctAnswers.length === 0) {
                     console.log('정답 선택 누락'); // 디버깅용 로그
                     showAlert('정답을 선택해주세요. 보기 중 하나 이상을 정답으로 선택해야 합니다.', 'error');
                     return;
                 }
                 
-                if (questionType === 'multiple' && correctAnswers.length !== parseInt(correctAnswerCount)) {
+                if ((questionType === 'multiple' || questionType === 'multiple_choice') && correctAnswers.length !== parseInt(correctAnswerCount)) {
                     console.log('정답 개수 불일치'); // 디버깅용 로그
                     showAlert(`정답 개수가 일치하지 않습니다. ${correctAnswerCount}개의 정답을 선택해주세요.`, 'error');
                     return;
@@ -2552,7 +2651,7 @@
 
                 // 보기 데이터 수집
                 let choices = [];
-                if (questionType === 'multiple') {
+                if (questionType === 'multiple' || questionType === 'multiple_choice') {
                     for (let i = 1; i <= parseInt(choiceCount); i++) {
                         const choiceText = formData.get(`choice${i}`);
                         if (!choiceText || choiceText.trim() === '') {
@@ -2574,9 +2673,9 @@
                 const questionData = {
                     title: questionTitle,
                     content: questionContent,
-                    type: questionType,
+                    type: questionType === 'multiple' ? 'multiple_choice' : questionType === 'short' ? 'subjective' : 'subjective',  // type 필드 수정
                     difficulty: difficulty,
-                    category: category,
+                    category: category,  // 이 필드는 localStorage용, Supabase 저장 시 category_id로 변환됨
                     explanation: explanation,
                     choices: choices,
                     correctAnswerCount: parseInt(correctAnswerCount),
@@ -2722,5 +2821,8 @@
             }
         }
     </script>
+    
+    <!-- Admin.js 스크립트 로드 -->
+    <script src="./js/admin.js"></script>
 </body>
 </html>

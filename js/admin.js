@@ -7,6 +7,252 @@ class AdminManager {
         this.questions = [];
         this.exams = [];
         this.departments = [];
+        this.mockData = this.getMockData();
+    }
+
+    // Mock 데이터 정의
+    getMockData() {
+        return {
+            categories: [
+                { name: '부가가치세', type: 'subject', code: 'VAT' },
+                { name: '소득세', type: 'subject', code: 'INCOME' },
+                { name: '법인세', type: 'subject', code: 'CORPORATE' },
+                { name: '원천세', type: 'subject', code: 'WITHHOLDING' },
+                { name: '기타', type: 'subject', code: 'OTHER' }
+            ],
+            questions: [
+                {
+                    type: 'multiple_choice',
+                    content: '부가가치세 과세대상이 아닌 것은? 부가가치세법상 과세대상이 아닌 거래를 고르시오.',
+                    explanation: '의료서비스는 부가가치세법상 면세 대상입니다.',
+                    difficulty: 3,
+                    category_name: '부가가치세',
+                    options: [
+                        { content: '의료서비스', is_correct: true },
+                        { content: '상품 판매', is_correct: false },
+                        { content: '건설업 서비스', is_correct: false },
+                        { content: '금융서비스', is_correct: false }
+                    ]
+                },
+                {
+                    type: 'multiple_choice',
+                    content: '종합소득세 과세표준 계산에서 공제되는 항목은? 종합소득세 과세표준 계산 시 공제되는 항목을 고르시오.',
+                    explanation: '기본공제, 특별공제, 표준공제 등 모든 공제 항목이 과세표준 계산에서 차감됩니다.',
+                    difficulty: 3,
+                    category_name: '소득세',
+                    options: [
+                        { content: '기본공제', is_correct: false },
+                        { content: '특별공제', is_correct: false },
+                        { content: '표준공제', is_correct: false },
+                        { content: '모든 항목', is_correct: true }
+                    ]
+                },
+                {
+                    type: 'multiple_choice',
+                    content: '법인세 손금불산입 항목이 아닌 것은? 법인세법상 손금불산입 항목이 아닌 것을 고르시오.',
+                    explanation: '급여는 일반적으로 손금산입 대상입니다.',
+                    difficulty: 3,
+                    category_name: '법인세',
+                    options: [
+                        { content: '업무상 접대비', is_correct: false },
+                        { content: '법인세', is_correct: false },
+                        { content: '부가가치세', is_correct: false },
+                        { content: '급여', is_correct: true }
+                    ]
+                }
+            ]
+        };
+    }
+
+    // Mock 데이터 마이그레이션 체크 및 실행
+    async checkAndMigrateMockData() {
+        try {
+            // Supabase에 데이터가 있는지 확인
+            const { data: existingQuestions, error: questionsError } = await window.supabase
+                .from('questions')
+                .select('count')
+                .limit(1);
+
+            const { data: existingCategories, error: categoriesError } = await window.supabase
+                .from('categories')
+                .select('count')
+                .limit(1);
+
+            // 데이터가 없으면 Mock 데이터 마이그레이션 실행
+            if ((!existingQuestions || existingQuestions.length === 0) && 
+                (!existingCategories || existingCategories.length === 0)) {
+                console.log('🔄 Mock 데이터 마이그레이션 시작...');
+                await this.migrateMockData();
+            } else {
+                console.log('✅ Supabase에 이미 데이터가 존재합니다.');
+            }
+        } catch (error) {
+            console.error('Mock 데이터 마이그레이션 체크 오류:', error);
+        }
+    }
+
+    // Mock 데이터를 Supabase로 마이그레이션
+    async migrateMockData() {
+        try {
+            Utils.showAlert('Mock 데이터를 Supabase로 마이그레이션 중...', 'info');
+            
+            // 1. 카테고리 마이그레이션
+            console.log('📁 카테고리 마이그레이션 중...');
+            const categoryMap = new Map();
+            
+            for (const category of this.mockData.categories) {
+                const { data: newCategory, error } = await window.supabase
+                    .from('categories')
+                    .insert([category])
+                    .select()
+                    .single();
+
+                if (error) {
+                    console.error('카테고리 생성 오류:', error);
+                    continue;
+                }
+                
+                categoryMap.set(category.name, newCategory.id);
+                console.log(`✅ 카테고리 생성됨: ${category.name}`);
+            }
+
+            // 2. 문제 마이그레이션
+            console.log('❓ 문제 마이그레이션 중...');
+            for (const question of this.mockData.questions) {
+                // 카테고리 ID 찾기
+                const categoryId = categoryMap.get(question.category_name);
+                
+                const questionData = {
+                    type: question.type,
+                    content: question.content,
+                    explanation: question.explanation,
+                    difficulty: question.difficulty,
+                    category_id: categoryId,
+                    created_by: window.currentUser?.id || null
+                };
+
+                const { data: newQuestion, error: questionError } = await window.supabase
+                    .from('questions')
+                    .insert([questionData])
+                    .select()
+                    .single();
+
+                if (questionError) {
+                    console.error('문제 생성 오류:', questionError);
+                    continue;
+                }
+
+                // 선택지 생성
+                if (question.options && question.options.length > 0) {
+                    const options = question.options.map((option, index) => ({
+                        question_id: newQuestion.id,
+                        content: option.content,
+                        is_correct: option.is_correct,
+                        order_index: index
+                    }));
+
+                    const { error: optionsError } = await window.supabase
+                        .from('question_options')
+                        .insert(options);
+
+                    if (optionsError) {
+                        console.error('선택지 생성 오류:', optionsError);
+                    }
+                }
+
+                console.log(`✅ 문제 생성됨: ${question.content.substring(0, 50)}...`);
+            }
+
+            Utils.showAlert('Mock 데이터 마이그레이션이 완료되었습니다!', 'success');
+            
+            // 데이터 새로고침
+            await this.loadBaseData();
+            
+        } catch (error) {
+            console.error('Mock 데이터 마이그레이션 오류:', error);
+            Utils.showAlert('Mock 데이터 마이그레이션에 실패했습니다.', 'error');
+        }
+    }
+
+    // Mock/Local 데이터를 Supabase로 마이그레이션
+    async migrateToSupabase(questionId) {
+        try {
+            const question = this.questions.find(q => q.id === questionId);
+            if (!question) {
+                Utils.showAlert('문제를 찾을 수 없습니다.', 'error');
+                return;
+            }
+
+            Utils.showAlert('Supabase로 마이그레이션 중...', 'info');
+
+            // 카테고리 ID 찾기
+            let categoryId = null;
+            if (question.categories?.name) {
+                const { data: category } = await window.supabase
+                    .from('categories')
+                    .select('id')
+                    .eq('name', question.categories.name)
+                    .single();
+                categoryId = category?.id;
+            }
+
+            const questionData = {
+                type: question.type,
+                content: question.content,
+                explanation: question.explanation,
+                difficulty: question.difficulty,
+                category_id: categoryId,
+                created_by: window.currentUser?.id || null
+            };
+
+            // 문제 저장
+            const { data: newQuestion, error: questionError } = await window.supabase
+                .from('questions')
+                .insert([questionData])
+                .select()
+                .single();
+
+            if (questionError) {
+                console.error('문제 마이그레이션 오류:', questionError);
+                Utils.showAlert('마이그레이션에 실패했습니다.', 'error');
+                return;
+            }
+
+            // 선택지 저장
+            if (question.question_options && question.question_options.length > 0) {
+                const options = question.question_options.map((option, index) => ({
+                    question_id: newQuestion.id,
+                    content: option.content,
+                    is_correct: option.is_correct,
+                    order_index: index
+                }));
+
+                const { error: optionsError } = await window.supabase
+                    .from('question_options')
+                    .insert(options);
+
+                if (optionsError) {
+                    console.error('선택지 마이그레이션 오류:', optionsError);
+                }
+            }
+
+            // 로컬 스토리지에서 제거 (Mock 데이터는 유지)
+            if (questionId.startsWith('local-')) {
+                const localQuestions = JSON.parse(localStorage.getItem('localQuestions') || '[]');
+                const updatedLocalQuestions = localQuestions.filter(q => q.id !== questionId);
+                localStorage.setItem('localQuestions', JSON.stringify(updatedLocalQuestions));
+            }
+
+            Utils.showAlert('마이그레이션이 완료되었습니다!', 'success');
+            
+            // 목록 새로고침
+            await this.loadQuestions();
+            await this.showQuestionManagement();
+
+        } catch (error) {
+            console.error('마이그레이션 오류:', error);
+            Utils.showAlert('마이그레이션에 실패했습니다.', 'error');
+        }
     }
 
     // 관리자 패널 초기화
@@ -16,8 +262,266 @@ class AdminManager {
             return;
         }
 
+        // Supabase 클라이언트 초기화 확인
+        await this.ensureSupabaseClient();
+        
         await this.loadBaseData();
         this.setupAdminNavigation();
+        
+        // Mock 데이터 마이그레이션 체크
+        await this.checkAndMigrateMockData();
+    }
+
+    // Supabase 클라이언트 확인 및 초기화
+    async ensureSupabaseClient() {
+        try {
+            // 현재 Supabase 클라이언트 상태 확인
+            console.log('Supabase 클라이언트 상태 확인...');
+            console.log('window.supabase:', typeof window.supabase, window.supabase);
+            
+            // Supabase 클라이언트가 없거나 잘못 초기화된 경우
+            if (!window.supabase || typeof window.supabase.from !== 'function') {
+                console.log('Supabase 클라이언트 재초기화 시도...');
+                
+                // 전역 supabase 확인
+                if (typeof supabase !== 'undefined' && supabase.createClient) {
+                    window.supabase = supabase.createClient(
+                        SUPABASE_CONFIG.url,
+                        SUPABASE_CONFIG.anonKey
+                    );
+                    console.log('✅ Supabase 클라이언트 재초기화 완료');
+                } else {
+                    console.error('❌ Supabase 라이브러리를 찾을 수 없습니다');
+                    return false;
+                }
+            }
+            
+            // 연결 테스트
+            const testResult = await window.supabase.from('categories').select('count', { count: 'exact' });
+            console.log('Supabase 연결 테스트 결과:', testResult);
+            
+            return true;
+        } catch (error) {
+            console.error('Supabase 클라이언트 초기화 오류:', error);
+            return false;
+        }
+    }
+
+    // Mock/Local 데이터를 Supabase로 마이그레이션하는 메서드
+    async checkAndMigrateMockData() {
+        console.log('Mock 데이터 마이그레이션 체크 시작...');
+        
+        try {
+            // Supabase에서 현재 문제 수 확인
+            const { data: existingQuestions, error } = await window.supabase
+                .from('questions')
+                .select('id', { count: 'exact' });
+            
+            if (error) {
+                console.error('Supabase 문제 조회 중 오류:', error);
+                return;
+            }
+            
+            const supabaseQuestionCount = existingQuestions ? existingQuestions.length : 0;
+            const mockQuestionCount = this.mockData.questions.length;
+            
+            console.log(`Supabase 문제 수: ${supabaseQuestionCount}, Mock 문제 수: ${mockQuestionCount}`);
+            
+            if (supabaseQuestionCount === 0 && mockQuestionCount > 0) {
+                console.log('Mock 데이터 자동 마이그레이션 시작...');
+                await this.migrateMockDataToSupabase();
+            }
+        } catch (error) {
+            console.error('Mock 데이터 마이그레이션 체크 오류:', error);
+        }
+    }
+
+    // Mock 데이터를 Supabase로 마이그레이션
+    async migrateMockDataToSupabase() {
+        console.log('Mock 데이터 Supabase 마이그레이션 시작...');
+        
+        try {
+            // Supabase 클라이언트 확인
+            if (!window.supabase || typeof window.supabase.from !== 'function') {
+                throw new Error('Supabase 클라이언트가 초기화되지 않았습니다.');
+            }
+            
+            // 1. 카테고리 마이그레이션 (upsert 대신 존재 여부 확인 후 insert)
+            console.log('카테고리 마이그레이션 중...');
+            for (const category of this.mockData.categories) {
+                try {
+                    // 존재 확인
+                    const { data: existsList, error: selErr } = await window.supabase
+                        .from('categories')
+                        .select('id')
+                        .eq('name', category.name)
+                        .eq('type', category.type)
+                        .limit(1);
+
+                    if (selErr) {
+                        console.warn('카테고리 조회 실패(무시):', selErr.message);
+                    }
+
+                    if (!existsList || existsList.length === 0) {
+                        const { error: insErr } = await window.supabase
+                            .from('categories')
+                            .insert([{ name: category.name, type: category.type, code: category.code }]);
+                        if (insErr) {
+                            console.warn('카테고리 저장 실패(무시):', insErr.message);
+                        } else {
+                            console.log(`✅ 카테고리 생성됨: ${category.name}`);
+                        }
+                    } else {
+                        console.log(`↪︎ 카테고리 존재: ${category.name}`);
+                    }
+                } catch (catError) {
+                    console.warn(`카테고리 ${category.name} 저장 중 오류:`, catError.message);
+                }
+            }
+            
+            // 2. 카테고리 ID 조회 및 캐시
+            const categoryMap = {};
+            try {
+                const { data: categories } = await window.supabase
+                    .from('categories')
+                    .select('id, name');
+                
+                if (categories) {
+                    categories.forEach(cat => {
+                        categoryMap[cat.name] = cat.id;
+                    });
+                }
+            } catch (error) {
+                console.warn('카테고리 조회 실패:', error.message);
+            }
+            
+            // 3. 문제 마이그레이션
+            console.log('문제 마이그레이션 중...');
+            let successCount = 0;
+            
+            for (const question of this.mockData.questions) {
+                try {
+                    // 카테고리 ID 찾기
+                    let categoryId = null;
+                    if (question.categories?.name && categoryMap[question.categories.name]) {
+                        categoryId = categoryMap[question.categories.name];
+                    }
+                    
+                    // 문제 저장 (최소 필드 중심, 안전 보정)
+                    const questionType = question?.type || 'multiple_choice';
+                    const questionContent = typeof question?.content === 'string' ? question.content : String(question?.content ?? '');
+                    if (!questionContent.trim()) {
+                        console.warn('질문 내용 없음으로 스킵');
+                        continue;
+                    }
+
+                    const questionData = {
+                        type: questionType,
+                        // 일부 프로젝트 스키마는 title NOT NULL을 요구 → 콘텐츠에서 유도
+                        title: (typeof question?.title === 'string' && question.title.trim())
+                            ? question.title.trim()
+                            : questionContent.substring(0, 50),
+                        content: questionContent,
+                        // 선택 필드들은 오류 방지를 위해 기본값으로 보정
+                        explanation: (typeof question?.explanation === 'string' && question.explanation.trim()) ? question.explanation : null,
+                        difficulty: Number.isInteger(question?.difficulty) ? question.difficulty : 3,
+                        category_id: categoryId
+                        // created_by는 프로필 FK 문제 회피를 위해 제외
+                    };
+                    
+                    const { data: savedQuestion, error: questionError } = await window.supabase
+                        .from('questions')
+                        .insert([questionData])
+                        .select()
+                        .single();
+                    
+                    if (questionError) {
+                        console.error('문제 저장 실패:', questionError.message);
+                        continue;
+                    }
+                    
+                    console.log(`✅ 문제 저장됨: ${question.content.substring(0, 50)}...`);
+                    successCount++;
+                    
+                    // 4. 객관식 선택지 마이그레이션
+                    const optionsSource = Array.isArray(question?.options) ? question.options : (Array.isArray(question?.question_options) ? question.question_options : []);
+                    if (questionType === 'multiple_choice' && optionsSource.length > 0) {
+                        for (let index = 0; index < optionsSource.length; index++) {
+                            const option = optionsSource[index];
+                            try {
+                                const { error: optionError } = await window.supabase
+                                    .from('question_options')
+                                    .insert([{
+                                        question_id: savedQuestion.id,
+                                        content: (typeof option?.content === 'string' ? option.content : (typeof option?.option_text === 'string' ? option.option_text : '')),
+                                        is_correct: option.is_correct,
+                                        order_index: (typeof option?.order_index === 'number') ? option.order_index : (typeof option?.display_order === 'number' ? option.display_order : index)
+                                    }]);
+                                
+                                if (optionError) {
+                                    console.warn('선택지 저장 실패:', optionError.message);
+                                }
+                            } catch (optError) {
+                                console.warn('선택지 처리 오류:', optError.message);
+                            }
+                        }
+                    }
+                } catch (questionError) {
+                    console.error('문제 처리 오류:', questionError.message);
+                }
+            }
+            
+            console.log(`✅ Mock 데이터 마이그레이션 완료 (${successCount}/${this.mockData.questions.length}개 성공)`);
+            Utils.showAlert(`Mock 데이터 마이그레이션 완료! ${successCount}개 문제가 저장되었습니다.`, 'success');
+            
+            // 문제 목록 다시 로드
+            await this.loadQuestions();
+            
+        } catch (error) {
+            console.error('마이그레이션 오류:', error);
+            Utils.showAlert(`마이그레이션 실패: ${error.message}`, 'error');
+        }
+    }
+
+    // 수동 동기화 실행
+    async manualSync() {
+        console.log('수동 동기화 시작...');
+        Utils.showAlert('데이터 동기화 중...', 'info');
+        
+        try {
+            await this.migrateMockDataToSupabase();
+            await this.updateSyncStatus();
+        } catch (error) {
+            console.error('수동 동기화 오류:', error);
+            Utils.showAlert('동기화에 실패했습니다.', 'error');
+        }
+    }
+
+    // 동기화 상태 업데이트
+    async updateSyncStatus() {
+        try {
+            const statusElement = document.getElementById('sync-status');
+            if (!statusElement) return;
+            
+            const { data: supabaseQuestions, error } = await window.supabase
+                .from('questions')
+                .select('id', { count: 'exact' });
+            
+            const supabaseCount = supabaseQuestions ? supabaseQuestions.length : 0;
+            const localCount = this.questions.length;
+            
+            if (error) {
+                statusElement.innerHTML = '<span class="text-danger">❌ 데이터베이스 연결 오류</span>';
+            } else if (supabaseCount === 0 && localCount > 0) {
+                statusElement.innerHTML = `<span class="text-warning">⚠️ 로컬에 ${localCount}개 문제가 있지만 Supabase에는 없음 (동기화 필요)</span>`;
+            } else if (supabaseCount === localCount && supabaseCount > 0) {
+                statusElement.innerHTML = `<span class="text-success">✅ 동기화됨 (${supabaseCount}개 문제)</span>`;
+            } else {
+                statusElement.innerHTML = `<span class="text-info">📊 Supabase: ${supabaseCount}개, 로컬: ${localCount}개</span>`;
+            }
+        } catch (error) {
+            console.error('동기화 상태 업데이트 오류:', error);
+        }
     }
 
     // 기본 데이터 로드
@@ -29,8 +533,18 @@ class AdminManager {
                 .select('*')
                 .order('name');
 
-            if (catError) throw catError;
-            this.categories = categories || [];
+            if (catError) {
+                console.error('카테고리 로드 오류:', catError);
+                // 오류 발생 시 Mock 데이터 사용
+                this.categories = this.mockData.categories.map(cat => ({
+                    id: cat.code,
+                    name: cat.name,
+                    type: cat.type,
+                    code: cat.code
+                }));
+            } else {
+                this.categories = categories || [];
+            }
 
             // 부서 로드
             const { data: departments, error: deptError } = await window.supabase
@@ -38,8 +552,12 @@ class AdminManager {
                 .select('*')
                 .order('name');
 
-            if (deptError) throw deptError;
-            this.departments = departments || [];
+            if (deptError) {
+                console.error('부서 로드 오류:', deptError);
+                this.departments = [];
+            } else {
+                this.departments = departments || [];
+            }
 
         } catch (error) {
             console.error('Load base data error:', error);
@@ -107,6 +625,20 @@ class AdminManager {
                 </button>
             </div>
             
+            <div class="sync-status-alert">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>데이터 동기화 상태:</strong>
+                    <span id="sync-status">확인 중...</span>
+                    <button class="btn btn-sm" style="background: #28a745; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer;" onclick="adminManager.manualSync()">
+                        <i class="fas fa-sync"></i> 수동 동기화
+                    </button>
+                    <button class="btn btn-sm" style="background: #17a2b8; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; margin-left: 5px;" onclick="adminManager.updateSyncStatus()">
+                        <i class="fas fa-refresh"></i> 상태 새로고침
+                    </button>
+                </div>
+            </div>
+            
             <div class="question-filters">
                 <select id="category-filter" onchange="adminManager.filterQuestions()">
                     <option value="">전체 카테고리</option>
@@ -130,11 +662,103 @@ class AdminManager {
                 ${this.renderQuestionsList()}
             </div>
         `;
+        
+        // 동기화 상태 업데이트
+        this.updateSyncStatus();
+    }
+
+    // 동기화 상태 업데이트
+    async updateSyncStatus() {
+        const statusElement = document.getElementById('sync-status');
+        if (!statusElement) return;
+        
+        try {
+            // Supabase에서 문제 수 확인
+            const { data: supabaseQuestions, error } = await window.supabase
+                .from('questions')
+                .select('count')
+                .limit(1);
+            
+            const supabaseCount = supabaseQuestions?.length || 0;
+            const localCount = this.questions.length;
+            
+            if (error) {
+                statusElement.innerHTML = `
+                    <span class="text-danger">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Supabase 연결 오류: ${error.message}
+                    </span>
+                `;
+            } else if (supabaseCount === 0 && localCount > 0) {
+                statusElement.innerHTML = `
+                    <span class="text-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        로컬에 ${localCount}개 문제가 있지만 Supabase에는 없음 (동기화 필요)
+                    </span>
+                    <button class="btn btn-sm btn-success ml-2" onclick="adminManager.manualSync()">
+                        <i class="fas fa-upload"></i> 수동 동기화
+                    </button>
+                `;
+            } else if (supabaseCount > 0 && localCount > 0) {
+                statusElement.innerHTML = `
+                    <span class="text-success">
+                        <i class="fas fa-check-circle"></i>
+                        Supabase: ${supabaseCount}개, 로컬: ${localCount}개 (부분 동기화됨)
+                    </span>
+                `;
+            } else if (supabaseCount > 0 && localCount === 0) {
+                statusElement.innerHTML = `
+                    <span class="text-info">
+                        <i class="fas fa-info-circle"></i>
+                        Supabase에만 ${supabaseCount}개 문제가 있음
+                    </span>
+                `;
+            } else {
+                statusElement.innerHTML = `
+                    <span class="text-muted">
+                        <i class="fas fa-info-circle"></i>
+                        문제가 없음
+                    </span>
+                `;
+            }
+        } catch (error) {
+            statusElement.innerHTML = `
+                <span class="text-danger">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    상태 확인 오류: ${error.message}
+                </span>
+            `;
+        }
+    }
+
+    // 수동 동기화 실행
+    async manualSync() {
+        try {
+            Utils.showAlert('수동 동기화를 시작합니다...', 'info');
+            
+            // Mock 데이터를 Supabase로 마이그레이션
+            await this.migrateMockData();
+            
+            // 상태 업데이트
+            await this.updateSyncStatus();
+            
+        } catch (error) {
+            console.error('수동 동기화 오류:', error);
+            Utils.showAlert('수동 동기화에 실패했습니다.', 'error');
+        }
+    }
+
+    // 동기화 상태 확인
+    async checkSyncStatus() {
+        await this.updateSyncStatus();
+        Utils.showAlert('동기화 상태를 새로고침했습니다.', 'info');
     }
 
     // 문제 목록 로드
     async loadQuestions() {
         try {
+            console.log('Supabase에서 문제 목록 가져오는 중...');
+            
             const { data: questions, error } = await window.supabase
                 .from('questions')
                 .select(`
@@ -145,12 +769,46 @@ class AdminManager {
                 `)
                 .order('created_at', { ascending: false });
 
-            if (error) throw error;
-            this.questions = questions || [];
+            if (error) {
+                console.error('Supabase 문제 로드 오류:', error);
+                // 오류 발생 시 빈 배열 사용 (Mock 데이터 사용 안 함)
+                this.questions = [];
+                Utils.showAlert(`데이터베이스 연결 오류: ${error.message}`, 'error');
+            } else {
+                this.questions = questions || [];
+                console.log('Supabase에서 실제 문제 로드됨:', this.questions.length);
+                
+                if (this.questions.length === 0) {
+                    console.log('⚠️ Supabase에 등록된 문제가 없습니다.');
+                } else {
+                    console.log('✅ 실제 데이터베이스 문제를 표시합니다.');
+                }
+            }
+
+            // 로컬 스토리지 정리 - Supabase 데이터만 유지
+            if (this.questions.length > 0) {
+                const cleanedQuestions = this.questions.map(q => ({
+                    id: q.id,
+                    title: q.title,
+                    content: q.content,
+                    type: q.type || 'multiple_choice',
+                    explanation: q.explanation,
+                    difficulty: q.difficulty || 3,
+                    category_id: q.category_id,
+                    created_at: q.created_at,
+                    options: q.question_options || [],
+                    isLocal: false
+                }));
+                
+                localStorage.setItem('questions', JSON.stringify(cleanedQuestions));
+                console.log('로컬 스토리지 정리 완료. Supabase 데이터만 유지:', cleanedQuestions.length);
+            }
 
         } catch (error) {
             console.error('Load questions error:', error);
-            Utils.showAlert('문제 목록을 불러올 수 없습니다.', 'error');
+            Utils.showAlert('문제 목록을 불러올 수 없습니다. 네트워크 연결을 확인해주세요.', 'error');
+            // catch에서도 Mock 데이터 사용하지 않음
+            this.questions = [];
         }
     }
 
@@ -162,33 +820,45 @@ class AdminManager {
 
         return `
             <div class="questions-grid">
-                ${this.questions.map(question => `
-                    <div class="question-card">
-                        <div class="question-card-header">
-                            <span class="question-type ${question.type}">${this.getQuestionTypeText(question.type)}</span>
-                            <span class="question-difficulty">난이도 ${question.difficulty}</span>
+                ${this.questions.map(question => {
+                    const isMock = question.id.startsWith('mock-');
+                    const isLocal = question.id.startsWith('local-');
+                    const dataSource = isMock ? 'Mock' : isLocal ? 'Local' : 'Supabase';
+                    
+                    return `
+                        <div class="question-card ${isMock ? 'mock-data' : isLocal ? 'local-data' : 'supabase-data'}">
+                            <div class="question-card-header">
+                                <span class="question-type ${question.type}">${this.getQuestionTypeText(question.type)}</span>
+                                <span class="question-difficulty">난이도 ${question.difficulty}</span>
+                                <span class="data-source ${dataSource.toLowerCase()}">${dataSource}</span>
+                            </div>
+                            
+                            <div class="question-content-preview">
+                                ${Utils.escapeHtml(question.content.substring(0, 100))}
+                                ${question.content.length > 100 ? '...' : ''}
+                            </div>
+                            
+                            <div class="question-meta">
+                                <span class="category">${question.categories?.name || '미분류'}</span>
+                                ${question.tags ? question.tags.map(tag => `<span class="tag">${tag}</span>`).join('') : ''}
+                            </div>
+                            
+                            <div class="question-actions">
+                                <button class="btn btn-sm btn-outline" onclick="adminManager.editQuestion('${question.id}')">
+                                    <i class="fas fa-edit"></i> 수정
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="adminManager.deleteQuestion('${question.id}')">
+                                    <i class="fas fa-trash"></i> 삭제
+                                </button>
+                                ${isMock || isLocal ? `
+                                    <button class="btn btn-sm btn-success" onclick="adminManager.migrateToSupabase('${question.id}')">
+                                        <i class="fas fa-upload"></i> Supabase로
+                                    </button>
+                                ` : ''}
+                            </div>
                         </div>
-                        
-                        <div class="question-content-preview">
-                            ${Utils.escapeHtml(question.content.substring(0, 100))}
-                            ${question.content.length > 100 ? '...' : ''}
-                        </div>
-                        
-                        <div class="question-meta">
-                            <span class="category">${question.categories?.name || '미분류'}</span>
-                            ${question.tags ? question.tags.map(tag => `<span class="tag">${tag}</span>`).join('') : ''}
-                        </div>
-                        
-                        <div class="question-actions">
-                            <button class="btn btn-sm btn-outline" onclick="adminManager.editQuestion('${question.id}')">
-                                <i class="fas fa-edit"></i> 수정
-                            </button>
-                            <button class="btn btn-sm btn-danger" onclick="adminManager.deleteQuestion('${question.id}')">
-                                <i class="fas fa-trash"></i> 삭제
-                            </button>
-                        </div>
-                    </div>
-                `).join('')}
+                    `;
+                }).join('')}
             </div>
         `;
     }
@@ -332,6 +1002,194 @@ class AdminManager {
         optionsList.insertAdjacentHTML('beforeend', optionHtml);
     }
 
+    // 문제 편집 모달 표시
+    async editQuestion(questionId) {
+        try {
+            Utils.showLoading();
+
+            const { data: question, error } = await window.supabase
+                .from('questions')
+                .select(`
+                    *,
+                    question_options (*)
+                `)
+                .eq('id', questionId)
+                .single();
+
+            if (error) throw error;
+
+            // 편집 모달 렌더
+            const optionsHiddenClass = question.type === 'multiple_choice' ? '' : 'hidden';
+            const sortedOptions = (question.question_options || [])
+                .slice()
+                .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+
+            let correctIndex = sortedOptions.findIndex(o => o.is_correct);
+            if (correctIndex < 0) correctIndex = 0;
+
+            const optionsHtml = (sortedOptions.length > 0 ? sortedOptions : new Array(4).fill(null))
+                .map((opt, idx) => {
+                    const text = opt ? Utils.escapeHtml(opt.content || '') : '';
+                    const checked = opt ? (opt.is_correct ? 'checked' : '') : (idx === 0 ? 'checked' : '');
+                    return `
+                        <div class="option-item">
+                            <input type="text" placeholder="선택지 ${idx + 1}" class="option-text" value="${text}">
+                            <label><input type="radio" name="correct-option" value="${idx}" ${checked}> 정답</label>
+                            <button type="button" onclick="this.parentNode.remove()" class="btn btn-sm btn-danger">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+
+            const modalHtml = `
+                <div class="modal-overlay" id="question-modal">
+                    <div class="modal-content" style="max-width: 800px;">
+                        <div class="modal-header">
+                            <h3>문제 수정</h3>
+                            <button class="modal-close" onclick="document.getElementById('question-modal').remove()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="question-form" onsubmit="adminManager.updateQuestion(event, '${question.id}')">
+                                <div class="form-group">
+                                    <label for="question-type">문제 유형</label>
+                                    <select id="question-type" name="type" required onchange="adminManager.toggleQuestionOptions()">
+                                        <option value="">선택하세요</option>
+                                        <option value="multiple_choice" ${question.type === 'multiple_choice' ? 'selected' : ''}>객관식</option>
+                                        <option value="subjective" ${question.type === 'subjective' ? 'selected' : ''}>주관식</option>
+                                        <option value="group" ${question.type === 'group' ? 'selected' : ''}>그룹형</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="question-category">카테고리</label>
+                                    <select id="question-category" name="category_id">
+                                        <option value="">선택하세요</option>
+                                        ${this.categories.map(cat => 
+                                            `<option value="${cat.id}" ${cat.id === question.category_id ? 'selected' : ''}>${cat.name}</option>`
+                                        ).join('')}
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="question-difficulty">난이도</label>
+                                    <select id="question-difficulty" name="difficulty">
+                                        ${[1,2,3,4,5].map(n => `<option value="${n}" ${question.difficulty === n ? 'selected' : ''}>${n}${n===1?' (쉬움)':n===3?' (보통)':n===5?' (어려움)':''}</option>`).join('')}
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="question-content">문제 내용</label>
+                                    <textarea id="question-content" name="content" rows="5" required>${Utils.escapeHtml(question.content || '')}</textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label for="question-explanation">해설 (선택사항)</label>
+                                    <textarea id="question-explanation" name="explanation" rows="3">${Utils.escapeHtml(question.explanation || '')}</textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label for="question-tags">태그 (쉼표로 구분)</label>
+                                    <input type="text" id="question-tags" name="tags" value="${(question.tags || []).join(', ')}" placeholder="예: 부가세, 신고, 과세표준">
+                                </div>
+                                <div id="options-container" class="${optionsHiddenClass}">
+                                    <h4>선택지</h4>
+                                    <div id="options-list">${optionsHtml}</div>
+                                    <button type="button" onclick="adminManager.addOption()" class="btn btn-outline">
+                                        <i class="fas fa-plus"></i> 선택지 추가
+                                    </button>
+                                </div>
+                                <div class="modal-actions">
+                                    <button type="button" onclick="document.getElementById('question-modal').remove()" class="btn btn-outline">취소</button>
+                                    <button type="submit" class="btn btn-primary">수정 저장</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>`;
+
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+        } catch (error) {
+            console.error('Edit question load error:', error);
+            Utils.showAlert('문제를 불러오지 못했습니다.', 'error');
+        } finally {
+            Utils.hideLoading();
+        }
+    }
+
+    // 문제 수정 저장
+    async updateQuestion(event, questionId) {
+        event.preventDefault();
+        try {
+            Utils.showLoading();
+
+            const formData = new FormData(event.target);
+            const content = formData.get('content') || '';
+            const type = formData.get('type');
+            const baseData = {
+                type,
+                title: content.substring(0, 50),
+                content,
+                explanation: formData.get('explanation') || null,
+                difficulty: parseInt(formData.get('difficulty')) || 3,
+                category_id: formData.get('category_id') || null,
+                tags: formData.get('tags') ? formData.get('tags').split(',').map(t => t.trim()).filter(Boolean) : null
+            };
+
+            const { data: updated, error: updError } = await window.supabase
+                .from('questions')
+                .update(baseData)
+                .eq('id', questionId)
+                .select()
+                .single();
+
+            if (updError) throw updError;
+
+            // 객관식 선택지 처리: 기존 전량 삭제 후 재삽입
+            if (type === 'multiple_choice') {
+                const { error: delErr } = await window.supabase
+                    .from('question_options')
+                    .delete()
+                    .eq('question_id', questionId);
+                if (delErr) {
+                    console.warn('선택지 삭제 경고:', delErr.message);
+                }
+
+                const optionItems = document.querySelectorAll('.option-item');
+                const correctOptionIndex = parseInt(document.querySelector('input[name="correct-option"]:checked')?.value);
+                const options = [];
+                optionItems.forEach((item, index) => {
+                    const text = item.querySelector('.option-text').value.trim();
+                    if (text) {
+                        options.push({
+                            question_id: questionId,
+                            content: text,
+                            is_correct: index === correctOptionIndex,
+                            order_index: index
+                        });
+                    }
+                });
+
+                if (options.length > 0) {
+                    const { error: insErr } = await window.supabase
+                        .from('question_options')
+                        .insert(options);
+                    if (insErr) {
+                        console.warn('선택지 저장 경고:', insErr.message);
+                    }
+                }
+            }
+
+            Utils.showAlert('문제가 수정되었습니다.', 'success');
+            document.getElementById('question-modal').remove();
+            await this.showQuestionManagement();
+
+        } catch (error) {
+            console.error('Update question error:', error);
+            Utils.showAlert('문제 수정에 실패했습니다.', 'error');
+        } finally {
+            Utils.hideLoading();
+        }
+    }
+
     // 문제 저장
     async saveQuestion(event) {
         event.preventDefault();
@@ -347,8 +1205,10 @@ class AdminManager {
                 difficulty: parseInt(formData.get('difficulty')),
                 category_id: formData.get('category_id') || null,
                 tags: formData.get('tags') ? formData.get('tags').split(',').map(tag => tag.trim()) : null,
-                created_by: window.currentUser.id
+                created_by: window.currentUser?.id || null
             };
+
+            console.log('저장할 문제 데이터:', questionData);
 
             // 문제 저장
             const { data: question, error: questionError } = await window.supabase
@@ -357,7 +1217,24 @@ class AdminManager {
                 .select()
                 .single();
 
-            if (questionError) throw questionError;
+            if (questionError) {
+                console.error('Supabase 문제 저장 오류:', questionError);
+                
+                // Supabase 저장 실패 시 로컬 스토리지에 저장
+                const localQuestions = JSON.parse(localStorage.getItem('localQuestions') || '[]');
+                const newQuestion = {
+                    id: `local-${Date.now()}`,
+                    ...questionData,
+                    created_at: new Date().toISOString()
+                };
+                localQuestions.push(newQuestion);
+                localStorage.setItem('localQuestions', JSON.stringify(localQuestions));
+                
+                Utils.showAlert('Supabase 저장 실패. 로컬에 저장되었습니다.', 'warning');
+                document.getElementById('question-modal').remove();
+                await this.showQuestionManagement();
+                return;
+            }
 
             // 객관식인 경우 선택지 저장
             if (questionData.type === 'multiple_choice') {
@@ -382,11 +1259,14 @@ class AdminManager {
                         .from('question_options')
                         .insert(options);
 
-                    if (optionsError) throw optionsError;
+                    if (optionsError) {
+                        console.error('선택지 저장 오류:', optionsError);
+                        Utils.showAlert('문제는 저장되었지만 선택지 저장에 실패했습니다.', 'warning');
+                    }
                 }
             }
 
-            Utils.showAlert('문제가 등록되었습니다.', 'success');
+            Utils.showAlert('문제가 성공적으로 등록되었습니다!', 'success');
             document.getElementById('question-modal').remove();
             await this.showQuestionManagement(); // 목록 새로고침
 
