@@ -249,10 +249,7 @@ class PasswordValidator {
     }
     
     updateValidationState() {
-        // 비밀번호 일치 검증을 먼저 수행
-        this.validatePasswordMatch();
-        
-        // 모든 규칙이 통과했는지 확인
+        // 모든 규칙이 통과했는지 확인 (무한루프 방지를 위해 validatePasswordMatch 호출 제거)
         this.isValid = Object.values(this.rules).every(rule => rule);
         
         console.log('📋 전체 검증 상태 업데이트:', this.rules);

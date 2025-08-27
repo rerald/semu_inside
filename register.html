@@ -410,10 +410,56 @@
         </div>
     </div>
 
-    <!-- Supabase -->
-    <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <!-- Supabase - 다양한 방법으로 로드 시도 -->
+    <script>
+        // 방법 1: 동적 스크립트 로드
+        async function loadSupabaseLibrary() {
+            console.log('🔄 Supabase 라이브러리 동적 로드 시작...');
+            
+            return new Promise((resolve, reject) => {
+                // 기존에 로드되어 있는지 확인
+                if (window.supabase && window.supabase.createClient) {
+                    console.log('✅ Supabase 이미 로드됨');
+                    resolve(window.supabase);
+                    return;
+                }
+                
+                const script = document.createElement('script');
+                script.src = 'https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js';
+                script.crossOrigin = 'anonymous';
+                
+                script.onload = () => {
+                    console.log('✅ Supabase 스크립트 로드 완료');
+                    console.log('📋 window.supabase:', !!window.supabase);
+                    console.log('📋 supabase keys:', Object.keys(window.supabase || {}));
+                    console.log('📋 createClient:', typeof (window.supabase && window.supabase.createClient));
+                    
+                    if (window.supabase && window.supabase.createClient) {
+                        resolve(window.supabase);
+                    } else {
+                        reject(new Error('Supabase createClient 함수를 찾을 수 없습니다'));
+                    }
+                };
+                
+                script.onerror = () => {
+                    console.error('❌ Supabase 스크립트 로드 실패');
+                    reject(new Error('Supabase 스크립트 로드 실패'));
+                };
+                
+                document.head.appendChild(script);
+            });
+        }
+        
+        // 페이지 로드 시 Supabase 로드
+        loadSupabaseLibrary().then(() => {
+            console.log('🎉 Supabase 로드 성공!');
+        }).catch(error => {
+            console.error('💥 Supabase 로드 실패:', error);
+        });
+    </script>
     
-    <!-- 공통 스크립트 -->
+    <!-- 설정 및 공통 스크립트 -->
+    <script src="./js/config.js"></script>
     <script src="./assets/js/common.js"></script>
     <script src="./js/password-validation.js"></script>
     
@@ -427,13 +473,8 @@
                 window.initPasswordValidation();
             }
             
-            // 이미 로그인된 경우 대시보드로 리다이렉트
-            setTimeout(() => {
-                if (window.semuApp && window.semuApp.currentUser) {
-                    console.log('✅ 이미 로그인됨, 대시보드로 이동');
-                    window.location.href = './dashboard.html';
-                }
-            }, 500);
+            // 회원가입 페이지 로드 완료
+            console.log('회원가입 페이지가 로드되었습니다.');
             
             // 회원가입 폼 이벤트
             const registerForm = document.getElementById('register-form');
@@ -501,21 +542,40 @@
             submitBtn.disabled = true;
             
             try {
-                const result = await window.semuApp.register(userData);
+                // semuApp과 Supabase가 모두 로드될 때까지 기다리기
+                let attempts = 0;
+                while ((!window.semuApp || !window.semuApp.supabaseClient) && attempts < 100) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    attempts++;
+                    if (attempts % 10 === 0) {
+                        console.log(`⏳ 시스템 초기화 대기 중... ${attempts}/100`);
+                    }
+                }
                 
-                if (result.success) {
-                    showAlert('회원가입이 완료되었습니다! 로그인 페이지로 이동합니다.', 'success');
+                if (window.semuApp && window.semuApp.supabaseClient) {
+                    console.log('✅ semuApp과 Supabase 준비 완료, 실제 회원가입 진행');
+                    const result = await window.semuApp.register(userData);
                     
-                    // 로그인 페이지로 이동
-                    setTimeout(() => {
-                        window.location.href = './login.html';
-                    }, 2000);
+                    if (result.success) {
+                        showAlert('회원가입이 완료되었습니다! 로그인 페이지로 이동합니다.', 'success');
+                        
+                        // 로그인 페이지로 이동
+                        setTimeout(() => {
+                            window.location.href = './login.html';
+                        }, 2000);
+                    } else {
+                        showAlert(result.error || '회원가입에 실패했습니다.', 'error');
+                    }
                 } else {
-                    showAlert(result.error || '회원가입에 실패했습니다.', 'error');
+                    console.error('⚠️ 시스템 초기화 실패:', {
+                        semuApp: !!window.semuApp,
+                        supabaseClient: !!(window.semuApp && window.semuApp.supabaseClient)
+                    });
+                    showAlert('시스템 초기화에 실패했습니다. 페이지를 새로고침하거나 잠시 후 다시 시도해주세요.', 'error');
                 }
             } catch (error) {
                 console.error('Register error:', error);
-                showAlert('회원가입 중 오류가 발생했습니다.', 'error');
+                showAlert('회원가입 중 오류가 발생했습니다: ' + error.message, 'error');
             } finally {
                 // 로딩 상태 해제
                 submitBtn.innerHTML = originalText;

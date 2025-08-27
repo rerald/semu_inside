@@ -225,15 +225,22 @@
         </div>
     </div>
 
+    <!-- Supabase -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <script src="./assets/js/common.js"></script>
+    
     <script>
-        // 자동 리다이렉트 (기존 사용자용)
-        setTimeout(() => {
-            const savedUser = localStorage.getItem('semu_user');
-            if (savedUser) {
-                console.log('기존 사용자 감지, 대시보드로 이동...');
+        // 로그인 대기 화면 유지 - 자동 리다이렉트 제거됨
+        console.log('세무인사이드 로그인 페이지 로드 완료');
+        
+        // 세션 확인 후 자동 리다이렉트
+        setTimeout(async () => {
+            if (window.semuApp && window.semuApp.currentUser) {
+                console.log('✅ 이미 로그인된 사용자 감지, 대시보드로 이동:', window.semuApp.currentUser.email);
+                alert('이미 로그인되어 있습니다. 대시보드로 이동합니다.');
                 window.location.href = './dashboard.html';
             }
-        }, 500);
+        }, 3000); // Supabase 초기화 대기
     </script>
 </body>
 </html>

@@ -14,11 +14,13 @@ class SemuApp {
         await this.initSupabase();
         
         // 인증 상태 확인
-        this.checkAuthState();
+        await this.checkAuthState();
         
         // 공통 이벤트 리스너 설정
         this.setupCommonEventListeners();
     }
+
+
 
     async initSupabase() {
         try {
@@ -28,52 +30,142 @@ class SemuApp {
                 anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNrcHZ0cW9oeXNwZnNtdndyZ29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNzU4ODUsImV4cCI6MjA3MTc1MTg4NX0.tMW3hiZR5JcXlbES2tKl1ZNOVRtYqGO04m-YSbqKUhY'
             };
 
-            // Supabase 라이브러리 로드 대기
+            // Supabase 라이브러리 로드 대기 (다양한 방법으로 확인)
             let attempts = 0;
-            while (!window.supabase && attempts < 50) {
+            const maxAttempts = 100;
+            
+            console.log('🔍 Supabase 라이브러리 로딩 대기 중...');
+            
+            while (attempts < maxAttempts) {
+                // 더 정확한 Supabase 확인
+                let supabaseFound = false;
+                let supabaseLib = null;
+                
+                // 1. window.supabase 직접 확인
+                if (window.supabase && typeof window.supabase === 'object') {
+                    console.log('🔍 window.supabase 발견:', typeof window.supabase, Object.keys(window.supabase));
+                    
+                    // createClient 함수 확인
+                    if (window.supabase.createClient && typeof window.supabase.createClient === 'function') {
+                        console.log('✅ window.supabase.createClient 함수 발견!');
+                        supabaseLib = window.supabase;
+                        supabaseFound = true;
+                    } else {
+                        console.log('⚠️ window.supabase는 있지만 createClient가 없음:', Object.keys(window.supabase));
+                    }
+                }
+                
+                // 2. window.Supabase 확인
+                if (!supabaseFound && window.Supabase && typeof window.Supabase === 'object') {
+                    console.log('🔍 window.Supabase 발견:', typeof window.Supabase, Object.keys(window.Supabase));
+                    if (window.Supabase.createClient && typeof window.Supabase.createClient === 'function') {
+                        console.log('✅ window.Supabase.createClient 함수 발견!');
+                        supabaseLib = window.Supabase;
+                        supabaseFound = true;
+                    }
+                }
+                
+                if (supabaseFound) {
+                    console.log('✅ Supabase 라이브러리 발견!', supabaseLib);
+                    break;
+                }
+                
                 await new Promise(resolve => setTimeout(resolve, 100));
                 attempts++;
+                
+                if (attempts % 20 === 0) {
+                    console.log(`⏳ Supabase 라이브러리 대기 중... ${attempts}/${maxAttempts}`);
+                    console.log('현재 window 객체의 supabase 관련 속성:', 
+                        Object.keys(window).filter(key => key.toLowerCase().includes('supa')));
+                    
+                    // 상세 디버깅
+                    if (window.supabase) {
+                        console.log('📋 window.supabase 상세:', {
+                            type: typeof window.supabase,
+                            constructor: window.supabase.constructor?.name,
+                            keys: Object.keys(window.supabase),
+                            createClient: typeof window.supabase.createClient
+                        });
+                    }
+                }
             }
 
-            if (window.supabase) {
-                this.supabaseClient = window.supabase.createClient(
-                    SUPABASE_CONFIG.url,
-                    SUPABASE_CONFIG.anonKey
-                );
-                
-                // 전역 변수로도 설정 (dashboard.html에서 사용)
-                window.supabaseClient = this.supabaseClient;
-                
-                console.log('✅ Supabase 연결 성공');
+            // Supabase 클라이언트 생성 시도
+            const supabaseLib = window.supabase || window.Supabase;
+            if (supabaseLib && supabaseLib.createClient) {
+                try {
+                    this.supabaseClient = supabaseLib.createClient(
+                        SUPABASE_CONFIG.url,
+                        SUPABASE_CONFIG.anonKey
+                    );
+                    
+                    // 전역 변수로도 설정
+                    window.supabaseClient = this.supabaseClient;
+                    
+                    // 연결 테스트
+                    console.log('🧪 Supabase 연결 테스트 중...');
+                    const testResult = await this.supabaseClient.from('profiles').select('count', { count: 'exact', head: true });
+                    console.log('✅ Supabase 연결 및 테스트 성공!');
+                    
+                } catch (error) {
+                    console.error('❌ Supabase 클라이언트 생성 실패:', error);
+                    this.supabaseClient = null;
+                }
             } else {
-                console.warn('⚠️ Supabase 라이브러리를 찾을 수 없습니다. Mock 모드로 실행합니다.');
+                console.warn('⚠️ Supabase 라이브러리를 찾을 수 없습니다.');
+                console.log('사용 가능한 전역 객체:', Object.keys(window).filter(key => 
+                    key.toLowerCase().includes('supa') || key.toLowerCase().includes('auth')
+                ));
             }
         } catch (error) {
             console.error('❌ Supabase 초기화 실패:', error);
         }
     }
 
-    checkAuthState() {
-        // 로컬 저장소에서 사용자 정보 확인
-        const savedUser = localStorage.getItem('semu_user');
-        if (savedUser) {
-            try {
-                const userData = JSON.parse(savedUser);
+    async checkAuthState() {
+        // Supabase 세션 확인
+        try {
+            if (this.supabaseClient) {
+                const { data: { session }, error } = await this.supabaseClient.auth.getSession();
                 
-                // 이전 하드코딩된 ID인 경우 강제 초기화
-                if (userData.id === '00000000-0000-0000-0000-000000000001') {
-                    console.log('🔄 이전 관리자 ID 감지 - localStorage 초기화');
-                    localStorage.removeItem('semu_user');
-                    this.currentUser = null;
+                if (error) {
+                    console.error('세션 확인 오류:', error);
                     return;
                 }
-                
-                this.currentUser = userData;
-                console.log('✅ 저장된 사용자 세션 복원:', this.currentUser.email);
-            } catch (error) {
-                console.error('❌ 사용자 세션 복원 실패:', error);
-                localStorage.removeItem('semu_user');
+
+                if (session?.user) {
+                    console.log('✅ Supabase 세션 발견:', session.user.email);
+                    
+                    // 프로필 정보 가져오기
+                    const { data: profile } = await this.supabaseClient
+                        .from('profiles')
+                        .select('*, departments(name, code)')
+                        .eq('id', session.user.id)
+                        .single();
+
+                    if (profile) {
+                        this.currentUser = {
+                            id: session.user.id,
+                            email: session.user.email,
+                            name: profile.name,
+                            role: profile.role || 'employee',
+                            department: profile.departments?.name || '미지정',
+                            department_id: profile.department_id,
+                            hire_date: profile.hire_date,
+                            phone: profile.phone,
+                            loginTime: new Date().toISOString()
+                        };
+                        
+                        console.log('✅ 세션에서 사용자 정보 복원:', this.currentUser.email);
+                    }
+                } else {
+                    console.log('📋 활성 세션 없음');
+                    this.currentUser = null;
+                }
             }
+        } catch (error) {
+            console.error('❌ 인증 상태 확인 실패:', error);
+            this.currentUser = null;
         }
     }
 
@@ -98,91 +190,52 @@ class SemuApp {
         });
     }
 
-    // 인증 관련 메서드
+    // 인증 관련 메서드 (Supabase 전용)
     async login(email, password) {
         try {
             console.log('🔐 로그인 시도:', email);
 
-            // 1단계: 하드코딩된 관리자 계정 확인 (우선 처리)
-            if (this.isHardcodedAdmin(email, password)) {
-                console.log('🔑 하드코딩된 관리자 계정으로 로그인');
-                this.currentUser = {
-                    id: this.generateAdminUUID(), // 고정 UUID 사용
-                    email: email,
-                    name: '관리자',
-                    role: 'admin',
-                    department: '관리팀',
-                    loginTime: new Date().toISOString()
-                };
-                
-                // 세션 저장
-                localStorage.setItem('semu_user', JSON.stringify(this.currentUser));
-                console.log('✅ 하드코딩된 관리자 로그인 성공:', this.currentUser);
-                
-                return { success: true, user: this.currentUser };
+            if (!this.supabaseClient) {
+                throw new Error('Supabase 클라이언트가 초기화되지 않았습니다. 데이터베이스 연결이 필요합니다.');
             }
 
-            // 2단계: Supabase 로그인 시도
-            if (this.supabaseClient) {
-                try {
-                    const { data, error } = await this.supabaseClient.auth.signInWithPassword({
-                        email: email,
-                        password: password
-                    });
+            // Supabase 로그인 시도
+            const { data, error } = await this.supabaseClient.auth.signInWithPassword({
+                email: email,
+                password: password
+            });
 
-                    if (error) throw error;
+            if (error) throw error;
 
-                    // 프로필 정보 가져오기
-                    const { data: profile } = await this.supabaseClient
-                        .from('profiles')
-                        .select('*, departments(name, code)')
-                        .eq('id', data.user.id)
-                        .single();
+            console.log('✅ Auth 로그인 성공:', data.user?.email);
 
-                    this.currentUser = {
-                        id: data.user.id,
-                        email: data.user.email,
-                        name: profile?.name || data.user.user_metadata?.name || email.split('@')[0],
-                        role: profile?.role || 'employee',
-                        department: profile?.departments?.name || '미지정',
-                        loginTime: new Date().toISOString()
-                    };
-                } catch (supabaseError) {
-                    console.log('⚠️ Supabase 로그인 실패, Mock 로그인 시도:', supabaseError);
-                    // Supabase 실패 시 Mock 로그인으로 폴백
-                    if (this.validateMockLogin(email, password)) {
-                        this.currentUser = {
-                            id: 'mock-' + Date.now(),
-                            email: email,
-                            name: email.split('@')[0],
-                            role: email.includes('admin') ? 'admin' : 'employee',
-                            department: '테스트팀',
-                            loginTime: new Date().toISOString()
-                        };
-                    } else {
-                        throw new Error('Invalid credentials');
-                    }
-                }
-            } else {
-                // Mock 로그인
-                if (this.validateMockLogin(email, password)) {
-                    this.currentUser = {
-                        id: 'mock-' + Date.now(),
-                        email: email,
-                        name: email.split('@')[0],
-                        role: email.includes('admin') ? 'admin' : 'employee',
-                        department: '테스트팀',
-                        loginTime: new Date().toISOString()
-                    };
-                } else {
-                    throw new Error('Invalid credentials');
-                }
+            // 프로필 정보 가져오기
+            const { data: profile, error: profileError } = await this.supabaseClient
+                .from('profiles')
+                .select('*, departments(name, code)')
+                .eq('id', data.user.id)
+                .single();
+
+            if (profileError) {
+                console.error('프로필 정보 조회 실패:', profileError);
+                throw new Error('사용자 프로필 정보를 찾을 수 없습니다.');
             }
 
-            // 세션 저장
-            localStorage.setItem('semu_user', JSON.stringify(this.currentUser));
+            this.currentUser = {
+                id: data.user.id,
+                email: data.user.email,
+                name: profile?.name || data.user.user_metadata?.name || email.split('@')[0],
+                role: profile?.role || 'employee',
+                department: profile?.departments?.name || '미지정',
+                department_id: profile?.department_id,
+                hire_date: profile?.hire_date,
+                phone: profile?.phone,
+                loginTime: new Date().toISOString()
+            };
+
+            console.log('✅ 프로필 정보 로드 완료:', this.currentUser);
             
-            console.log('✅ 로그인 성공:', this.currentUser);
+            console.log('✅ Supabase 로그인 성공:', this.currentUser);
             return { success: true, user: this.currentUser };
 
         } catch (error) {
@@ -199,42 +252,16 @@ class SemuApp {
         }
     }
 
-    validateMockLogin(email, password) {
-        const validAccounts = [
-            { email: 'admin@semu.com', password: '123456' },
-            { email: 'kjtsori@gmail.com', password: '123456' },
-            { email: 'rerald293@gmail.com', password: '123456' },
-            { email: 'test@test.com', password: '123456' }
-        ];
 
-        return validAccounts.some(account => 
-            account.email === email && account.password === password
-        );
-    }
-
-    isHardcodedAdmin(email, password) {
-        // 하드코딩된 관리자 계정
-        const adminAccount = {
-            email: 'admin@semu.com',
-            password: 'Admin123!'
-        };
-
-        return email === adminAccount.email && password === adminAccount.password;
-    }
-
-    generateAdminUUID() {
-        // 기존 데이터베이스의 실제 관리자 ID 사용
-        return '17430453-d823-45a7-8a93-8512781b183a';
-    }
 
     async logout() {
         try {
             if (this.supabaseClient) {
-                await this.supabaseClient.auth.signOut();
+                const { error } = await this.supabaseClient.auth.signOut();
+                if (error) throw error;
             }
             
             this.currentUser = null;
-            localStorage.removeItem('semu_user');
             
             console.log('✅ 로그아웃 완료');
             
@@ -251,12 +278,14 @@ class SemuApp {
         }
     }
 
-    // 회원가입 메서드
+    // 회원가입 메서드 (Supabase 전용)
     async register(userData) {
         try {
             console.log('📝 회원가입 시도:', userData.email);
 
-            if (this.supabaseClient) {
+            if (!this.supabaseClient) {
+                throw new Error('Supabase 클라이언트가 초기화되지 않았습니다. 데이터베이스 연결이 필요합니다.');
+            }
                 // Supabase 회원가입
                 const { data, error } = await this.supabaseClient.auth.signUp({
                     email: userData.email,
@@ -273,48 +302,64 @@ class SemuApp {
 
                 if (error) throw error;
 
+                // 부서 ID 먼저 조회
+                console.log('📋 부서 정보 조회 중...');
+                let departmentId = null;
+                
+                try {
+                    const { data: department, error: deptError } = await this.supabaseClient
+                        .from('departments')
+                        .select('id')
+                        .eq('code', userData.department.toUpperCase())
+                        .single();
+
+                    if (deptError) {
+                        console.warn('부서 조회 실패, 기본값 사용:', deptError.message);
+                        // 기본 부서 (첫 번째 부서) 사용
+                        const { data: defaultDept } = await this.supabaseClient
+                            .from('departments')
+                            .select('id')
+                            .limit(1)
+                            .single();
+                        departmentId = defaultDept?.id;
+                    } else {
+                        departmentId = department.id;
+                        console.log('✅ 부서 ID 찾음:', departmentId);
+                    }
+                } catch (error) {
+                    console.warn('부서 조회 중 오류, 계속 진행:', error.message);
+                }
+
                 // 프로필 테이블에 사용자 정보 저장
                 if (data.user) {
-                    const { error: profileError } = await this.supabaseClient
+                    const profileData = {
+                        id: data.user.id,
+                        name: userData.name,
+                        email: userData.email,
+                        department_id: departmentId,
+                        hire_date: userData.hire_date,
+                        phone: userData.phone || null,
+                        role: 'employee'
+                    };
+
+                    console.log('💾 프로필 데이터:', profileData);
+
+                    const { data: profileResult, error: profileError } = await this.supabaseClient
                         .from('profiles')
-                        .insert([
-                            {
-                                id: data.user.id,
-                                name: userData.name,
-                                email: userData.email,
-                                department: userData.department,
-                                hire_date: userData.hire_date,
-                                phone: userData.phone || null,
-                                role: 'employee', // 기본 역할
-                                created_at: new Date().toISOString(),
-                                updated_at: new Date().toISOString()
-                            }
-                        ]);
+                        .insert([profileData])
+                        .select()
+                        .single();
 
                     if (profileError) {
-                        console.warn('⚠️ 프로필 저장 실패 (계정은 생성됨):', profileError);
+                        console.error('프로필 저장 실패:', profileError);
+                        throw new Error(`프로필 저장 실패: ${profileError.message}`);
                     }
+
+                    console.log('✅ 프로필 저장 완료:', profileResult);
                 }
 
                 console.log('✅ 회원가입 성공:', data.user);
                 return { success: true, user: data.user };
-
-            } else {
-                // Mock 회원가입 (Supabase 연결 실패 시)
-                const mockUser = {
-                    id: 'mock-' + Date.now(),
-                    email: userData.email,
-                    name: userData.name,
-                    role: 'employee',
-                    department: userData.department,
-                    hire_date: userData.hire_date,
-                    phone: userData.phone,
-                    created_at: new Date().toISOString()
-                };
-
-                console.log('✅ Mock 회원가입 성공:', mockUser);
-                return { success: true, user: mockUser };
-            }
 
         } catch (error) {
             console.error('❌ 회원가입 실패:', error);

@@ -236,7 +236,7 @@
     </div>
 
     <!-- Supabase -->
-    <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
     
     <!-- 공통 스크립트 -->
     <script src="./assets/js/common.js"></script>
@@ -246,17 +246,31 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('📋 로그인 페이지 로드됨');
             
-            // 이미 로그인된 경우 대시보드로 리다이렉트
-            setTimeout(() => {
-                if (window.semuApp && window.semuApp.currentUser) {
-                    console.log('✅ 이미 로그인됨, 대시보드로 이동');
-                    window.location.href = './dashboard.html';
-                }
-            }, 500);
+            // 로그인 페이지 로드 완료
+            console.log('로그인 페이지가 로드되었습니다.');
             
             // 로그인 폼 이벤트
             const loginForm = document.getElementById('loginForm');
             loginForm.addEventListener('submit', handleLogin);
+            
+            // 세션 확인 후 자동 리다이렉트 (리다이렉트 루프 방지)
+            let redirectAttempted = false;
+            const currentUrl = new URL(window.location.href);
+            const redirectFrom = currentUrl.searchParams.get('redirect_from');
+            
+            // 대시보드에서 온 리다이렉트인 경우 자동 리다이렉트 비활성화
+            if (redirectFrom === 'dashboard') {
+                console.log('🔄 대시보드에서 리다이렉트됨, 자동 리다이렉트 비활성화');
+                return;
+            }
+            
+            setTimeout(async () => {
+                if (window.semuApp && window.semuApp.currentUser && !redirectAttempted) {
+                    redirectAttempted = true;
+                    console.log('✅ 이미 로그인된 사용자 감지, 대시보드로 이동:', window.semuApp.currentUser.email);
+                    window.location.href = './dashboard.html?from_login=true';
+                }
+            }, 3000); // 더 긴 대기 시간으로 세션 복원 완료 보장
         });
 
         async function handleLogin(e) {
