@@ -186,6 +186,87 @@ class SemuApp {
         }
     }
 
+    // 회원가입 메서드
+    async register(userData) {
+        try {
+            console.log('📝 회원가입 시도:', userData.email);
+
+            if (this.supabaseClient) {
+                // Supabase 회원가입
+                const { data, error } = await this.supabaseClient.auth.signUp({
+                    email: userData.email,
+                    password: userData.password,
+                    options: {
+                        data: {
+                            name: userData.name,
+                            department: userData.department,
+                            hire_date: userData.hire_date,
+                            phone: userData.phone || null
+                        }
+                    }
+                });
+
+                if (error) throw error;
+
+                // 프로필 테이블에 사용자 정보 저장
+                if (data.user) {
+                    const { error: profileError } = await this.supabaseClient
+                        .from('profiles')
+                        .insert([
+                            {
+                                id: data.user.id,
+                                name: userData.name,
+                                email: userData.email,
+                                department: userData.department,
+                                hire_date: userData.hire_date,
+                                phone: userData.phone || null,
+                                role: 'employee', // 기본 역할
+                                created_at: new Date().toISOString(),
+                                updated_at: new Date().toISOString()
+                            }
+                        ]);
+
+                    if (profileError) {
+                        console.warn('⚠️ 프로필 저장 실패 (계정은 생성됨):', profileError);
+                    }
+                }
+
+                console.log('✅ 회원가입 성공:', data.user);
+                return { success: true, user: data.user };
+
+            } else {
+                // Mock 회원가입 (Supabase 연결 실패 시)
+                const mockUser = {
+                    id: 'mock-' + Date.now(),
+                    email: userData.email,
+                    name: userData.name,
+                    role: 'employee',
+                    department: userData.department,
+                    hire_date: userData.hire_date,
+                    phone: userData.phone,
+                    created_at: new Date().toISOString()
+                };
+
+                console.log('✅ Mock 회원가입 성공:', mockUser);
+                return { success: true, user: mockUser };
+            }
+
+        } catch (error) {
+            console.error('❌ 회원가입 실패:', error);
+            let message = '회원가입에 실패했습니다.';
+            
+            if (error.message.includes('User already registered')) {
+                message = '이미 등록된 이메일입니다.';
+            } else if (error.message.includes('Password should be at least 6 characters')) {
+                message = '비밀번호는 최소 6자 이상이어야 합니다.';
+            } else if (error.message.includes('Invalid email')) {
+                message = '올바른 이메일 형식이 아닙니다.';
+            }
+            
+            return { success: false, error: message };
+        }
+    }
+
     // 네비게이션 메서드
     navigateTo(page) {
         const pages = {

@@ -182,6 +182,122 @@
                 gap: 0;
             }
         }
+        
+        /* 비밀번호 유효성 검사 스타일 */
+        .password-rules {
+            margin-top: 10px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #e9ecef;
+        }
+        
+        .rule-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #6c757d;
+        }
+        
+        .rule-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .rule-item i {
+            margin-right: 8px;
+            font-size: 16px;
+        }
+        
+        .rule-item.valid {
+            color: #28a745;
+        }
+        
+        .rule-item.valid i {
+            color: #28a745;
+        }
+        
+        .rule-item:not(.valid) i {
+            color: #dc3545;
+        }
+        
+        /* 비밀번호 강도 표시 */
+        .password-strength-container {
+            margin-top: 10px;
+        }
+        
+        .password-strength {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .strength-bar {
+            flex: 1;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .strength-fill {
+            height: 100%;
+            width: 0%;
+            background: #6c757d;
+            transition: all 0.3s ease;
+        }
+        
+        .password-strength.strength-weak .strength-fill {
+            background: #dc3545;
+        }
+        
+        .password-strength.strength-fair .strength-fill {
+            background: #ffc107;
+        }
+        
+        .password-strength.strength-good .strength-fill {
+            background: #17a2b8;
+        }
+        
+        .password-strength.strength-strong .strength-fill {
+            background: #28a745;
+        }
+        
+        .strength-text {
+            font-size: 14px;
+            color: #6c757d;
+            min-width: 80px;
+        }
+        
+        /* 비밀번호 일치 여부 */
+        .password-match {
+            margin-top: 8px;
+            font-size: 14px;
+            padding: 5px 0;
+        }
+        
+        .password-match.match {
+            color: #28a745;
+        }
+        
+        .password-match.no-match {
+            color: #dc3545;
+        }
+        
+        .password-match.empty {
+            color: #6c757d;
+        }
+        
+        /* 입력 필드 상태 표시 */
+        .form-control.valid {
+            border-color: #28a745;
+            box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+        }
+        
+        .form-control.invalid {
+            border-color: #dc3545;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+        }
     </style>
 </head>
 <body>
@@ -213,13 +329,49 @@
                         <label for="password">비밀번호 <span class="required">*</span></label>
                         <input type="password" id="password" name="password" class="form-control" required 
                                placeholder="비밀번호를 입력하세요">
-                        <div id="password-validation" class="password-validation"></div>
+                        
+                        <!-- 실시간 비밀번호 유효성 검사 결과 -->
+                        <div class="password-rules" style="display: none;">
+                            <div class="rule-item" id="rule-length">
+                                <i class="fas fa-times-circle"></i>
+                                <span>8자 이상</span>
+                            </div>
+                            <div class="rule-item" id="rule-uppercase">
+                                <i class="fas fa-times-circle"></i>
+                                <span>대문자 포함</span>
+                            </div>
+                            <div class="rule-item" id="rule-lowercase">
+                                <i class="fas fa-times-circle"></i>
+                                <span>소문자 포함</span>
+                            </div>
+                            <div class="rule-item" id="rule-number">
+                                <i class="fas fa-times-circle"></i>
+                                <span>숫자 포함</span>
+                            </div>
+                            <div class="rule-item" id="rule-special">
+                                <i class="fas fa-times-circle"></i>
+                                <span>특수문자 포함</span>
+                            </div>
+                        </div>
+                        
+                        <!-- 비밀번호 강도 표시 -->
+                        <div class="password-strength-container">
+                            <div class="password-strength" id="password-strength">
+                                <div class="strength-bar">
+                                    <div class="strength-fill" id="strength-fill"></div>
+                                </div>
+                                <span class="strength-text" id="strength-text">비밀번호를 입력하세요</span>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="form-group">
                         <label for="password-confirm">비밀번호 확인 <span class="required">*</span></label>
                         <input type="password" id="password-confirm" name="password-confirm" class="form-control" required 
                                placeholder="비밀번호를 다시 입력하세요">
+                        
+                        <!-- 비밀번호 일치 여부 표시 -->
+                        <div class="password-match" id="password-match"></div>
                     </div>
                     
                     <div class="form-row">
@@ -301,10 +453,29 @@
                 return;
             }
             
-            // 비밀번호 검증
-            if (window.passwordValidator && !window.passwordValidator.isPasswordValid()) {
-                const errors = window.passwordValidator.getValidationErrors();
-                showAlert('비밀번호 조건을 만족하지 않습니다:\n' + errors.join('\n'), 'error');
+            // 비밀번호 검증 (간단한 검증으로 대체)
+            if (password.length < 8) {
+                showAlert('비밀번호는 8자 이상이어야 합니다.', 'error');
+                return;
+            }
+            
+            if (!/[A-Z]/.test(password)) {
+                showAlert('비밀번호는 대문자를 포함해야 합니다.', 'error');
+                return;
+            }
+            
+            if (!/[a-z]/.test(password)) {
+                showAlert('비밀번호는 소문자를 포함해야 합니다.', 'error');
+                return;
+            }
+            
+            if (!/[0-9]/.test(password)) {
+                showAlert('비밀번호는 숫자를 포함해야 합니다.', 'error');
+                return;
+            }
+            
+            if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+                showAlert('비밀번호는 특수문자를 포함해야 합니다.', 'error');
                 return;
             }
             

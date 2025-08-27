@@ -170,12 +170,12 @@
                 
                 <div class="test-accounts">
                     <h4><i class="fas fa-vial"></i> 테스트 계정</h4>
-                    <div class="test-account">admin@semu.com / 123456</div>
+                    <div class="test-account">admin@semu.com / Admin123!</div>
                     <div class="test-account">kjtsori@gmail.com / 123456</div>
                     <div class="test-account">rerald293@gmail.com / 123456</div>
                     
                     <div class="quick-login">
-                        <button type="button" onclick="quickLogin('admin@semu.com', '123456')">
+                        <button type="button" onclick="quickLoginAsAdmin('admin@semu.com', 'Admin123!')">
                             관리자 로그인
                         </button>
                         <button type="button" onclick="quickLogin('kjtsori@gmail.com', '123456')">
@@ -258,6 +258,30 @@
             // 폼 제출
             const loginForm = document.getElementById('loginForm');
             loginForm.dispatchEvent(new Event('submit'));
+        }
+
+        async function quickLoginAsAdmin(email, password) {
+            document.getElementById('email').value = email;
+            document.getElementById('password').value = password;
+            
+            // 로그인 처리
+            try {
+                const result = await window.semuApp.login(email, password);
+                
+                if (result.success) {
+                    showAlert('관리자로 로그인되었습니다!', 'success');
+                    
+                    // 어드민 페이지로 이동
+                    setTimeout(() => {
+                        window.location.href = './admin.html';
+                    }, 1000);
+                } else {
+                    showAlert(result.error, 'error');
+                }
+            } catch (error) {
+                console.error('Admin login error:', error);
+                showAlert('관리자 로그인 중 오류가 발생했습니다.', 'error');
+            }
         }
     </script>
 </body>
