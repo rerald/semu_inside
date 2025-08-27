@@ -99,6 +99,44 @@
             background: var(--primary-dark);
         }
 
+        .alternative-login {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 1px solid #e9ecef;
+        }
+
+        .alternative-login h4 {
+            margin: 0 0 15px 0;
+            color: var(--dark-gray);
+            font-size: 1rem;
+        }
+
+        .btn-magic {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin: 5px;
+            transition: all 0.3s;
+            display: block;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .btn-magic:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-magic i {
+            margin-right: 8px;
+        }
+
         .auth-links {
             margin: 20px 0;
             text-align: center;
@@ -170,7 +208,7 @@
                 
                 <div class="test-accounts">
                     <h4><i class="fas fa-vial"></i> 테스트 계정</h4>
-                    <div class="test-account">admin@semu.com / Admin123!</div>
+                    <div class="test-account"><strong>관리자:</strong> admin@semu.com / Admin123!</div>
                     <div class="test-account">kjtsori@gmail.com / 123456</div>
                     <div class="test-account">rerald293@gmail.com / 123456</div>
                     
@@ -180,6 +218,16 @@
                         </button>
                         <button type="button" onclick="quickLogin('kjtsori@gmail.com', '123456')">
                             사용자 로그인
+                        </button>
+                    </div>
+                    
+                    <div class="alternative-login">
+                        <h4><i class="fas fa-key"></i> 대안 로그인</h4>
+                        <button type="button" onclick="sendMagicLink('admin@semu.com')" class="btn-magic">
+                            <i class="fas fa-magic"></i> Magic Link로 로그인
+                        </button>
+                        <button type="button" onclick="sendMagicLink('kjtsori@gmail.com')" class="btn-magic">
+                            <i class="fas fa-magic"></i> Magic Link로 로그인
                         </button>
                     </div>
                 </div>
@@ -271,16 +319,56 @@
                 if (result.success) {
                     showAlert('관리자로 로그인되었습니다!', 'success');
                     
-                    // 어드민 페이지로 이동
-                    setTimeout(() => {
-                        window.location.href = './admin.html';
-                    }, 1000);
+                    // 관리자 계정인 경우 admin.html로 이동
+                    if (result.user.role === 'admin') {
+                        setTimeout(() => {
+                            window.location.href = './admin.html';
+                        }, 1000);
+                    } else {
+                        // 일반 사용자인 경우 대시보드로 이동
+                        setTimeout(() => {
+                            window.location.href = './dashboard.html';
+                        }, 1000);
+                    }
                 } else {
                     showAlert(result.error, 'error');
                 }
             } catch (error) {
                 console.error('Admin login error:', error);
                 showAlert('관리자 로그인 중 오류가 발생했습니다.', 'error');
+            }
+        }
+
+        async function sendMagicLink(email) {
+            try {
+                console.log('🔐 Magic Link 전송 시도:', email);
+                
+                // 이메일 입력 필드에 설정
+                document.getElementById('email').value = email;
+                
+                // Magic Link 전송
+                const { error } = await window.supabaseClient.auth.signInWithOtp({
+                    email: email,
+                    options: {
+                        emailRedirectTo: window.location.origin + '/dashboard.html'
+                    }
+                });
+                
+                if (error) {
+                    throw error;
+                }
+                
+                showAlert(`Magic Link가 ${email}로 전송되었습니다. 이메일을 확인해주세요.`, 'success');
+                console.log('✅ Magic Link 전송 완료');
+                
+            } catch (error) {
+                console.error('❌ Magic Link 전송 실패:', error);
+                
+                if (error.message.includes('Email logins are disabled')) {
+                    showAlert('이메일 로그인이 비활성화되어 있습니다. Supabase 설정을 확인해주세요.', 'error');
+                } else {
+                    showAlert('Magic Link 전송에 실패했습니다. 다시 시도해주세요.', 'error');
+                }
             }
         }
     </script>

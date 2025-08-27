@@ -117,9 +117,51 @@
 
         .exam-header {
             display: flex;
-            justify-content: between;
+            justify-content: space-between;
             align-items: flex-start;
             margin-bottom: 15px;
+        }
+
+        .exam-score-info {
+            text-align: right;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .score-badge {
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .score-badge.excellent {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+        }
+
+        .score-badge.good {
+            background: linear-gradient(135deg, #17a2b8, #20c997);
+            box-shadow: 0 2px 8px rgba(23, 162, 184, 0.3);
+        }
+
+        .score-badge.average {
+            background: linear-gradient(135deg, #ffc107, #fd7e14);
+            box-shadow: 0 2px 8px rgba(255, 193, 7, 0.3);
+        }
+
+        .score-badge.poor {
+            background: linear-gradient(135deg, #dc3545, #e83e8c);
+            box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+        }
+
+        .score-detail {
+            color: var(--medium-gray);
+            font-size: 0.8rem;
+            font-weight: 500;
         }
 
         .exam-title {
@@ -210,6 +252,82 @@
             font-size: 1.2rem;
         }
 
+        /* 로딩 및 오류 상태 스타일 */
+        .loading-exams {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--medium-gray);
+        }
+
+        .loading-exams i {
+            font-size: 2rem;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+        }
+
+        .loading-exams p {
+            margin: 0;
+            font-size: 1.1rem;
+        }
+
+        .no-exams {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--medium-gray);
+        }
+
+        .no-exams i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: #dee2e6;
+        }
+
+        .no-exams p {
+            margin: 0 0 10px 0;
+            font-size: 1.1rem;
+        }
+
+        .no-exams small {
+            color: #adb5bd;
+        }
+
+        .error-message {
+            text-align: center;
+            padding: 40px 20px;
+            color: #dc3545;
+        }
+
+        .error-message i {
+            font-size: 2rem;
+            margin-bottom: 15px;
+        }
+
+        .error-message p {
+            margin: 0;
+            font-size: 1.1rem;
+        }
+
+        /* 시험 상태별 스타일 */
+        .exam-status.completed {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .exam-status.in-progress {
+            background-color: #ffc107;
+            color: #212529;
+        }
+
+        .exam-status.scheduled {
+            background-color: #17a2b8;
+            color: white;
+        }
+
+        .exam-status.expired {
+            background-color: #6c757d;
+            color: white;
+        }
+
         @media (max-width: 768px) {
             .main-content {
                 padding: 20px;
@@ -252,7 +370,7 @@
                         <a href="./exam.html" class="nav-link">
                             <i class="fas fa-clipboard-list"></i> 시험
                         </a>
-                        <a href="./results.html" class="nav-link">
+                        <a href="#" onclick="showLatestResult()" class="nav-link">
                             <i class="fas fa-chart-bar"></i> 결과
                         </a>
                         <a href="./profile.html" class="nav-link">
@@ -316,7 +434,7 @@
                             <i class="fas fa-play"></i>
                             <span>시험 응시</span>
                         </a>
-                        <a href="./results.html" class="quick-action-btn">
+                        <a href="#" onclick="showLatestResult()" class="quick-action-btn">
                             <i class="fas fa-chart-line"></i>
                             <span>성적 확인</span>
                         </a>
@@ -333,77 +451,10 @@
                     </h3>
 
                     <div id="examList">
-                        <!-- 시험 카드들 -->
-                        <div class="exam-card" onclick="startExam('tax-2024-q1')">
-                            <div class="exam-header">
-                                <div>
-                                    <h4 class="exam-title">2024년 1분기 부가가치세 평가</h4>
-                                    <span class="exam-status available">응시 가능</span>
-                                </div>
-                            </div>
-                            <p class="exam-description">
-                                부가가치세 기본 개념과 실무 적용 능력을 평가하는 시험입니다. 
-                                최신 세법 개정사항을 반영한 문제들로 구성되어 있습니다.
-                            </p>
-                            <div class="exam-meta">
-                                <span><i class="fas fa-clock"></i> 60분</span>
-                                <span><i class="fas fa-question-circle"></i> 20문항</span>
-                                <span><i class="fas fa-calendar"></i> 언제든지</span>
-                                <span><i class="fas fa-star"></i> 난이도: 중급</span>
-                            </div>
-                            <div class="exam-actions">
-                                <button class="btn btn-primary">
-                                    <i class="fas fa-play"></i> 시험 시작
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="exam-card" onclick="startExam('income-basic')">
-                            <div class="exam-header">
-                                <div>
-                                    <h4 class="exam-title">소득세법 기본 평가</h4>
-                                    <span class="exam-status available">응시 가능</span>
-                                </div>
-                            </div>
-                            <p class="exam-description">
-                                소득세법의 기본 이론과 계산 능력을 평가합니다. 
-                                급여소득, 사업소득, 기타소득의 계산 방법을 다룹니다.
-                            </p>
-                            <div class="exam-meta">
-                                <span><i class="fas fa-clock"></i> 45분</span>
-                                <span><i class="fas fa-question-circle"></i> 15문항</span>
-                                <span><i class="fas fa-calendar"></i> 언제든지</span>
-                                <span><i class="fas fa-star"></i> 난이도: 초급</span>
-                            </div>
-                            <div class="exam-actions">
-                                <button class="btn btn-primary">
-                                    <i class="fas fa-play"></i> 시험 시작
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="exam-card" onclick="startExam('corp-advanced')">
-                            <div class="exam-header">
-                                <div>
-                                    <h4 class="exam-title">법인세법 고급</h4>
-                                    <span class="exam-status scheduled">예약 필요</span>
-                                </div>
-                            </div>
-                            <p class="exam-description">
-                                법인세법의 고급 수준 문제들로 구성된 시험입니다. 
-                                복잡한 세무조정과 손금불산입 항목들을 다룹니다.
-                            </p>
-                            <div class="exam-meta">
-                                <span><i class="fas fa-clock"></i> 90분</span>
-                                <span><i class="fas fa-question-circle"></i> 25문항</span>
-                                <span><i class="fas fa-calendar"></i> 예약 필요</span>
-                                <span><i class="fas fa-star"></i> 난이도: 고급</span>
-                            </div>
-                            <div class="exam-actions">
-                                <button class="btn btn-secondary">
-                                    <i class="fas fa-calendar-plus"></i> 예약하기
-                                </button>
-                            </div>
+                        <!-- 시험 카드들이 동적으로 로드됩니다 -->
+                        <div class="loading-exams">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <p>시험 목록을 불러오는 중...</p>
                         </div>
                     </div>
                 </div>
@@ -422,9 +473,19 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('📊 대시보드 페이지 로드됨');
             
+            // Supabase 클라이언트 초기화 확인
+            let checkCount = 0;
+            const maxChecks = 50; // 최대 5초 대기 (50 * 100ms)
+            
+            const checkSupabaseClient = () => {
+                checkCount++;
+                
+                if (window.supabaseClient && window.semuApp) {
+                    console.log('✅ Supabase 클라이언트와 semuApp 모두 확인됨');
+            
             // 인증 확인
-            setTimeout(() => {
-                if (!window.semuApp || !window.semuApp.requireAuth()) {
+                    if (!window.semuApp.requireAuth()) {
+                        console.warn('⚠️ 인증이 필요합니다.');
                     return;
                 }
                 
@@ -433,7 +494,28 @@
                 
                 // 통계 데이터 로드
                 loadDashboardStats();
-            }, 500);
+                    
+                    // 시험 목록 로드
+                    loadExamList();
+                } else if (checkCount < maxChecks) {
+                    console.log(`⏳ 초기화 대기 중... (${checkCount}/${maxChecks})`);
+                    console.log('  - supabaseClient:', !!window.supabaseClient);
+                    console.log('  - semuApp:', !!window.semuApp);
+                    setTimeout(checkSupabaseClient, 100);
+                } else {
+                    console.error('❌ 초기화 실패 - 최대 대기 시간 초과');
+                    document.getElementById('examList').innerHTML = `
+                        <div class="error-message">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <p>시스템 초기화에 실패했습니다. 페이지를 새로고침해주세요.</p>
+                            <small>supabaseClient: ${!!window.supabaseClient}, semuApp: ${!!window.semuApp}</small>
+                        </div>
+                    `;
+                }
+            };
+            
+            // Supabase 클라이언트 확인 시작
+            checkSupabaseClient();
         });
 
         function updateUserInfo() {
@@ -447,23 +529,125 @@
 
         async function loadDashboardStats() {
             try {
-                // 실제 Supabase에서 데이터를 가져올 수 있지만
-                // 현재는 Mock 데이터 사용
-                const stats = {
-                    totalExams: 5,
-                    completedExams: 2,
-                    pendingExams: 3,
-                    averageScore: 85
-                };
+                console.log('📊 대시보드 통계 데이터 로딩 중...');
+                
+                // 현재 사용자 정보 가져오기
+                const user = window.semuApp?.currentUser;
+                if (!user) {
+                    console.warn('사용자 정보가 없습니다.');
+                    return;
+                }
+
+                // 사용자가 응시 가능한 시험 통계 조회 (더 간단한 방식)
+                let examIds = [];
+                
+                // 하드코딩된 관리자 계정인지 확인
+                if (user.id === '17430453-d823-45a7-8a93-8512781b183a' && user.role === 'admin') {
+                    console.log('🔑 하드코딩된 관리자 계정 - 모든 시험 통계 조회');
+                    
+                    // 모든 시험 권한을 가져오기
+                    const { data: allExamPermissions, error: allPermissionsError } = await window.supabaseClient
+                        .from('exam_permissions')
+                        .select('exam_id');
+                    
+                    if (allPermissionsError) {
+                        console.error('❌ 전체 시험 권한 조회 실패:', allPermissionsError);
+                        throw allPermissionsError;
+                    }
+                    
+                    examIds = [...new Set(allExamPermissions.map(p => p.exam_id))]; // 중복 제거
+                    console.log('📋 관리자 - 모든 시험 ID들 (통계):', examIds);
+                } else {
+                    // 일반 사용자 권한 조회
+                    let query = window.supabaseClient
+                        .from('exam_permissions')
+                        .select('exam_id');
+                    
+                    // 조건에 따라 쿼리 구성
+                    if (user.department_id) {
+                        query = query.or(`employee_id.eq.${user.id},department_id.eq.${user.department_id}`);
+                    } else {
+                        query = query.eq('employee_id', user.id);
+                    }
+                    
+                    const { data: userPermissions, error: statsPermissionsError } = await query;
+                    
+                    if (statsPermissionsError) throw statsPermissionsError;
+                    
+                    if (!userPermissions || userPermissions.length === 0) {
+                        console.log('📋 사용자에게 권한이 있는 시험이 없습니다.');
+                        return;
+                    }
+                    
+                    examIds = [...new Set(userPermissions.map(p => p.exam_id))]; // 중복 제거
+                }
+                
+                // 권한이 있는 시험들의 상세 정보 가져오기
+                const { data: stats, error: statsError } = await window.supabaseClient
+                    .from('exams')
+                    .select(`
+                        id,
+                        title,
+                        status,
+                        exam_sessions!left(
+                            id,
+                            employee_id,
+                            status,
+                            score,
+                            total_points
+                        )
+                    `)
+                    .in('id', examIds)
+                    .eq('status', 'published');
+
+                if (statsError) throw statsError;
+
+                // 통계 계산
+                const totalExams = stats?.length || 0;
+                let completedExams = 0;
+                let pendingExams = 0;
+                let totalScore = 0;
+                let scoredExams = 0;
+
+                stats?.forEach(exam => {
+                    if (exam.status === 'published') {
+                        const sessions = exam.exam_sessions || [];
+                        const userSession = sessions.find(s => s.employee_id === user.id);
+                        
+                        if (userSession) {
+                            if (userSession.status === 'graded' || userSession.status === 'submitted') {
+                                completedExams++;
+                                if (userSession.score !== null) {
+                                    totalScore += userSession.score;
+                                    scoredExams++;
+                                }
+                            } else if (userSession.status === 'in_progress') {
+                                pendingExams++;
+                            }
+                        } else {
+                            // 세션이 없는 경우 대기 중인 시험으로 간주
+                            pendingExams++;
+                        }
+                    }
+                });
+
+                const averageScore = scoredExams > 0 ? Math.round(totalScore / scoredExams) : 0;
+
+                console.log('📊 통계 데이터:', { totalExams, completedExams, pendingExams, averageScore });
 
                 // 애니메이션과 함께 숫자 업데이트
-                animateNumber('totalExams', stats.totalExams);
-                animateNumber('completedExams', stats.completedExams);
-                animateNumber('pendingExams', stats.pendingExams);
-                animateNumber('averageScore', stats.averageScore);
+                animateNumber('totalExams', totalExams);
+                animateNumber('completedExams', completedExams);
+                animateNumber('pendingExams', pendingExams);
+                animateNumber('averageScore', averageScore);
 
             } catch (error) {
                 console.error('통계 로드 실패:', error);
+                // 오류 시 기본값 표시
+                animateNumber('totalExams', 0);
+                animateNumber('completedExams', 0);
+                animateNumber('pendingExams', 0);
+                animateNumber('averageScore', 0);
             }
         }
 
@@ -487,26 +671,529 @@
             }, 16);
         }
 
-        function startExam(examId) {
-            console.log('🎯 시험 시작 요청:', examId);
+        // 시험 목록 로드
+        async function loadExamList() {
+            try {
+                console.log('📋 시험 목록 로딩 중...');
+                
+                // 현재 사용자 정보 가져오기
+                const user = window.semuApp?.currentUser;
+                console.log('👤 현재 사용자:', user);
+                
+                if (!user) {
+                    console.warn('사용자 정보가 없습니다.');
+                    document.getElementById('examList').innerHTML = `
+                        <div class="error-message">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <p>사용자 정보를 가져올 수 없습니다. 로그인 상태를 확인해주세요.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // 1단계: exam_permissions 테이블 확인
+                console.log('🔍 1단계: exam_permissions 테이블 조회 중...');
+                const { data: allPermissions, error: permissionsError } = await window.supabaseClient
+                    .from('exam_permissions')
+                    .select('*');
+                
+                if (permissionsError) {
+                    console.error('❌ exam_permissions 조회 실패:', permissionsError);
+                } else {
+                    console.log('📋 전체 exam_permissions:', allPermissions);
+                }
+
+                // 2단계: 사용자별 권한 조회 (더 간단한 방식)
+                console.log('🔍 2단계: 사용자별 권한 조회 중...');
+                
+                // 하드코딩된 관리자 계정인지 확인
+                if (user.id === '17430453-d823-45a7-8a93-8512781b183a' && user.role === 'admin') {
+                    console.log('🔑 하드코딩된 관리자 계정 - 모든 시험에 접근 권한 부여');
+                    
+                    // 모든 시험 권한을 가져오기
+                    const { data: allExamPermissions, error: allPermissionsError } = await window.supabaseClient
+                        .from('exam_permissions')
+                        .select('exam_id');
+                    
+                    if (allPermissionsError) {
+                        console.error('❌ 전체 시험 권한 조회 실패:', allPermissionsError);
+                        throw allPermissionsError;
+                    }
+                    
+                    const examIds = allExamPermissions.map(p => p.exam_id);
+                    console.log('📋 관리자 - 모든 시험 ID들:', examIds);
+                    
+                    // 모든 시험 정보 가져오기
+                    await loadExamDetails(examIds, user);
+                    return;
+                }
+                
+                // 일반 사용자 권한 조회
+                let query = window.supabaseClient
+                    .from('exam_permissions')
+                    .select('exam_id');
+                
+                // 조건에 따라 쿼리 구성
+                if (user.department_id) {
+                    query = query.or(`employee_id.eq.${user.id},department_id.eq.${user.department_id}`);
+                } else {
+                    query = query.eq('employee_id', user.id);
+                }
+                
+                const { data: userPermissions, error: examPermissionsError } = await query;
+                
+                if (examPermissionsError) throw examPermissionsError;
+                
+                if (!userPermissions || userPermissions.length === 0) {
+                    console.log('📋 사용자에게 권한이 있는 시험이 없습니다.');
+                    displayExamList([], user);
+                    return;
+                }
+                
+                const examIds = userPermissions.map(p => p.exam_id);
+                console.log('📋 권한이 있는 시험 ID들:', examIds);
+                
+                // 권한이 있는 시험들의 상세 정보 가져오기
+                const { data: permissions, error: examError } = await window.supabaseClient
+                    .from('exams')
+                    .select(`
+                        id,
+                        title,
+                        description,
+                        duration,
+                        status,
+                        start_time,
+                        end_time,
+                        exam_questions(count),
+                        exam_sessions!left(
+                            id,
+                            employee_id,
+                            status,
+                            score,
+                            total_points
+                        )
+                    `)
+                    .in('id', examIds)
+                    .eq('status', 'published');
+
+                if (examError) throw examError;
+
+                console.log('📋 응시 가능한 시험:', permissions);
+
+                // 시험 목록 표시
+                displayExamList(permissions, user);
+
+            } catch (error) {
+                console.error('시험 목록 로드 실패:', error);
+                document.getElementById('examList').innerHTML = `
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>시험 목록을 불러오는 중 오류가 발생했습니다.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // 시험 상세 정보 로드 (관리자용)
+        async function loadExamDetails(examIds, user) {
+            try {
+                console.log('🔍 시험 상세 정보 로드 중...');
+                
+                // 시험들의 상세 정보 가져오기
+                const { data: permissions, error: examError } = await window.supabaseClient
+                    .from('exams')
+                    .select(`
+                        id,
+                        title,
+                        description,
+                        duration,
+                        status,
+                        start_time,
+                        end_time,
+                        exam_questions(count),
+                        exam_sessions!left(
+                            id,
+                            employee_id,
+                            status,
+                            score,
+                            total_points
+                        )
+                    `)
+                    .in('id', examIds)
+                    .eq('status', 'published');
+
+                if (examError) throw examError;
+
+                console.log('📋 관리자 - 응시 가능한 시험:', permissions);
+
+                // 시험 목록 표시
+                displayExamList(permissions, user);
+                
+            } catch (error) {
+                console.error('❌ 시험 상세 정보 로드 실패:', error);
+                document.getElementById('examList').innerHTML = `
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>시험 상세 정보를 불러오는 중 오류가 발생했습니다.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // 점수 정보 생성 함수
+        function generateScoreInfo(userSession) {
+            console.log('🎯 점수 정보 생성 시도:', { 
+                userSession, 
+                score: userSession?.score, 
+                total_points: userSession?.total_points 
+            });
             
-            const examTitles = {
-                'tax-2024-q1': '2024년 1분기 부가가치세 평가',
-                'income-basic': '소득세법 기본 평가',
-                'corp-advanced': '법인세법 고급'
-            };
+            if (!userSession || userSession.score === null || !userSession.total_points) {
+                console.log('❌ 점수 정보 생성 실패 - 데이터 부족');
+                return '';
+            }
             
-            const title = examTitles[examId] || '알 수 없는 시험';
+            // score가 이미 백분율인 경우와 정답 개수인 경우를 구분
+            let percentage, correctAnswers, displayScore;
             
-            if (examId === 'corp-advanced') {
-                showAlert('이 시험은 예약이 필요합니다.', 'warning');
+            if (userSession.score > userSession.total_points) {
+                // score가 백분율 (0-100)인 경우
+                percentage = userSession.score;
+                correctAnswers = Math.round((percentage / 100) * userSession.total_points);
+                displayScore = `${percentage}점`;
+            } else {
+                // score가 정답 개수인 경우
+                correctAnswers = userSession.score;
+                percentage = Math.round((correctAnswers / userSession.total_points) * 100);
+                displayScore = `${correctAnswers}점`;
+            }
+            
+            let badgeClass = 'score-badge';
+            
+            if (percentage >= 90) badgeClass += ' excellent';
+            else if (percentage >= 80) badgeClass += ' good';
+            else if (percentage >= 60) badgeClass += ' average';
+            else badgeClass += ' poor';
+            
+            console.log('✅ 점수 정보 생성 완료:', { 
+                percentage, 
+                correctAnswers, 
+                total: userSession.total_points,
+                displayScore 
+            });
+            
+            return `
+                <div class="exam-score-info">
+                    <div class="${badgeClass}">${displayScore} (${percentage}%)</div>
+                    <div class="score-detail">${correctAnswers}/${userSession.total_points} 정답</div>
+                </div>
+            `;
+        }
+
+        // 시험 목록 표시
+        function displayExamList(permissions, user) {
+            const examList = document.getElementById('examList');
+            
+            if (!permissions || permissions.length === 0) {
+                examList.innerHTML = `
+                    <div class="no-exams">
+                        <i class="fas fa-clipboard-list"></i>
+                        <p>응시 가능한 시험이 없습니다.</p>
+                        <small>관리자에게 문의하세요.</small>
+                    </div>
+                `;
                 return;
             }
+
+            const examsHtml = permissions.map(exam => {
+                const questionCount = exam.exam_questions?.[0]?.count || 0;
+                const userSession = exam.exam_sessions?.find(s => s.employee_id === user.id);
+                
+                // 시험 상태 결정
+                let status = 'available';
+                let statusText = '응시 가능';
+                let statusClass = 'available';
+                let buttonText = '시험 시작';
+                let buttonClass = 'btn-primary';
+                let buttonIcon = 'fas fa-play';
+                let buttonAction = `startExam('${exam.id}')`;
+                let scoreInfo = ''; // 점수 정보 추가
+
+                if (userSession) {
+                    if (userSession.status === 'graded') {
+                        status = 'completed';
+                        statusText = '완료';
+                        statusClass = 'completed';
+                        buttonText = '결과 보기';
+                        buttonClass = 'btn-success';
+                        buttonIcon = 'fas fa-eye';
+                        buttonAction = `viewResult('${exam.id}')`;
+                        scoreInfo = generateScoreInfo(userSession);
+                    } else if (userSession.status === 'submitted') {
+                        status = 'submitted';
+                        statusText = '제출됨';
+                        statusClass = 'submitted';
+                        buttonText = '결과 보기';
+                        buttonClass = 'btn-info';
+                        buttonIcon = 'fas fa-eye';
+                        buttonAction = `viewResult('${exam.id}')`;
+                        scoreInfo = generateScoreInfo(userSession);
+                    } else if (userSession.status === 'in_progress') {
+                        status = 'in-progress';
+                        statusText = '진행 중';
+                        statusClass = 'in-progress';
+                        buttonText = '계속하기';
+                        buttonClass = 'btn-warning';
+                        buttonIcon = 'fas fa-play';
+                        buttonAction = `continueExam('${exam.id}')`;
+                    }
+                }
+
+                // 시험 기간 체크
+                const now = new Date();
+                const startTime = exam.start_time ? new Date(exam.start_time) : null;
+                const endTime = exam.end_time ? new Date(exam.end_time) : null;
+                
+                if (startTime && now < startTime) {
+                    status = 'scheduled';
+                    statusText = '예정됨';
+                    statusClass = 'scheduled';
+                    buttonText = '예약됨';
+                    buttonClass = 'btn-secondary';
+                    buttonIcon = 'fas fa-clock';
+                    buttonAction = 'return false;';
+                } else if (endTime && now > endTime) {
+                    status = 'expired';
+                    statusText = '종료됨';
+                    statusClass = 'expired';
+                    buttonText = '종료됨';
+                    buttonClass = 'btn-secondary';
+                    buttonIcon = 'fas fa-times';
+                    buttonAction = 'return false;';
+                }
+
+                return `
+                    <div class="exam-card" data-exam-id="${exam.id}">
+                        <div class="exam-header">
+                            <div>
+                                <h4 class="exam-title">${exam.title}</h4>
+                                <span class="exam-status ${statusClass}">${statusText}</span>
+                            </div>
+                            ${scoreInfo}
+                        </div>
+                        <p class="exam-description">
+                            ${exam.description || '설명이 없습니다.'}
+                        </p>
+                        <div class="exam-meta">
+                            <span><i class="fas fa-clock"></i> ${exam.duration}분</span>
+                            <span><i class="fas fa-question-circle"></i> ${questionCount}문항</span>
+                            <span><i class="fas fa-calendar"></i> ${getExamTimeText(startTime, endTime)}</span>
+                            <span><i class="fas fa-star"></i> 난이도: ${getDifficultyText(exam.difficulty)}</span>
+                        </div>
+                        <div class="exam-actions">
+                            <button class="btn ${buttonClass}" onclick="${buttonAction}">
+                                <i class="${buttonIcon}"></i> ${buttonText}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            examList.innerHTML = examsHtml;
+        }
+
+        // 시험 시간 텍스트 생성
+        function getExamTimeText(startTime, endTime) {
+            const now = new Date();
             
-            if (confirm(`"${title}" 시험을 시작하시겠습니까?\n\n시험이 시작되면 제한 시간이 적용됩니다.`)) {
-                // 시험 페이지로 이동
-                window.location.href = `./exam.html?id=${examId}`;
+            if (startTime && endTime) {
+                if (now < startTime) {
+                    return `시작: ${formatDate(startTime)}`;
+                } else if (now > endTime) {
+                    return `종료: ${formatDate(endTime)}`;
+                } else {
+                    return '진행 중';
+                }
+            } else if (startTime) {
+                if (now < startTime) {
+                    return `시작: ${formatDate(startTime)}`;
+                } else {
+                    return '언제든지';
+                }
+            } else {
+                return '언제든지';
             }
+        }
+
+        // 날짜 포맷팅
+        function formatDate(date) {
+            if (!date) return '';
+            return new Intl.DateTimeFormat('ko-KR', {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            }).format(new Date(date));
+        }
+
+        // 난이도 텍스트 변환
+        function getDifficultyText(difficulty) {
+            const difficultyMap = {
+                1: '매우 쉬움',
+                2: '쉬움', 
+                3: '보통',
+                4: '어려움',
+                5: '매우 어려움'
+            };
+            return difficultyMap[difficulty] || '보통';
+        }
+
+        // 시험 시작 함수 (수정됨)
+        async function startExam(examId) {
+            try {
+                console.log('🎯 시험 시작 요청:', examId);
+                
+                // 시험 정보 확인
+                const { data: exam, error } = await window.supabaseClient
+                    .from('exams')
+                    .select('*')
+                    .eq('id', examId)
+                    .single();
+                
+                if (error) throw error;
+                
+                if (confirm(`"${exam.title}" 시험을 시작하시겠습니까?\n\n시험이 시작되면 제한 시간이 적용됩니다.`)) {
+                    
+                    // 하드코딩된 관리자 계정인지 확인
+                    if (window.semuApp.currentUser.id === '17430453-d823-45a7-8a93-8512781b183a') {
+                        console.log('🔑 하드코딩된 관리자 계정 - 시험 세션 생성 없이 바로 이동');
+                        
+                        // 시험 페이지로 바로 이동 (세션 생성 없음)
+                        console.log('🚀 시험 페이지로 이동:', `./exam.html?id=${examId}`);
+                        window.location.href = `./exam.html?id=${examId}`;
+                        return;
+                    }
+                    
+                    // 일반 사용자 계정 - 시험 세션 생성
+                    // 기존 시험 세션 확인
+                    const { data: existingSession, error: checkError } = await window.supabaseClient
+                        .from('exam_sessions')
+                        .select('*')
+                        .eq('exam_id', examId)
+                        .eq('employee_id', window.semuApp.currentUser.id)
+                        .single();
+                    
+                    let sessionId;
+                    
+                    if (checkError && checkError.code === 'PGRST116') {
+                        // 기존 세션이 없는 경우 - 새로 생성
+                        console.log('🆕 새로운 시험 세션 생성');
+                        const { data: newSession, error: sessionError } = await window.supabaseClient
+                            .from('exam_sessions')
+                            .insert([{
+                                exam_id: examId,
+                                employee_id: window.semuApp.currentUser.id,
+                                status: 'in_progress'
+                            }])
+                            .select()
+                            .single();
+                        
+                        if (sessionError) throw sessionError;
+                        sessionId = newSession.id;
+                        
+                    } else if (checkError) {
+                        // 다른 오류 발생
+                        throw checkError;
+                        
+                    } else {
+                        // 기존 세션이 있는 경우
+                        if (existingSession.status === 'in_progress') {
+                            // 진행 중인 세션 - 계속하기
+                            console.log('🔄 기존 진행 중인 세션 사용');
+                            sessionId = existingSession.id;
+                        } else if (existingSession.status === 'submitted') {
+                            // 이미 제출된 세션 - 재시도 확인
+                            if (confirm('이미 제출된 시험입니다. 다시 응시하시겠습니까?\n\n기존 점수는 유지됩니다.')) {
+                                // 새로운 세션 생성
+                                const { data: newSession, error: sessionError } = await window.supabaseClient
+                                    .from('exam_sessions')
+                                    .insert([{
+                                        exam_id: examId,
+                                        employee_id: window.semuApp.currentUser.id,
+                                        status: 'in_progress'
+                                    }])
+                                    .select()
+                                    .single();
+                                
+                                if (sessionError) throw sessionError;
+                                sessionId = newSession.id;
+                            } else {
+                                return; // 취소
+                            }
+                        }
+                    }
+                    
+                // 시험 페이지로 이동
+                    console.log('🚀 시험 페이지로 이동:', `./exam.html?id=${examId}`);
+                    window.location.href = `./exam.html?id=${examId}`;
+                }
+                
+            } catch (error) {
+                console.error('시험 시작 오류:', error);
+                
+                if (error.code === '23505') {
+                    alert('이미 진행 중인 시험이 있습니다. 시험 페이지로 이동합니다.');
+                window.location.href = `./exam.html?id=${examId}`;
+                } else {
+                    alert('시험을 시작할 수 없습니다. 다시 시도해주세요.');
+                }
+            }
+        }
+
+        // 시험 결과 보기
+        function viewResult(examId) {
+            window.location.href = `./results.html?exam=${examId}`;
+        }
+
+        // 최근 시험 결과 보기
+        async function showLatestResult() {
+            try {
+                const user = window.semuApp?.currentUser;
+                if (!user) {
+                    showAlert('로그인이 필요합니다.', 'warning');
+                    return;
+                }
+
+                console.log('🔍 최근 시험 결과 조회 중...');
+
+                // 사용자의 가장 최근 제출된 시험 세션 조회
+                const { data: latestSession, error } = await window.supabaseClient
+                    .from('exam_sessions')
+                    .select('exam_id, submit_time')
+                    .eq('employee_id', user.id)
+                    .eq('status', 'submitted')
+                    .order('submit_time', { ascending: false })
+                    .limit(1)
+                    .single();
+
+                if (error || !latestSession) {
+                    showAlert('아직 제출된 시험 결과가 없습니다.', 'info');
+                    return;
+                }
+
+                // 해당 시험의 결과 페이지로 이동
+                window.location.href = `./results.html?exam=${latestSession.exam_id}`;
+
+            } catch (error) {
+                console.error('❌ 최근 시험 결과 조회 실패:', error);
+                showAlert('시험 결과를 불러오는 중 오류가 발생했습니다.', 'error');
+            }
+        }
+
+        // 시험 계속하기
+        function continueExam(examId) {
+            // 기존 세션 찾기
+            window.location.href = `./exam.html?id=${examId}`;
         }
     </script>
 </body>

@@ -40,6 +40,10 @@ class SemuApp {
                     SUPABASE_CONFIG.url,
                     SUPABASE_CONFIG.anonKey
                 );
+                
+                // 전역 변수로도 설정 (dashboard.html에서 사용)
+                window.supabaseClient = this.supabaseClient;
+                
                 console.log('✅ Supabase 연결 성공');
             } else {
                 console.warn('⚠️ Supabase 라이브러리를 찾을 수 없습니다. Mock 모드로 실행합니다.');
@@ -54,7 +58,17 @@ class SemuApp {
         const savedUser = localStorage.getItem('semu_user');
         if (savedUser) {
             try {
-                this.currentUser = JSON.parse(savedUser);
+                const userData = JSON.parse(savedUser);
+                
+                // 이전 하드코딩된 ID인 경우 강제 초기화
+                if (userData.id === '00000000-0000-0000-0000-000000000001') {
+                    console.log('🔄 이전 관리자 ID 감지 - localStorage 초기화');
+                    localStorage.removeItem('semu_user');
+                    this.currentUser = null;
+                    return;
+                }
+                
+                this.currentUser = userData;
                 console.log('✅ 저장된 사용자 세션 복원:', this.currentUser.email);
             } catch (error) {
                 console.error('❌ 사용자 세션 복원 실패:', error);
@@ -89,30 +103,66 @@ class SemuApp {
         try {
             console.log('🔐 로그인 시도:', email);
 
-            if (this.supabaseClient) {
-                // Supabase 로그인
-                const { data, error } = await this.supabaseClient.auth.signInWithPassword({
-                    email: email,
-                    password: password
-                });
-
-                if (error) throw error;
-
-                // 프로필 정보 가져오기
-                const { data: profile } = await this.supabaseClient
-                    .from('profiles')
-                    .select('*, departments(name, code)')
-                    .eq('id', data.user.id)
-                    .single();
-
+            // 1단계: 하드코딩된 관리자 계정 확인 (우선 처리)
+            if (this.isHardcodedAdmin(email, password)) {
+                console.log('🔑 하드코딩된 관리자 계정으로 로그인');
                 this.currentUser = {
-                    id: data.user.id,
-                    email: data.user.email,
-                    name: profile?.name || data.user.user_metadata?.name || email.split('@')[0],
-                    role: profile?.role || 'employee',
-                    department: profile?.departments?.name || '미지정',
+                    id: this.generateAdminUUID(), // 고정 UUID 사용
+                    email: email,
+                    name: '관리자',
+                    role: 'admin',
+                    department: '관리팀',
                     loginTime: new Date().toISOString()
                 };
+                
+                // 세션 저장
+                localStorage.setItem('semu_user', JSON.stringify(this.currentUser));
+                console.log('✅ 하드코딩된 관리자 로그인 성공:', this.currentUser);
+                
+                return { success: true, user: this.currentUser };
+            }
+
+            // 2단계: Supabase 로그인 시도
+            if (this.supabaseClient) {
+                try {
+                    const { data, error } = await this.supabaseClient.auth.signInWithPassword({
+                        email: email,
+                        password: password
+                    });
+
+                    if (error) throw error;
+
+                    // 프로필 정보 가져오기
+                    const { data: profile } = await this.supabaseClient
+                        .from('profiles')
+                        .select('*, departments(name, code)')
+                        .eq('id', data.user.id)
+                        .single();
+
+                    this.currentUser = {
+                        id: data.user.id,
+                        email: data.user.email,
+                        name: profile?.name || data.user.user_metadata?.name || email.split('@')[0],
+                        role: profile?.role || 'employee',
+                        department: profile?.departments?.name || '미지정',
+                        loginTime: new Date().toISOString()
+                    };
+                } catch (supabaseError) {
+                    console.log('⚠️ Supabase 로그인 실패, Mock 로그인 시도:', supabaseError);
+                    // Supabase 실패 시 Mock 로그인으로 폴백
+                    if (this.validateMockLogin(email, password)) {
+                        this.currentUser = {
+                            id: 'mock-' + Date.now(),
+                            email: email,
+                            name: email.split('@')[0],
+                            role: email.includes('admin') ? 'admin' : 'employee',
+                            department: '테스트팀',
+                            loginTime: new Date().toISOString()
+                        };
+                    } else {
+                        throw new Error('Invalid credentials');
+                    }
+                }
             } else {
                 // Mock 로그인
                 if (this.validateMockLogin(email, password)) {
@@ -160,6 +210,21 @@ class SemuApp {
         return validAccounts.some(account => 
             account.email === email && account.password === password
         );
+    }
+
+    isHardcodedAdmin(email, password) {
+        // 하드코딩된 관리자 계정
+        const adminAccount = {
+            email: 'admin@semu.com',
+            password: 'Admin123!'
+        };
+
+        return email === adminAccount.email && password === adminAccount.password;
+    }
+
+    generateAdminUUID() {
+        // 기존 데이터베이스의 실제 관리자 ID 사용
+        return '17430453-d823-45a7-8a93-8512781b183a';
     }
 
     async logout() {

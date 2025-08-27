@@ -454,7 +454,7 @@
                 this.updateUserInfo();
                 
                 // URL 파라미터에서 결과 정보 가져오기
-                this.loadResultData();
+                await this.loadResultData();
                 
                 // UI 업데이트
                 this.updateUI();
@@ -467,26 +467,148 @@
                 }
             }
 
-            loadResultData() {
-                const urlParams = new URLSearchParams(window.location.search);
-                this.score = parseInt(urlParams.get('score')) || 85;
-                this.totalQuestions = parseInt(urlParams.get('total')) || 20;
-                
-                // Mock 시험 데이터 (실제로는 서버에서 가져와야 함)
-                this.examData = {
-                    title: '2024년 1분기 부가가치세 평가',
-                    correctAnswers: Math.round(this.totalQuestions * this.score / 100),
-                    incorrectAnswers: this.totalQuestions - Math.round(this.totalQuestions * this.score / 100),
-                    timeUsed: 45, // 분
-                    questions: [
-                        { id: 1, correct: true, text: '부가가치세 과세표준은 다음 중 어떤 것을 기준으로...' },
-                        { id: 2, correct: true, text: '부가가치세 면세 사업에 해당하지 않는 것은?' },
-                        { id: 3, correct: false, text: '부가가치세 신고기한은 다음 중 언제입니까?' },
-                        // ... 더 많은 문제들
-                    ]
-                };
-                
-                console.log('✅ 결과 데이터 로드:', { score: this.score, total: this.totalQuestions });
+            async loadResultData() {
+                try {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const examId = urlParams.get('exam');
+                    const score = parseInt(urlParams.get('score')) || 0;
+                    const totalQuestions = parseInt(urlParams.get('total')) || 0;
+                    const autoSubmit = urlParams.get('auto_submit') === 'true';
+                    
+                    console.log('🔍 결과 데이터 파라미터:', { examId, score, totalQuestions, autoSubmit });
+                    console.log('🔍 현재 URL:', window.location.href);
+                    
+                    if (examId) {
+                        // 시험 ID가 있는 경우 - 데이터베이스에서 결과 조회
+                        await this.loadResultFromDatabase(examId);
+                    } else if (score > 0 && totalQuestions > 0) {
+                        // URL 파라미터로 점수만 전달된 경우 - 임시 데이터 사용
+                        this.score = score;
+                        this.totalQuestions = totalQuestions;
+                        this.examData = {
+                            title: '시험 결과',
+                            correctAnswers: Math.round(this.totalQuestions * this.score / 100),
+                            incorrectAnswers: this.totalQuestions - Math.round(this.totalQuestions * this.score / 100),
+                            timeUsed: 0,
+                            questions: []
+                        };
+                        
+                        if (autoSubmit) {
+                            this.examData.title = '자동 제출된 시험 결과';
+                        }
+                    } else {
+                        // 기본값 설정
+                        this.score = 0;
+                        this.totalQuestions = 0;
+                        this.examData = {
+                            title: '시험 결과 없음',
+                            correctAnswers: 0,
+                            incorrectAnswers: 0,
+                            timeUsed: 0,
+                            questions: []
+                        };
+                    }
+                    
+                    console.log('✅ 결과 데이터 로드 완료:', { 
+                        score: this.score, 
+                        total: this.totalQuestions,
+                        examData: this.examData 
+                    });
+                    
+                } catch (error) {
+                    console.error('❌ 결과 데이터 로드 실패:', error);
+                    this.score = 0;
+                    this.totalQuestions = 0;
+                    this.examData = {
+                        title: '오류 발생',
+                        correctAnswers: 0,
+                        incorrectAnswers: 0,
+                        timeUsed: 0,
+                        questions: []
+                    };
+                }
+            }
+
+            async loadResultFromDatabase(examId) {
+                try {
+                    console.log('🔍 데이터베이스에서 시험 결과 조회:', examId);
+                    
+                    // 현재 사용자 ID 가져오기 (하드코딩된 관리자 계정 지원)
+                    let userId;
+                    
+                    if (window.semuApp && window.semuApp.currentUser) {
+                        userId = window.semuApp.currentUser.id;
+                        console.log('✅ 앱에서 사용자 ID 확인:', userId);
+                    } else {
+                        const { data: { user } } = await window.supabaseClient.auth.getUser();
+                        if (!user) {
+                            throw new Error('사용자 인증 정보를 찾을 수 없습니다.');
+                        }
+                        userId = user.id;
+                    }
+                    
+                    // 1단계: 시험 세션 정보 조회
+                    const { data: session, error: sessionError } = await window.supabaseClient
+                        .from('exam_sessions')
+                        .select(`
+                            *,
+                            exams (
+                                title,
+                                description,
+                                duration
+                            )
+                        `)
+                        .eq('exam_id', examId)
+                        .eq('employee_id', userId)
+                        .eq('status', 'submitted')
+                        .order('submit_time', { ascending: false })
+                        .limit(1)
+                        .single();
+                    
+                    if (sessionError) throw sessionError;
+                    
+                    // 2단계: 개별 답변 결과 조회
+                    const { data: answers, error: answersError } = await window.supabaseClient
+                        .from('exam_answers')
+                        .select(`
+                            *,
+                            questions (
+                                title,
+                                content
+                            )
+                        `)
+                        .eq('session_id', session.id)
+                        .order('created_at');
+                    
+                    if (answersError) throw answersError;
+                    
+                    // 3단계: 결과 데이터 구성
+                    this.score = session.score || 0;
+                    this.totalQuestions = session.total_points || 0;
+                    
+                    const correctAnswers = answers.filter(a => a.is_correct).length;
+                    const incorrectAnswers = answers.filter(a => !a.is_correct).length;
+                    
+                    this.examData = {
+                        title: session.exams?.title || '시험 결과',
+                        correctAnswers: correctAnswers,
+                        incorrectAnswers: incorrectAnswers,
+                        timeUsed: session.duration_minutes || 0,
+                        questions: answers.map(answer => ({
+                            id: answer.question_id,
+                            correct: answer.is_correct,
+                            text: answer.questions?.title || answer.questions?.content || '문제 내용 없음',
+                            userAnswer: answer.answer,
+                            points: answer.points
+                        }))
+                    };
+                    
+                    console.log('✅ 데이터베이스에서 결과 로드 완료:', this.examData);
+                    
+                } catch (error) {
+                    console.error('❌ 데이터베이스 결과 조회 실패:', error);
+                    throw error;
+                }
             }
 
             updateUI() {
@@ -573,22 +695,27 @@
                 const container = document.getElementById('questionResults');
                 container.innerHTML = '';
                 
-                // Mock 데이터로 첫 5개 문제만 표시
-                const sampleQuestions = [
-                    { id: 1, correct: true, text: '부가가치세 과세표준은 다음 중 어떤 것을 기준으로 계산됩니까?' },
-                    { id: 2, correct: true, text: '부가가치세 면세 사업에 해당하지 않는 것은?' },
-                    { id: 3, correct: false, text: '부가가치세 신고기한은 다음 중 언제입니까?' },
-                    { id: 4, correct: true, text: '간이과세자의 기준은 무엇입니까?' },
-                    { id: 5, correct: false, text: '부가가치세 영세율과 면세의 차이점은?' }
-                ];
+                // 실제 데이터베이스에서 가져온 문제 결과 사용
+                console.log('📊 문항별 결과 표시 시도:', { 
+                    examData: this.examData, 
+                    questions: this.examData?.questions,
+                    questionsLength: this.examData?.questions?.length 
+                });
                 
-                sampleQuestions.forEach(question => {
+                if (!this.examData || !this.examData.questions || this.examData.questions.length === 0) {
+                    const errorMsg = `문제 결과를 불러올 수 없습니다. (examData: ${!!this.examData}, questions: ${!!this.examData?.questions}, length: ${this.examData?.questions?.length})`;
+                    container.innerHTML = `<p>${errorMsg}</p>`;
+                    console.warn('❌ 문항별 결과 표시 실패:', errorMsg);
+                    return;
+                }
+                
+                this.examData.questions.forEach((question, index) => {
                     const questionDiv = document.createElement('div');
                     questionDiv.className = `question-result ${question.correct ? 'correct' : 'incorrect'}`;
                     
                     questionDiv.innerHTML = `
                         <div class="question-info">
-                            <div class="question-number">문제 ${question.id}</div>
+                            <div class="question-number">문제 ${index + 1}</div>
                             <div class="question-preview">${question.text}</div>
                         </div>
                         <div class="question-status">
@@ -602,11 +729,12 @@
                     container.appendChild(questionDiv);
                 });
                 
-                // 더 보기 버튼 (실제로는 전체 문제 수에 따라)
-                if (this.totalQuestions > 5) {
+                // 더 보기 버튼 (전체 문제 수가 표시된 것보다 많을 때)
+                const displayedQuestions = this.examData.questions.length;
+                if (this.totalQuestions > displayedQuestions) {
                     const moreBtn = document.createElement('button');
                     moreBtn.className = 'btn btn-outline';
-                    moreBtn.innerHTML = `<i class="fas fa-chevron-down"></i> 나머지 ${this.totalQuestions - 5}개 문제 보기`;
+                    moreBtn.innerHTML = `<i class="fas fa-chevron-down"></i> 나머지 ${this.totalQuestions - displayedQuestions}개 문제 보기`;
                     moreBtn.onclick = () => this.showAllQuestions();
                     container.appendChild(moreBtn);
                 }
@@ -674,8 +802,16 @@
 
         function retakeExam() {
             if (confirm('같은 시험을 다시 응시하시겠습니까?')) {
-                // 실제로는 시험 ID를 기반으로 해야 함
-                window.location.href = './exam.html?id=tax-2024-q1';
+                // URL에서 시험 ID 가져오기
+                const urlParams = new URLSearchParams(window.location.search);
+                const examId = urlParams.get('exam');
+                
+                if (examId) {
+                    window.location.href = `./exam.html?id=${examId}`;
+                } else {
+                    // 시험 ID가 없는 경우 대시보드로 이동
+                    window.location.href = './dashboard.html';
+                }
             }
         }
 
