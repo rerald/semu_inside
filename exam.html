@@ -515,11 +515,43 @@
                 this.init();
             }
 
+            async waitForAuthAndSession() {
+                console.log('⏳ 인증 및 세션 복원 대기 중...');
+                
+                let attempts = 0;
+                const maxAttempts = 100; // 10초 대기 (100 * 100ms)
+                
+                while (attempts < maxAttempts) {
+                    // semuApp과 supabaseClient가 모두 로드되었는지 확인
+                    if (window.semuApp && window.supabaseClient) {
+                        // 세션 복원이 완료되었는지 확인
+                        if (window.semuApp.currentUser) {
+                            console.log('✅ 사용자 인증 확인됨:', window.semuApp.currentUser.email);
+                            return;
+                        }
+                        
+                        // 세션 복원을 위한 추가 대기
+                        if (attempts > 50) {
+                            console.log('⏳ 세션 복원 추가 대기 중...', attempts);
+                        }
+                    }
+                    
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    attempts++;
+                }
+                
+                console.warn('⚠️ 세션 복원 타임아웃');
+            }
+
             async init() {
                 console.log('📝 시험 페이지 초기화');
                 
-                // 인증 확인
-                if (!window.semuApp || !window.semuApp.requireAuth()) {
+                // 세션 복원 대기 및 인증 확인
+                await this.waitForAuthAndSession();
+                
+                if (!window.semuApp.currentUser) {
+                    console.warn('⚠️ 인증된 사용자가 없습니다. 로그인 페이지로 이동');
+                    window.location.href = './login.html';
                     return;
                 }
 
@@ -1266,8 +1298,26 @@
         // 전역 함수들
         let examPage;
 
-        document.addEventListener('DOMContentLoaded', () => {
-            examPage = new ExamPage();
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('📚 시험 페이지 DOM 로드 완료');
+            
+            // Supabase 초기화 대기
+            let attempts = 0;
+            const maxAttempts = 50;
+            
+            while (attempts < maxAttempts && (!window.semuApp || !window.supabaseClient)) {
+                console.log('⏳ Supabase 초기화 대기 중...', attempts);
+                await new Promise(resolve => setTimeout(resolve, 200));
+                attempts++;
+            }
+            
+            if (window.semuApp && window.supabaseClient) {
+                console.log('✅ Supabase 초기화 완료, 시험 페이지 생성');
+                examPage = new ExamPage();
+            } else {
+                console.error('❌ Supabase 초기화 실패');
+                alert('시스템 초기화에 실패했습니다. 페이지를 새로고침해주세요.');
+            }
         });
 
         function previousQuestion() {

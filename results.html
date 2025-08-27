@@ -330,11 +330,11 @@
                         <div class="result-icon" id="resultIcon">
                             <i class="fas fa-trophy"></i>
                         </div>
-                        <h1 class="result-title" id="resultTitle">시험 완료!</h1>
-                        <p class="result-subtitle" id="resultSubtitle">수고하셨습니다.</p>
+                        <h1 class="result-title" id="resultTitle">결과를 불러오는 중...</h1>
+                        <p class="result-subtitle" id="resultSubtitle">잠시만 기다려주세요.</p>
                         
                         <div class="score-display">
-                            <div class="score-number" id="scoreNumber">85</div>
+                            <div class="score-number" id="scoreNumber">...</div>
                             <div class="score-label">점</div>
                         </div>
                     </div>
@@ -347,11 +347,11 @@
                         </h3>
                         <div class="progress-circle" id="progressCircle">
                             <div class="circle-content">
-                                <div class="circle-score" id="circleScore">85</div>
+                                <div class="circle-score" id="circleScore">...</div>
                                 <div class="circle-label">점</div>
                             </div>
                         </div>
-                        <p style="color: var(--medium-gray);">전체 평균보다 <strong id="comparison">15점 높음</strong></p>
+                        <p style="color: var(--medium-gray);">전체 평균보다 <strong id="comparison">-</strong></p>
                     </div>
 
                     <!-- 통계 -->
@@ -360,28 +360,28 @@
                             <div class="stat-icon" style="color: #28a745;">
                                 <i class="fas fa-check-circle"></i>
                             </div>
-                            <div class="stat-value" id="correctCount">17</div>
+                            <div class="stat-value" id="correctCount">-</div>
                             <div class="stat-label">정답</div>
                         </div>
                         <div class="stat-item">
                             <div class="stat-icon" style="color: #dc3545;">
                                 <i class="fas fa-times-circle"></i>
                             </div>
-                            <div class="stat-value" id="incorrectCount">3</div>
+                            <div class="stat-value" id="incorrectCount">-</div>
                             <div class="stat-label">오답</div>
                         </div>
                         <div class="stat-item">
                             <div class="stat-icon" style="color: #17a2b8;">
                                 <i class="fas fa-clock"></i>
                             </div>
-                            <div class="stat-value" id="timeUsed">45</div>
+                            <div class="stat-value" id="timeUsed">-</div>
                             <div class="stat-label">소요 시간(분)</div>
                         </div>
                         <div class="stat-item">
                             <div class="stat-icon" style="color: #ffc107;">
                                 <i class="fas fa-percentage"></i>
                             </div>
-                            <div class="stat-value" id="accuracy">85</div>
+                            <div class="stat-value" id="accuracy">-</div>
                             <div class="stat-label">정답률(%)</div>
                         </div>
                     </div>
@@ -435,28 +435,65 @@
         // 결과 페이지 전용 스크립트
         class ResultsPage {
             constructor() {
-                this.score = 0;
-                this.totalQuestions = 0;
+                this.score = null;
+                this.totalQuestions = null;
                 this.examData = null;
+                this.isDataLoaded = false;
                 
                 this.init();
+            }
+
+            async waitForAuthAndSession() {
+                console.log('⏳ 인증 및 세션 복원 대기 중...');
+                
+                let attempts = 0;
+                const maxAttempts = 100; // 10초 대기 (100 * 100ms)
+                
+                while (attempts < maxAttempts) {
+                    // semuApp과 supabaseClient가 모두 로드되었는지 확인
+                    if (window.semuApp && window.supabaseClient) {
+                        // 세션 복원이 완료되었는지 확인
+                        if (window.semuApp.currentUser) {
+                            console.log('✅ 사용자 인증 확인됨:', window.semuApp.currentUser.email);
+                            return;
+                        }
+                        
+                        // 세션 복원을 위한 추가 대기
+                        if (attempts > 50) {
+                            console.log('⏳ 세션 복원 추가 대기 중...', attempts);
+                        }
+                    }
+                    
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    attempts++;
+                }
+                
+                console.warn('⚠️ 세션 복원 타임아웃');
             }
 
             async init() {
                 console.log('📊 결과 페이지 초기화');
                 
-                // 인증 확인
-                if (!window.semuApp || !window.semuApp.requireAuth()) {
+                // 세션 복원 대기 및 인증 확인
+                await this.waitForAuthAndSession();
+                
+                if (!window.semuApp.currentUser) {
+                    console.warn('⚠️ 인증된 사용자가 없습니다. 로그인 페이지로 이동');
+                    window.location.href = './login.html';
                     return;
                 }
 
                 // 사용자 정보 표시
                 this.updateUserInfo();
                 
+                // 로딩 상태 표시
+                this.showLoadingState();
+                
                 // URL 파라미터에서 결과 정보 가져오기
                 await this.loadResultData();
                 
-                // UI 업데이트
+                // 로딩 완료 후 UI 업데이트
+                this.hideLoadingState();
                 this.updateUI();
             }
 
@@ -465,6 +502,18 @@
                 if (user) {
                     document.getElementById('userName').textContent = user.name + '님';
                 }
+            }
+
+            showLoadingState() {
+                console.log('⏳ 결과 로딩 상태 표시 (HTML에 이미 설정됨)');
+                
+                // HTML에서 이미 로딩 상태로 설정되어 있으므로 
+                // 추가적인 DOM 조작 없이 로그만 출력
+            }
+
+            hideLoadingState() {
+                console.log('✅ 결과 로딩 완료');
+                // 실제 UI 업데이트는 updateUI()에서 처리됨
             }
 
             async loadResultData() {
@@ -496,6 +545,9 @@
                         if (autoSubmit) {
                             this.examData.title = '자동 제출된 시험 결과';
                         }
+                        
+                        // URL 파라미터 데이터 로드 완료
+                        this.isDataLoaded = true;
                     } else {
                         // 기본값 설정
                         this.score = 0;
@@ -507,6 +559,9 @@
                             timeUsed: 0,
                             questions: []
                         };
+                        
+                        // 기본값도 로드 완료로 처리
+                        this.isDataLoaded = true;
                     }
                     
                     console.log('✅ 결과 데이터 로드 완료:', { 
@@ -605,13 +660,25 @@
                     
                     console.log('✅ 데이터베이스에서 결과 로드 완료:', this.examData);
                     
+                    // 데이터 로드 완료 플래그 설정
+                    this.isDataLoaded = true;
+                    
                 } catch (error) {
                     console.error('❌ 데이터베이스 결과 조회 실패:', error);
+                    this.isDataLoaded = false;
                     throw error;
                 }
             }
 
             updateUI() {
+                // 데이터가 로드되지 않았으면 UI 업데이트 하지 않음
+                if (!this.isDataLoaded || this.score === null) {
+                    console.log('⚠️ 데이터 로드 미완료, UI 업데이트 건너뜀');
+                    return;
+                }
+                
+                console.log('🎨 UI 업데이트 시작:', { score: this.score, total: this.totalQuestions });
+                
                 // 점수 표시
                 document.getElementById('scoreNumber').textContent = this.score;
                 document.getElementById('circleScore').textContent = this.score;
@@ -796,8 +863,26 @@
         // 전역 함수들
         let resultsPage;
 
-        document.addEventListener('DOMContentLoaded', () => {
-            resultsPage = new ResultsPage();
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('📊 결과 페이지 DOM 로드 완료');
+            
+            // Supabase 초기화 대기
+            let attempts = 0;
+            const maxAttempts = 50;
+            
+            while (attempts < maxAttempts && (!window.semuApp || !window.supabaseClient)) {
+                console.log('⏳ Supabase 초기화 대기 중...', attempts);
+                await new Promise(resolve => setTimeout(resolve, 200));
+                attempts++;
+            }
+            
+            if (window.semuApp && window.supabaseClient) {
+                console.log('✅ Supabase 초기화 완료, 결과 페이지 생성');
+                resultsPage = new ResultsPage();
+            } else {
+                console.error('❌ Supabase 초기화 실패');
+                alert('시스템 초기화에 실패했습니다. 페이지를 새로고침해주세요.');
+            }
         });
 
         function retakeExam() {
