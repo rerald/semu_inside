@@ -84,6 +84,7 @@
             font-weight: 700;
             color: var(--dark-gray);
             margin-bottom: 5px;
+            transition: transform 0.2s ease-in-out;
         }
 
         .stat-label {
@@ -402,28 +403,28 @@
                             <div class="stat-icon exams">
                                 <i class="fas fa-clipboard-list"></i>
                             </div>
-                            <div class="stat-number" id="totalExams">5</div>
+                            <div class="stat-number" id="totalExams">-</div>
                             <div class="stat-label">전체 시험</div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-icon completed">
                                 <i class="fas fa-check-circle"></i>
                             </div>
-                            <div class="stat-number" id="completedExams">2</div>
+                            <div class="stat-number" id="completedExams">-</div>
                             <div class="stat-label">완료한 시험</div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-icon pending">
                                 <i class="fas fa-clock"></i>
                             </div>
-                            <div class="stat-number" id="pendingExams">3</div>
+                            <div class="stat-number" id="pendingExams">-</div>
                             <div class="stat-label">대기 중인 시험</div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-icon score">
                                 <i class="fas fa-trophy"></i>
                             </div>
-                            <div class="stat-number" id="averageScore">85</div>
+                            <div class="stat-number" id="averageScore">-</div>
                             <div class="stat-label">평균 점수</div>
                         </div>
                     </div>
@@ -499,6 +500,24 @@
                     
                     console.log('✅ 사용자 인증 확인됨:', window.semuApp.currentUser.email);
                 
+                    // 관리자 계정 체크 - 사용자 대시보드 접근 제한
+                    const user = window.semuApp.currentUser;
+                    if (user.role === 'super_admin' || user.role === 'admin') {
+                        console.warn('⚠️ 관리자 계정으로 사용자 대시보드 접근 제한');
+                        if (confirm('관리자 계정입니다. 사용자 대시보드를 사용하려면 일반 계정으로 다시 로그인해주세요.')) {
+                            // 로그아웃 후 로그인 페이지로 이동
+                            window.semuApp.logout().then(() => {
+                                window.location.href = './login.html';
+                            }).catch(() => {
+                                window.location.href = './login.html';
+                            });
+                        } else {
+                            // 관리자 페이지로 이동
+                            window.location.href = './admin.html';
+                        }
+                        return;
+                    }
+                
                 // 사용자 정보 표시
                 updateUserInfo();
                 
@@ -544,141 +563,211 @@
                 // 현재 사용자 정보 가져오기
                 const user = window.semuApp?.currentUser;
                 if (!user) {
-                    console.warn('사용자 정보가 없습니다.');
+                    console.warn('⚠️ 사용자 정보가 없습니다.');
+                    setDefaultStats();
                     return;
                 }
 
-                // 사용자가 응시 가능한 시험 통계 조회 (더 간단한 방식)
-                let examIds = [];
+                console.log('👤 통계 조회 사용자:', { id: user.id, email: user.email, role: user.role, department_id: user.department_id });
+
+                // 1단계: 사용자가 응시 가능한 시험 ID들 조회
+                let permissionsQuery;
                 
-                // 하드코딩된 관리자 계정인지 확인
-                if (user.id === '17430453-d823-45a7-8a93-8512781b183a' && user.role === 'admin') {
-                    console.log('🔑 하드코딩된 관리자 계정 - 모든 시험 통계 조회');
-                    
-                    // 모든 시험 권한을 가져오기
-                    const { data: allExamPermissions, error: allPermissionsError } = await window.supabaseClient
+                // 관리자인 경우 모든 시험에 접근 가능
+                if (user.role === 'super_admin' || user.role === 'admin') {
+                    console.log('🔑 관리자 권한으로 모든 시험 조회');
+                    permissionsQuery = window.supabaseClient
                         .from('exam_permissions')
                         .select('exam_id');
-                    
-                    if (allPermissionsError) {
-                        console.error('❌ 전체 시험 권한 조회 실패:', allPermissionsError);
-                        throw allPermissionsError;
-                    }
-                    
-                    examIds = [...new Set(allExamPermissions.map(p => p.exam_id))]; // 중복 제거
-                    console.log('📋 관리자 - 모든 시험 ID들 (통계):', examIds);
+                } else if (user.department_id) {
+                    // 부서 ID가 있는 경우: 개인 권한 또는 부서 권한
+                    console.log('👥 부서 권한 포함하여 조회');
+                    permissionsQuery = window.supabaseClient
+                        .from('exam_permissions')
+                        .select('exam_id')
+                        .or(`employee_id.eq.${user.id},department_id.eq.${user.department_id}`);
                 } else {
-                    // 일반 사용자 권한 조회
-                    let query = window.supabaseClient
+                    // 부서 ID가 없는 경우: 개인 권한만
+                    console.log('👤 개인 권한만 조회');
+                    permissionsQuery = window.supabaseClient
                         .from('exam_permissions')
-                        .select('exam_id');
-                    
-                    // 조건에 따라 쿼리 구성
-                    if (user.department_id) {
-                        query = query.or(`employee_id.eq.${user.id},department_id.eq.${user.department_id}`);
-                    } else {
-                        query = query.eq('employee_id', user.id);
-                    }
-                    
-                    const { data: userPermissions, error: statsPermissionsError } = await query;
-                    
-                    if (statsPermissionsError) throw statsPermissionsError;
-                    
-                    if (!userPermissions || userPermissions.length === 0) {
-                        console.log('📋 사용자에게 권한이 있는 시험이 없습니다.');
-                        return;
-                    }
-                    
-                    examIds = [...new Set(userPermissions.map(p => p.exam_id))]; // 중복 제거
+                        .select('exam_id')
+                        .eq('employee_id', user.id);
                 }
-                
-                // 권한이 있는 시험들의 상세 정보 가져오기
-                const { data: stats, error: statsError } = await window.supabaseClient
+
+                const { data: permissions, error: permError } = await permissionsQuery;
+
+                if (permError) {
+                    console.error('❌ 권한 조회 실패:', permError);
+                    throw permError;
+                }
+
+                if (!permissions || permissions.length === 0) {
+                    console.log('📋 응시 가능한 시험이 없습니다.');
+                    setDefaultStats();
+                    return;
+                }
+
+                const examIds = [...new Set(permissions.map(p => p.exam_id))];
+                console.log('🎯 응시 가능한 시험 ID들:', examIds);
+                console.log('🎯 응시 가능한 시험 수:', examIds.length);
+
+                // 2단계: 시험 정보와 사용자의 응시 세션 조회
+                const { data: userSessions, error: sessionError } = await window.supabaseClient
+                    .from('exam_sessions')
+                    .select('exam_id, status, score, total_points, submit_time')
+                    .eq('employee_id', user.id)
+                    .in('exam_id', examIds);
+
+                if (sessionError) {
+                    console.error('❌ 세션 조회 실패:', sessionError);
+                    throw sessionError;
+                }
+
+                console.log('📊 사용자 응시 세션:', userSessions);
+                console.log('📊 세션 상세 정보:');
+                userSessions?.forEach((session, index) => {
+                    console.log(`  ${index + 1}. 시험 ID: ${session.exam_id}`);
+                    console.log(`     상태: ${session.status}`);
+                    console.log(`     점수: ${session.score}/${session.total_points}`);
+                    console.log(`     제출시간: ${session.submit_time}`);
+                });
+
+                // 3단계: 게시된 시험 수 조회
+                const { data: publishedExams, error: examError } = await window.supabaseClient
                     .from('exams')
-                    .select(`
-                        id,
-                        title,
-                        status,
-                        exam_sessions!left(
-                            id,
-                            employee_id,
-                            status,
-                            score,
-                            total_points
-                        )
-                    `)
+                    .select('id')
                     .in('id', examIds)
                     .eq('status', 'published');
 
-                if (statsError) throw statsError;
+                if (examError) {
+                    console.error('❌ 시험 조회 실패:', examError);
+                    throw examError;
+                }
 
-                // 통계 계산
-                const totalExams = stats?.length || 0;
+                // 4단계: 통계 계산
+                const totalExams = publishedExams?.length || 0;
+                const sessionMap = new Map(userSessions?.map(s => [s.exam_id, s]) || []);
+                
+                console.log('📈 통계 계산 시작:');
+                console.log(`  - 전체 게시된 시험: ${totalExams}개`);
+                console.log(`  - 사용자 세션: ${userSessions?.length || 0}개`);
+                
                 let completedExams = 0;
-                let pendingExams = 0;
                 let totalScore = 0;
                 let scoredExams = 0;
 
-                stats?.forEach(exam => {
-                    if (exam.status === 'published') {
-                        const sessions = exam.exam_sessions || [];
-                        const userSession = sessions.find(s => s.employee_id === user.id);
+                publishedExams?.forEach((exam, index) => {
+                    const session = sessionMap.get(exam.id);
+                    console.log(`\n  🔍 시험 ${index + 1} (ID: ${exam.id}):`);
+                    
+                    if (session) {
+                        console.log(`    - 세션 상태: ${session.status}`);
+                        console.log(`    - 점수: ${session.score}/${session.total_points}`);
                         
-                        if (userSession) {
-                            if (userSession.status === 'graded' || userSession.status === 'submitted') {
-                                completedExams++;
-                                if (userSession.score !== null) {
-                                    totalScore += userSession.score;
-                                    scoredExams++;
+                        if (session.status === 'submitted' || session.status === 'graded') {
+                            completedExams++;
+                            console.log(`    ✅ 완료된 시험으로 카운트 (완료 시험 수: ${completedExams})`);
+                            
+                            if (session.score !== null && session.total_points > 0) {
+                                let percentage;
+                                
+                                // 데이터 검증 및 정리
+                                if (session.score > session.total_points && session.score <= 100) {
+                                    // 점수가 총점보다 크지만 100 이하면 백분율로 저장된 것
+                                    percentage = Math.round(session.score);
+                                    console.log(`    🔍 데이터 이상 - 백분율로 추정: ${session.score}% → ${percentage}%`);
+                                    console.log(`    ⚠️ 데이터베이스 점수 오류: score=${session.score}, total_points=${session.total_points}`);
+                                } else if (session.score > 100) {
+                                    // 점수가 100보다 크면 잘못된 데이터
+                                    console.log(`    ❌ 잘못된 점수 데이터: ${session.score}/${session.total_points} - 제외`);
+                                    return; // 이 시험은 통계에서 제외
+                                } else {
+                                    // 정상적인 점수/총점 계산
+                                    percentage = Math.round((session.score / session.total_points) * 100);
+                                    console.log(`    ✅ 정상 점수 계산: ${session.score}/${session.total_points} × 100 = ${percentage}%`);
                                 }
-                            } else if (userSession.status === 'in_progress') {
-                                pendingExams++;
+                                
+                                totalScore += percentage;
+                                scoredExams++;
+                                console.log(`    📊 점수 추가: ${percentage}% (누적: ${totalScore}, 점수 있는 시험: ${scoredExams})`);
+                            } else {
+                                console.log(`    ⚠️ 점수 없음: score=${session.score}, total_points=${session.total_points}`);
                             }
                         } else {
-                            // 세션이 없는 경우 대기 중인 시험으로 간주
-                            pendingExams++;
+                            console.log(`    ⏳ 미완료 상태: ${session.status}`);
                         }
+                    } else {
+                        console.log(`    📝 세션 없음 (미응시)`);
                     }
                 });
 
+                const pendingExams = totalExams - completedExams;
                 const averageScore = scoredExams > 0 ? Math.round(totalScore / scoredExams) : 0;
+                
+                console.log('\n📊 최종 통계 계산 결과:');
+                console.log(`  - 전체 시험: ${totalExams}`);
+                console.log(`  - 완료한 시험: ${completedExams}`);
+                console.log(`  - 대기 중인 시험: ${pendingExams}`);
+                console.log(`  - 평균 점수 계산: ${totalScore} ÷ ${scoredExams} = ${averageScore}%`);
 
-                console.log('📊 통계 데이터:', { totalExams, completedExams, pendingExams, averageScore });
+                // 추가 검증
+                console.log('🔍 평균 점수 계산 검증:');
+                console.log(`  totalScore: ${totalScore} (타입: ${typeof totalScore})`);
+                console.log(`  scoredExams: ${scoredExams} (타입: ${typeof scoredExams})`);
+                console.log(`  계산식: ${totalScore} / ${scoredExams} = ${totalScore / scoredExams}`);
+                console.log(`  반올림 결과: ${Math.round(totalScore / scoredExams)}`);
 
-                // 애니메이션과 함께 숫자 업데이트
+                // 5단계: UI 업데이트
+                console.log('\n🎯 UI 업데이트 시작:');
+                console.log(`  - totalExams: ${totalExams}`);
+                console.log(`  - completedExams: ${completedExams}`);
+                console.log(`  - pendingExams: ${pendingExams}`);
+                console.log(`  - averageScore: ${averageScore}`);
+
                 animateNumber('totalExams', totalExams);
                 animateNumber('completedExams', completedExams);
                 animateNumber('pendingExams', pendingExams);
                 animateNumber('averageScore', averageScore);
 
             } catch (error) {
-                console.error('통계 로드 실패:', error);
-                // 오류 시 기본값 표시
-                animateNumber('totalExams', 0);
-                animateNumber('completedExams', 0);
-                animateNumber('pendingExams', 0);
-                animateNumber('averageScore', 0);
+                console.error('❌ 통계 로드 실패:', error);
+                setDefaultStats();
             }
+        }
+
+        // 기본 통계값 설정
+        function setDefaultStats() {
+            console.log('📊 기본 통계값 설정');
+            animateNumber('totalExams', 0);
+            animateNumber('completedExams', 0);
+            animateNumber('pendingExams', 0);
+            animateNumber('averageScore', 0);
         }
 
         function animateNumber(elementId, targetNumber) {
             const element = document.getElementById(elementId);
-            const startNumber = 0;
-            const duration = 1000; // 1초
-            const increment = targetNumber / (duration / 16); // 60fps
+            if (!element) {
+                console.warn(`⚠️ Element not found: ${elementId}`);
+                return;
+            }
+
+            // 기존 애니메이션 정리
+            if (element._timer) {
+                clearInterval(element._timer);
+                element._timer = null;
+            }
+
+            // 즉시 값 설정 (애니메이션 없이)
+            element.textContent = targetNumber;
             
-            let currentNumber = startNumber;
-            
-            const timer = setInterval(() => {
-                currentNumber += increment;
-                
-                if (currentNumber >= targetNumber) {
-                    currentNumber = targetNumber;
-                    clearInterval(timer);
-                }
-                
-                element.textContent = Math.round(currentNumber);
-            }, 16);
+            console.log(`🎯 ${elementId} 업데이트: ${targetNumber}`);
+
+            // 간단한 애니메이션 효과만 (값 변경 없이)
+            element.style.transform = 'scale(1.1)';
+            setTimeout(() => {
+                element.style.transform = 'scale(1)';
+            }, 200);
         }
 
         // 시험 목록 로드
@@ -716,9 +805,9 @@
                 // 2단계: 사용자별 권한 조회 (더 간단한 방식)
                 console.log('🔍 2단계: 사용자별 권한 조회 중...');
                 
-                // 하드코딩된 관리자 계정인지 확인
-                if (user.id === '17430453-d823-45a7-8a93-8512781b183a' && user.role === 'admin') {
-                    console.log('🔑 하드코딩된 관리자 계정 - 모든 시험에 접근 권한 부여');
+                // 관리자 계정인지 확인
+                if (user.role === 'super_admin' || user.role === 'admin') {
+                    console.log('🔑 관리자 계정 - 모든 시험에 접근 권한 부여');
                     
                     // 모든 시험 권한을 가져오기
                     const { data: allExamPermissions, error: allPermissionsError } = await window.supabaseClient
@@ -739,15 +828,19 @@
                 }
                 
                 // 일반 사용자 권한 조회
-                let query = window.supabaseClient
-                    .from('exam_permissions')
-                    .select('exam_id');
-                
-                // 조건에 따라 쿼리 구성
+                let query;
                 if (user.department_id) {
-                    query = query.or(`employee_id.eq.${user.id},department_id.eq.${user.department_id}`);
+                    // 부서 ID가 있는 경우: 개인 권한 또는 부서 권한
+                    query = window.supabaseClient
+                        .from('exam_permissions')
+                        .select('exam_id')
+                        .or(`employee_id.eq.${user.id},department_id.eq.${user.department_id}`);
                 } else {
-                    query = query.eq('employee_id', user.id);
+                    // 부서 ID가 없는 경우: 개인 권한만
+                    query = window.supabaseClient
+                        .from('exam_permissions')
+                        .select('exam_id')
+                        .eq('employee_id', user.id);
                 }
                 
                 const { data: userPermissions, error: examPermissionsError } = await query;

@@ -1366,6 +1366,239 @@
             color: var(--dark-gray);
             font-weight: 600;
         }
+
+        /* 사용자 관리 스타일 */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h5 {
+            margin: 0;
+            color: var(--dark-gray);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--medium-gray);
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-btn:hover {
+            color: var(--dark-gray);
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .modal-footer {
+            padding: 20px;
+            border-top: 1px solid #e9ecef;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: var(--dark-gray);
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+        }
+
+        .form-group small {
+            display: block;
+            margin-top: 5px;
+            color: var(--medium-gray);
+            font-size: 12px;
+        }
+
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .admin-table th,
+        .admin-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .admin-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: var(--dark-gray);
+        }
+
+        .admin-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .btn-small {
+            padding: 5px 10px;
+            font-size: 12px;
+            border-radius: 4px;
+            margin-right: 5px;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-outline {
+            background: white;
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+        }
+
+        .btn-outline:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .role-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .role-admin {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .role-employee {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .status-active {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        .table-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            color: var(--medium-gray);
+            font-size: 14px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--medium-gray);
+        }
+
+        .empty-state i {
+            margin-bottom: 20px;
+            color: #ddd;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 10px;
+            color: var(--dark-gray);
+        }
+
+        .loading-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--medium-gray);
+        }
+
+        .error-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #dc3545;
+        }
+
+        .error-state i {
+            margin-bottom: 15px;
+            font-size: 2rem;
+        }
     </style>
 </head>
 <body>
@@ -1707,10 +1940,11 @@
                 console.log('📝 참고: profiles 테이블 접근 시 406 오류 발생하여 Mock 데이터 사용');
                 
                 // 관리자 권한 확인
-                if (!PERMISSIONS.canManageQuestions(profile.role)) {
+                if (profile.role !== 'super_admin' && profile.role !== 'admin') {
+                    console.warn('❌ 관리자 권한 부족:', profile.role);
                     showAdminError('관리자 권한이 필요합니다.');
                     setTimeout(() => {
-                        window.location.href = './dashboard.html';
+                        window.location.href = './login.html';
                     }, 2000);
                     return;
                 }
@@ -2010,13 +2244,34 @@
             }, 5000);
         }
 
+        // showAdminAlert 함수 추가 (showAlert와 동일한 기능)
+        function showAdminAlert(message, type = 'info') {
+            return showAlert(message, type);
+        }
+
         function toggleMobileMenu() {
             const sidebar = document.getElementById('admin-sidebar');
             sidebar.classList.toggle('open');
         }
 
         function goToDashboard() {
-            window.location.href = './dashboard.html';
+            // 관리자 세션을 먼저 로그아웃하고 일반 로그인 페이지로 이동
+            if (confirm('사용자 대시보드로 이동하려면 관리자 세션을 종료하고 다시 로그인해야 합니다. 계속하시겠습니까?')) {
+                logout();
+            }
+        }
+
+        // 로그아웃 함수
+        async function logout() {
+            try {
+                if (window.supabaseClient) {
+                    await window.supabaseClient.auth.signOut();
+                }
+                window.location.href = './login.html';
+            } catch (error) {
+                console.error('로그아웃 오류:', error);
+                window.location.href = './login.html';
+            }
         }
 
         // 각 섹션 로딩 함수들
@@ -4198,14 +4453,601 @@
             contentContainer.innerHTML = `
                 <div class="admin-section-header">
                     <h4>사용자 관리</h4>
-                    <button class="btn btn-primary" onclick="alert('사용자 관리 기능은 준비 중입니다.')">
+                    <button class="btn btn-primary" onclick="showAddUserModal()">
                         <i class="fas fa-user-plus"></i> 사용자 추가
+                    </button>
+                    <button class="btn btn-secondary" onclick="refreshUserList()">
+                        <i class="fas fa-sync-alt"></i> 새로고침
                     </button>
                 </div>
                 <div class="admin-content-body">
-                    <p>등록된 사용자 목록이 여기에 표시됩니다.</p>
+                    <div id="users-loading" class="loading-state">
+                        <i class="fas fa-spinner fa-spin"></i> 사용자 목록을 불러오는 중...
+                    </div>
+                    <div id="users-list" style="display: none;">
+                        <!-- 사용자 목록이 여기에 표시됩니다 -->
+                    </div>
+                </div>
+                
+                <!-- 사용자 추가 모달 -->
+                <div id="add-user-modal" class="modal" style="display: none;">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5>새 사용자 추가</h5>
+                            <button class="close-btn" onclick="hideAddUserModal()">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="add-user-form">
+                                <div class="form-group">
+                                    <label for="user-name">이름 *</label>
+                                    <input type="text" id="user-name" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="user-email">이메일 *</label>
+                                    <input type="email" id="user-email" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="user-password">임시 비밀번호 *</label>
+                                    <input type="password" id="user-password" required minlength="6">
+                                    <small>최소 6자 이상 입력해주세요</small>
+                                </div>
+                                <div class="form-group">
+                                    <label for="user-role">권한</label>
+                                    <select id="user-role">
+                                        <option value="employee">일반 사용자</option>
+                                        <option value="admin">관리자</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="user-department">부서</label>
+                                    <select id="user-department">
+                                        <option value="">부서 선택</option>
+                                        <!-- 부서 옵션들이 동적으로 로드됩니다 -->
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="user-hire-date">입사일</label>
+                                    <input type="date" id="user-hire-date">
+                                </div>
+                                <div class="form-group">
+                                    <label for="user-phone">전화번호</label>
+                                    <input type="tel" id="user-phone">
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-secondary" onclick="hideAddUserModal()">취소</button>
+                            <button class="btn btn-primary" onclick="createNewUser()">
+                                <i class="fas fa-user-plus"></i> 사용자 생성
+                            </button>
+                        </div>
+                    </div>
                 </div>
             `;
+            
+            // 사용자 목록 로드
+            await loadUserList();
+            
+            // 부서 목록 로드
+            await loadDepartmentOptions();
+        }
+
+        // 사용자 목록 로드
+        async function loadUserList() {
+            try {
+                console.log('👥 사용자 목록 로드 중...');
+                
+                const { data: profiles, error } = await window.supabaseClient
+                    .from('profiles')
+                    .select(`
+                        *,
+                        departments (
+                            name,
+                            code
+                        )
+                    `)
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                const usersListContainer = document.getElementById('users-list');
+                const loadingContainer = document.getElementById('users-loading');
+                
+                if (profiles && profiles.length > 0) {
+                    let usersHTML = `
+                        <div class="table-container">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>이름</th>
+                                        <th>이메일</th>
+                                        <th>권한</th>
+                                        <th>부서</th>
+                                        <th>입사일</th>
+                                        <th>가입일</th>
+                                        <th>상태</th>
+                                        <th>관리</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+
+                    profiles.forEach(user => {
+                        const hireDate = user.hire_date ? new Date(user.hire_date).toLocaleDateString('ko-KR') : '-';
+                        const createdDate = user.created_at ? new Date(user.created_at).toLocaleDateString('ko-KR') : '-';
+                        const departmentName = user.departments?.name || '미지정';
+                        
+                        usersHTML += `
+                            <tr>
+                                <td>${user.name || '이름 없음'}</td>
+                                <td>${user.email}</td>
+                                <td>
+                                    <span class="role-badge role-${user.role || 'employee'}">
+                                        ${user.role === 'admin' ? '관리자' : '일반 사용자'}
+                                    </span>
+                                </td>
+                                <td>${departmentName}</td>
+                                <td>${hireDate}</td>
+                                <td>${createdDate}</td>
+                                <td>
+                                    <span class="status-badge status-active">활성</span>
+                                </td>
+                                <td>
+                                    <button class="btn-small btn-outline" onclick="editUser('${user.id}')">
+                                        <i class="fas fa-edit"></i> 수정
+                                    </button>
+                                    <button class="btn-small btn-danger" onclick="deleteUser('${user.id}', '${user.email}')">
+                                        <i class="fas fa-trash"></i> 삭제
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+
+                    usersHTML += `
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="table-info">
+                            총 ${profiles.length}명의 사용자가 등록되어 있습니다.
+                        </div>
+                    `;
+
+                    usersListContainer.innerHTML = usersHTML;
+                } else {
+                    usersListContainer.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-users fa-3x"></i>
+                            <h3>등록된 사용자가 없습니다</h3>
+                            <p>새 사용자를 추가하여 시작하세요.</p>
+                        </div>
+                    `;
+                }
+
+                loadingContainer.style.display = 'none';
+                usersListContainer.style.display = 'block';
+                
+                console.log('✅ 사용자 목록 로드 완료:', profiles.length + '명');
+
+            } catch (error) {
+                console.error('❌ 사용자 목록 로드 실패:', error);
+                document.getElementById('users-loading').innerHTML = `
+                    <div class="error-state">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        사용자 목록을 불러오는데 실패했습니다: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // 부서 옵션 로드
+        async function loadDepartmentOptions() {
+            try {
+                const { data: departments, error } = await window.supabaseClient
+                    .from('departments')
+                    .select('id, name, code')
+                    .order('name');
+
+                if (error) throw error;
+
+                const departmentSelect = document.getElementById('user-department');
+                if (departmentSelect && departments) {
+                    departments.forEach(dept => {
+                        const option = document.createElement('option');
+                        option.value = dept.id;
+                        option.textContent = dept.name;
+                        departmentSelect.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('❌ 부서 목록 로드 실패:', error);
+            }
+        }
+
+        // 사용자 추가 모달 표시
+        function showAddUserModal() {
+            document.getElementById('add-user-modal').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+
+        // 사용자 추가 모달 숨기기
+        function hideAddUserModal() {
+            document.getElementById('add-user-modal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+            document.getElementById('add-user-form').reset();
+        }
+
+        // 새 사용자 생성
+        async function createNewUser() {
+            const createBtn = document.querySelector('.modal-footer .btn-primary');
+            const originalText = createBtn.innerHTML;
+            
+            try {
+                // 버튼 로딩 상태
+                createBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 생성 중...';
+                createBtn.disabled = true;
+                
+                const name = document.getElementById('user-name').value.trim();
+                const email = document.getElementById('user-email').value.trim();
+                const password = document.getElementById('user-password').value;
+                const role = document.getElementById('user-role').value;
+                const departmentId = document.getElementById('user-department').value || null;
+                const hireDate = document.getElementById('user-hire-date').value || null;
+                const phone = document.getElementById('user-phone').value.trim() || null;
+
+                if (!name || !email || !password) {
+                    showAdminAlert('이름, 이메일, 비밀번호는 필수 입력 항목입니다.', 'warning');
+                    return;
+                }
+
+                if (password.length < 6) {
+                    showAdminAlert('비밀번호는 최소 6자 이상이어야 합니다.', 'warning');
+                    return;
+                }
+
+                console.log('👤 새 사용자 생성 중:', { name, email, role });
+
+                // 0단계: 이메일 중복 확인
+                const { data: existingUser, error: checkError } = await window.supabaseClient
+                    .from('profiles')
+                    .select('email')
+                    .eq('email', email)
+                    .single();
+
+                if (existingUser) {
+                    throw new Error('이미 등록된 이메일입니다.');
+                }
+
+                // 1단계: Supabase Auth에 사용자 생성
+                const { data: authUser, error: authError } = await window.supabaseClient.auth.signUp({
+                    email: email,
+                    password: password,
+                    options: {
+                        data: {
+                            name: name,
+                            role: role
+                        }
+                    }
+                });
+
+                if (authError) {
+                    console.error('Auth 오류:', authError);
+                    throw authError;
+                }
+
+                // 2단계: profiles 테이블에 프로필 생성
+                const { data: profile, error: profileError } = await window.supabaseClient
+                    .from('profiles')
+                    .insert([
+                        {
+                            id: authUser.user.id,
+                            name: name,
+                            email: email,
+                            role: role,
+                            department_id: departmentId,
+                            hire_date: hireDate,
+                            phone: phone
+                        }
+                    ])
+                    .select()
+                    .single();
+
+                if (profileError) throw profileError;
+
+                console.log('✅ 사용자 생성 완료:', profile);
+                
+                showAdminAlert('사용자가 성공적으로 생성되었습니다.', 'success');
+                hideAddUserModal();
+                await loadUserList(); // 목록 새로고침
+
+            } catch (error) {
+                console.error('❌ 사용자 생성 실패:', error);
+                
+                let errorMessage = '사용자 생성에 실패했습니다.';
+                
+                if (error.message.includes('이미 등록된 이메일')) {
+                    errorMessage = '이미 등록된 이메일입니다.';
+                } else if (error.message.includes('already_registered') || error.message.includes('already exists') || error.message.includes('User already registered')) {
+                    errorMessage = '이미 등록된 이메일입니다. Supabase Auth에 존재하는 계정입니다.';
+                } else if (error.message.includes('Password') || error.message.includes('password')) {
+                    errorMessage = '비밀번호가 요구사항을 충족하지 않습니다. (최소 6자 이상)';
+                } else if (error.message.includes('Invalid email')) {
+                    errorMessage = '올바른 이메일 형식이 아닙니다.';
+                } else {
+                    errorMessage = '사용자 생성 실패: ' + error.message;
+                }
+                
+                showAdminAlert(errorMessage, 'error');
+            } finally {
+                // 버튼 상태 복원
+                createBtn.innerHTML = originalText;
+                createBtn.disabled = false;
+            }
+        }
+
+        // 사용자 목록 새로고침
+        async function refreshUserList() {
+            document.getElementById('users-loading').style.display = 'block';
+            document.getElementById('users-list').style.display = 'none';
+            await loadUserList();
+        }
+
+        // 사용자 수정
+        async function editUser(userId) {
+            try {
+                console.log('✏️ 사용자 수정 모달 준비 중:', userId);
+                
+                // 사용자 정보 조회
+                const { data: user, error } = await window.supabaseClient
+                    .from('profiles')
+                    .select(`
+                        *,
+                        departments (
+                            id,
+                            name,
+                            code
+                        )
+                    `)
+                    .eq('id', userId)
+                    .single();
+
+                if (error) throw error;
+                if (!user) {
+                    showAdminAlert('사용자 정보를 찾을 수 없습니다.', 'error');
+                    return;
+                }
+
+                console.log('✅ 사용자 정보 로드됨:', user);
+                
+                // 수정 모달 표시
+                showEditUserModal(user);
+                
+            } catch (error) {
+                console.error('❌ 사용자 정보 로드 실패:', error);
+                showAdminAlert('사용자 정보를 불러오는데 실패했습니다: ' + error.message, 'error');
+            }
+        }
+
+        // 사용자 수정 모달 표시
+        async function showEditUserModal(user) {
+            // 수정 모달 HTML 생성
+            const modalHTML = `
+                <div id="edit-user-modal" class="modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5>사용자 정보 수정</h5>
+                            <button class="close-btn" onclick="hideEditUserModal()">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="edit-user-form">
+                                <input type="hidden" id="edit-user-id" value="${user.id}">
+                                <div class="form-group">
+                                    <label for="edit-user-name">이름 *</label>
+                                    <input type="text" id="edit-user-name" value="${user.name || ''}" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="edit-user-email">이메일 *</label>
+                                    <input type="email" id="edit-user-email" value="${user.email}" required readonly>
+                                    <small>이메일은 수정할 수 없습니다</small>
+                                </div>
+                                <div class="form-group">
+                                    <label for="edit-user-role">권한</label>
+                                    <select id="edit-user-role">
+                                        <option value="employee" ${user.role === 'employee' ? 'selected' : ''}>일반 사용자</option>
+                                        <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>관리자</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="edit-user-department">부서</label>
+                                    <select id="edit-user-department">
+                                        <option value="">부서 선택</option>
+                                        <!-- 부서 옵션들이 동적으로 로드됩니다 -->
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="edit-user-hire-date">입사일</label>
+                                    <input type="date" id="edit-user-hire-date" value="${user.hire_date || ''}">
+                                </div>
+                                <div class="form-group">
+                                    <label for="edit-user-phone">전화번호</label>
+                                    <input type="tel" id="edit-user-phone" value="${user.phone || ''}">
+                                </div>
+                                <div class="form-group">
+                                    <label for="edit-user-password">새 비밀번호 (선택사항)</label>
+                                    <input type="password" id="edit-user-password" minlength="6">
+                                    <small>비밀번호를 변경하려면 새 비밀번호를 입력하세요 (최소 6자)</small>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-secondary" onclick="hideEditUserModal()">취소</button>
+                            <button class="btn btn-primary" onclick="updateUser()">
+                                <i class="fas fa-save"></i> 저장
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // 기존 모달 제거 후 새 모달 추가
+            const existingModal = document.getElementById('edit-user-modal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            
+            // 부서 옵션 로드
+            await loadDepartmentOptionsForEdit(user.department_id);
+            
+            // 모달 표시
+            document.getElementById('edit-user-modal').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+
+        // 수정용 부서 옵션 로드
+        async function loadDepartmentOptionsForEdit(currentDepartmentId) {
+            try {
+                const { data: departments, error } = await window.supabaseClient
+                    .from('departments')
+                    .select('id, name, code')
+                    .order('name');
+
+                if (error) throw error;
+
+                const departmentSelect = document.getElementById('edit-user-department');
+                if (departmentSelect && departments) {
+                    departments.forEach(dept => {
+                        const option = document.createElement('option');
+                        option.value = dept.id;
+                        option.textContent = dept.name;
+                        option.selected = dept.id === currentDepartmentId;
+                        departmentSelect.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('❌ 부서 목록 로드 실패:', error);
+            }
+        }
+
+        // 사용자 수정 모달 숨기기
+        function hideEditUserModal() {
+            const modal = document.getElementById('edit-user-modal');
+            if (modal) {
+                modal.remove();
+            }
+            document.body.style.overflow = 'auto';
+        }
+
+        // 사용자 정보 업데이트
+        async function updateUser() {
+            const updateBtn = document.querySelector('#edit-user-modal .modal-footer .btn-primary');
+            const originalText = updateBtn.innerHTML;
+            
+            try {
+                // 버튼 로딩 상태
+                updateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 저장 중...';
+                updateBtn.disabled = true;
+                
+                const userId = document.getElementById('edit-user-id').value;
+                const name = document.getElementById('edit-user-name').value.trim();
+                const role = document.getElementById('edit-user-role').value;
+                const departmentId = document.getElementById('edit-user-department').value || null;
+                const hireDate = document.getElementById('edit-user-hire-date').value || null;
+                const phone = document.getElementById('edit-user-phone').value.trim() || null;
+                const newPassword = document.getElementById('edit-user-password').value;
+
+                if (!name) {
+                    showAdminAlert('이름은 필수 입력 항목입니다.', 'warning');
+                    return;
+                }
+
+                if (newPassword && newPassword.length < 6) {
+                    showAdminAlert('새 비밀번호는 최소 6자 이상이어야 합니다.', 'warning');
+                    return;
+                }
+
+                console.log('💾 사용자 정보 업데이트 중:', { userId, name, role });
+
+                // 1단계: profiles 테이블 업데이트
+                const { data: profile, error: profileError } = await window.supabaseClient
+                    .from('profiles')
+                    .update({
+                        name: name,
+                        role: role,
+                        department_id: departmentId,
+                        hire_date: hireDate,
+                        phone: phone,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', userId)
+                    .select()
+                    .single();
+
+                if (profileError) throw profileError;
+
+                // 2단계: 비밀번호 변경 (선택사항)
+                if (newPassword) {
+                    console.log('🔑 비밀번호 업데이트 중...');
+                    
+                    // 참고: Supabase에서 다른 사용자의 비밀번호를 변경하려면 Admin API가 필요합니다.
+                    // 현재는 클라이언트에서 직접 변경할 수 없으므로 사용자에게 알림
+                    showAdminAlert('프로필 정보가 업데이트되었습니다. 비밀번호 변경은 사용자가 직접 수행해야 합니다.', 'info');
+                } else {
+                    showAdminAlert('사용자 정보가 성공적으로 업데이트되었습니다.', 'success');
+                }
+
+                console.log('✅ 사용자 정보 업데이트 완료:', profile);
+                
+                hideEditUserModal();
+                await loadUserList(); // 목록 새로고침
+
+            } catch (error) {
+                console.error('❌ 사용자 정보 업데이트 실패:', error);
+                
+                let errorMessage = '사용자 정보 업데이트에 실패했습니다.';
+                if (error.message.includes('duplicate') || error.message.includes('unique')) {
+                    errorMessage = '중복된 정보가 있습니다.';
+                } else if (error.message) {
+                    errorMessage = '업데이트 실패: ' + error.message;
+                }
+                
+                showAdminAlert(errorMessage, 'error');
+            } finally {
+                // 버튼 상태 복원
+                updateBtn.innerHTML = originalText;
+                updateBtn.disabled = false;
+            }
+        }
+
+        // 사용자 삭제
+        async function deleteUser(userId, email) {
+            if (!confirm(`정말로 사용자 "${email}"를 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`)) {
+                return;
+            }
+
+            try {
+                console.log('🗑️ 사용자 삭제 중:', userId);
+
+                // profiles 테이블에서 사용자 삭제
+                const { error: profileError } = await window.supabaseClient
+                    .from('profiles')
+                    .delete()
+                    .eq('id', userId);
+
+                if (profileError) throw profileError;
+
+                // 참고: Supabase Auth에서 사용자를 삭제하려면 Admin API가 필요합니다.
+                // 현재는 profiles 테이블에서만 삭제하고, Auth는 수동으로 처리해야 합니다.
+                
+                console.log('✅ 사용자 삭제 완료');
+                showAdminAlert('사용자가 삭제되었습니다.', 'success');
+                await loadUserList(); // 목록 새로고침
+
+            } catch (error) {
+                console.error('❌ 사용자 삭제 실패:', error);
+                showAdminAlert('사용자 삭제에 실패했습니다: ' + error.message, 'error');
+            }
         }
 
         async function loadCategoriesSection() {
