@@ -410,9 +410,10 @@
 
                     <!-- 액션 버튼들 -->
                     <div class="action-buttons">
-                        <button class="btn btn-primary btn-large" onclick="retakeExam()">
+                        <!-- 재응시 버튼 비활성화 -->
+                        <!-- <button class="btn btn-primary btn-large" onclick="retakeExam()">
                             <i class="fas fa-redo"></i> 다시 응시
-                        </button>
+                        </button> -->
                         <button class="btn btn-secondary btn-large" onclick="viewDetails()">
                             <i class="fas fa-search"></i> 상세 분석
                         </button>
@@ -885,6 +886,8 @@
             }
         });
 
+        // 재응시 기능 비활성화
+        /*
         function retakeExam() {
             if (confirm('같은 시험을 다시 응시하시겠습니까?')) {
                 // URL에서 시험 ID 가져오기
@@ -899,6 +902,7 @@
                 }
             }
         }
+        */
 
         function viewDetails() {
             showAlert('상세 분석 페이지는 곧 구현될 예정입니다.', 'info');
