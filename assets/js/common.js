@@ -100,31 +100,60 @@ class SemuApp {
                     console.log('✅ Supabase 세션 발견:', session.user.email);
                     
                     // 프로필 정보 가져오기
-                    const { data: profile } = await this.supabaseClient
-                        .from('profiles')
-                        .select('*, departments(name, code)')
-                        .eq('id', session.user.id)
-                        .single();
+                    try {
+                        console.log('🔍 프로필 정보 조회 시도:', session.user.id);
+                        const { data: profile, error: profileError } = await this.supabaseClient
+                            .from('profiles')
+                            .select('*, departments(name, code)')
+                            .eq('id', session.user.id)
+                            .single();
 
-                    if (profile) {
+                        if (profileError) {
+                            console.error('❌ 프로필 정보 조회 실패:', profileError);
+                            // 프로필 정보가 없어도 기본 사용자 정보는 설정
+                            this.currentUser = {
+                                id: session.user.id,
+                                email: session.user.email,
+                                name: session.user.user_metadata?.name || session.user.email.split('@')[0],
+                                role: 'employee',
+                                department: '미지정',
+                                loginTime: new Date().toISOString()
+                            };
+                            console.log('⚠️ 기본 사용자 정보로 설정:', this.currentUser);
+                        } else if (profile) {
+                            this.currentUser = {
+                                id: session.user.id,
+                                email: session.user.email,
+                                name: profile.name,
+                                role: profile.role || 'employee',
+                                department: profile.departments?.name || '미지정',
+                                department_id: profile.department_id,
+                                hire_date: profile.hire_date,
+                                phone: profile.phone,
+                                loginTime: new Date().toISOString()
+                            };
+                            
+                            console.log('✅ 세션에서 사용자 정보 복원:', this.currentUser.email);
+                        }
+                    } catch (profileError) {
+                        console.error('❌ 프로필 조회 중 예외 발생:', profileError);
+                        // 예외가 발생해도 기본 사용자 정보는 설정
                         this.currentUser = {
                             id: session.user.id,
                             email: session.user.email,
-                            name: profile.name,
-                            role: profile.role || 'employee',
-                            department: profile.departments?.name || '미지정',
-                            department_id: profile.department_id,
-                            hire_date: profile.hire_date,
-                            phone: profile.phone,
+                            name: session.user.user_metadata?.name || session.user.email.split('@')[0],
+                            role: 'employee',
+                            department: '미지정',
                             loginTime: new Date().toISOString()
                         };
-                        
-                        console.log('✅ 세션에서 사용자 정보 복원:', this.currentUser.email);
+                        console.log('⚠️ 예외 발생으로 기본 사용자 정보 설정:', this.currentUser);
                     }
                 } else {
                     console.log('📋 활성 세션 없음');
                     this.currentUser = null;
                 }
+            } else {
+                console.log('⚠️ Supabase 클라이언트가 초기화되지 않음');
             }
         } catch (error) {
             console.error('❌ 인증 상태 확인 실패:', error);

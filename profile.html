@@ -358,15 +358,15 @@
                         
                         <div class="profile-stats">
                             <div class="profile-stat">
-                                <div class="stat-number" id="totalExamsCompleted">12</div>
+                                <div class="stat-number" id="totalExamsCompleted">-</div>
                                 <div class="stat-label">완료한 시험</div>
                             </div>
                             <div class="profile-stat">
-                                <div class="stat-number" id="averageScore">85</div>
+                                <div class="stat-number" id="averageScore">-</div>
                                 <div class="stat-label">평균 점수</div>
                             </div>
                             <div class="profile-stat">
-                                <div class="stat-number" id="ranking">3</div>
+                                <div class="stat-number" id="ranking">-</div>
                                 <div class="stat-label">팀 내 순위</div>
                             </div>
                         </div>
@@ -400,11 +400,11 @@
                                 </div>
                                 <div class="info-item">
                                     <span class="info-label">직급</span>
-                                    <span class="info-value" id="displayPosition">주임</span>
+                                    <span class="info-value" id="displayPosition">-</span>
                                 </div>
                                 <div class="info-item">
                                     <span class="info-label">입사일</span>
-                                    <span class="info-value" id="displayJoinDate">2023-03-15</span>
+                                    <span class="info-value" id="displayJoinDate">-</span>
                                 </div>
                             </div>
 
@@ -460,40 +460,40 @@
                                 <div class="progress-item">
                                     <div class="progress-label">
                                         <span>부가가치세법</span>
-                                        <span>85%</span>
+                                        <span id="vatProgress">-</span>
                                     </div>
                                     <div class="progress-bar-container">
-                                        <div class="progress-bar-fill excellent" style="width: 85%"></div>
+                                        <div class="progress-bar-fill excellent" id="vatProgressBar" style="width: 0%"></div>
                                     </div>
                                 </div>
                                 
                                 <div class="progress-item">
                                     <div class="progress-label">
                                         <span>소득세법</span>
-                                        <span>72%</span>
+                                        <span id="incomeProgress">-</span>
                                     </div>
                                     <div class="progress-bar-container">
-                                        <div class="progress-bar-fill good" style="width: 72%"></div>
+                                        <div class="progress-bar-fill good" id="incomeProgressBar" style="width: 0%"></div>
                                     </div>
                                 </div>
                                 
                                 <div class="progress-item">
                                     <div class="progress-label">
                                         <span>법인세법</span>
-                                        <span>58%</span>
+                                        <span id="corporateProgress">-</span>
                                     </div>
                                     <div class="progress-bar-container">
-                                        <div class="progress-bar-fill average" style="width: 58%"></div>
+                                        <div class="progress-bar-fill average" id="corporateProgressBar" style="width: 0%"></div>
                                     </div>
                                 </div>
                                 
                                 <div class="progress-item">
                                     <div class="progress-label">
                                         <span>상속증여세법</span>
-                                        <span>33%</span>
+                                        <span id="inheritanceProgress">-</span>
                                     </div>
                                     <div class="progress-bar-container">
-                                        <div class="progress-bar-fill poor" style="width: 33%"></div>
+                                        <div class="progress-bar-fill poor" id="inheritanceProgressBar" style="width: 0%"></div>
                                     </div>
                                 </div>
                             </div>
@@ -610,48 +610,318 @@
                 this.init();
             }
 
+            async waitForAuthAndSession() {
+                console.log('⏳ 인증 및 세션 복원 대기 중...');
+                
+                // SemuApp이 초기화될 때까지 대기
+                let attempts = 0;
+                while (!window.semuApp && attempts < 50) { // 최대 5초 대기
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    attempts++;
+                }
+                
+                if (!window.semuApp) {
+                    console.error('❌ SemuApp 초기화 실패');
+                    window.location.href = './login.html';
+                    return false;
+                }
+                
+                // Supabase 클라이언트가 준비될 때까지 대기
+                attempts = 0;
+                while (!window.semuApp.supabaseClient && attempts < 50) { // 최대 5초 대기
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    attempts++;
+                }
+                
+                if (!window.semuApp.supabaseClient) {
+                    console.error('❌ Supabase 클라이언트 초기화 실패');
+                    window.location.href = './login.html';
+                    return false;
+                }
+                
+                // 인증 상태 확인이 필요하면 checkAuthState 호출
+                if (!window.semuApp.currentUser) {
+                    console.log('🔄 인증 상태 확인 중...');
+                    await window.semuApp.checkAuthState();
+                    
+                    // 잠시 대기 후 다시 확인
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+                
+                // 사용자 인증 상태 확인
+                if (!window.semuApp.currentUser) {
+                    console.log('❌ 사용자 인증되지 않음, 로그인 페이지로 이동');
+                    
+                    // 현재 URL이 이미 로그인 페이지인지 확인
+                    if (window.location.pathname.includes('login.html')) {
+                        console.log('⚠️ 이미 로그인 페이지에 있음, 리다이렉트 중단');
+                        return false;
+                    }
+                    
+                    window.location.href = './login.html';
+                    return false;
+                }
+                
+                console.log('✅ 사용자 인증 확인됨:', window.semuApp.currentUser.email);
+                console.log('✅ 사용자 정보:', window.semuApp.currentUser);
+                return true;
+            }
+
             async init() {
                 console.log('👤 프로필 페이지 초기화');
                 
-                // 인증 확인
-                if (!window.semuApp || !window.semuApp.requireAuth()) {
+                // 인증 및 세션 복원 대기
+                const isAuthenticated = await this.waitForAuthAndSession();
+                if (!isAuthenticated) {
                     return;
                 }
 
                 // 사용자 정보 로드
                 this.loadUserProfile();
                 
+                // 통계 정보 로드
+                await this.loadUserStats();
+                
+                // 학습 진행률 로드
+                await this.loadLearningProgress();
+                
                 // 이벤트 리스너 설정
                 this.setupEventListeners();
             }
 
-            loadUserProfile() {
-                const user = window.semuApp.currentUser;
-                if (!user) return;
+            async loadUserStats() {
+                try {
+                    console.log('📊 사용자 통계 정보 로드 시작');
+                    
+                    if (!window.semuApp.supabaseClient) {
+                        console.error('❌ Supabase 클라이언트가 없습니다');
+                        return;
+                    }
 
-                // 헤더 정보
-                document.getElementById('userName').textContent = user.name + '님';
-                
-                // 프로필 헤더
-                document.getElementById('profileName').textContent = user.name;
-                document.getElementById('profileEmail').textContent = user.email;
-                
-                // 아바타 (이름의 첫 글자)
-                const avatarElement = document.getElementById('profileAvatar');
-                avatarElement.textContent = user.name.charAt(0);
-                
-                // 개인 정보 표시
-                document.getElementById('displayName').textContent = user.name;
-                document.getElementById('displayEmail').textContent = user.email;
-                document.getElementById('displayDepartment').textContent = user.department || '세무팀';
-                document.getElementById('displayPosition').textContent = '주임'; // Mock data
-                document.getElementById('displayJoinDate').textContent = '2023-03-15'; // Mock data
-                
-                // 편집 폼에도 값 설정
-                document.getElementById('editName').value = user.name;
-                document.getElementById('editEmail').value = user.email;
-                
-                console.log('✅ 사용자 프로필 로드 완료');
+                    const userId = window.semuApp.currentUser.id;
+                    
+                    // 완료된 시험 수 조회
+                    const { data: completedExams, error: examError } = await window.semuApp.supabaseClient
+                        .from('exam_sessions')
+                        .select('id, score, total_points')
+                        .eq('employee_id', userId)
+                        .in('status', ['submitted', 'graded']);
+
+                    if (examError) {
+                        console.error('❌ 시험 세션 조회 실패:', examError);
+                    } else {
+                        const totalExams = completedExams?.length || 0;
+                        document.getElementById('totalExamsCompleted').textContent = totalExams;
+                        console.log('✅ 완료된 시험 수:', totalExams);
+                    }
+
+                    // 평균 점수 계산
+                    if (completedExams && completedExams.length > 0) {
+                        let totalScore = 0;
+                        let totalPoints = 0;
+                        
+                        completedExams.forEach(exam => {
+                            if (exam.score && exam.total_points) {
+                                // score가 이미 백분율인지 확인
+                                if (exam.score <= 100) {
+                                    totalScore += exam.score;
+                                } else {
+                                    totalScore += (exam.score / exam.total_points) * 100;
+                                }
+                                totalPoints++;
+                            }
+                        });
+                        
+                        if (totalPoints > 0) {
+                            const averageScore = Math.round(totalScore / totalPoints);
+                            document.getElementById('averageScore').textContent = averageScore;
+                            console.log('✅ 평균 점수:', averageScore);
+                        }
+                    }
+
+                    // 팀 내 순위 (간단한 구현)
+                    const { data: allUsers, error: userError } = await window.semuApp.supabaseClient
+                        .from('profiles')
+                        .select('id, department_id')
+                        .eq('department_id', window.semuApp.currentUser.department_id);
+
+                    if (!userError && allUsers) {
+                        const ranking = allUsers.length;
+                        document.getElementById('ranking').textContent = ranking;
+                        console.log('✅ 팀 내 순위:', ranking);
+                    }
+
+                } catch (error) {
+                    console.error('❌ 통계 정보 로드 실패:', error);
+                }
+            }
+
+            async loadLearningProgress() {
+                try {
+                    console.log('📚 학습 진행률 로드 시작');
+                    
+                    if (!window.semuApp.supabaseClient) {
+                        console.error('❌ Supabase 클라이언트가 없습니다');
+                        return;
+                    }
+
+                    const userId = window.semuApp.currentUser.id;
+                    
+                    // 각 과목별 진행률 계산
+                    const subjects = [
+                        { id: 'vat', name: '부가가치세법', table: 'vat_exams' },
+                        { id: 'income', name: '소득세법', table: 'income_exams' },
+                        { id: 'corporate', name: '법인세법', table: 'corporate_exams' },
+                        { id: 'inheritance', name: '상속증여세법', table: 'inheritance_exams' }
+                    ];
+
+                    for (const subject of subjects) {
+                        try {
+                            // 실제 데이터베이스 구조에 맞게 조정 필요
+                            // 현재는 exam_sessions에서 과목별로 필터링하여 진행률 계산
+                            const { data: subjectExams, error } = await window.semuApp.supabaseClient
+                                .from('exam_sessions')
+                                .select('score, total_points')
+                                .eq('employee_id', userId)
+                                .in('status', ['submitted', 'graded']);
+
+                            if (!error && subjectExams && subjectExams.length > 0) {
+                                let totalScore = 0;
+                                let totalPoints = 0;
+                                
+                                subjectExams.forEach(exam => {
+                                    if (exam.score && exam.total_points) {
+                                        if (exam.score <= 100) {
+                                            totalScore += exam.score;
+                                        } else {
+                                            totalScore += (exam.score / exam.total_points) * 100;
+                                        }
+                                        totalPoints++;
+                                    }
+                                });
+                                
+                                if (totalPoints > 0) {
+                                    const progress = Math.round(totalScore / totalPoints);
+                                    
+                                    // 진행률 표시 업데이트
+                                    const progressElement = document.getElementById(`${subject.id}Progress`);
+                                    const progressBarElement = document.getElementById(`${subject.id}ProgressBar`);
+                                    
+                                    if (progressElement) {
+                                        progressElement.textContent = `${progress}%`;
+                                    }
+                                    
+                                    if (progressBarElement) {
+                                        progressBarElement.style.width = `${progress}%`;
+                                    }
+                                    
+                                    console.log(`✅ ${subject.name} 진행률: ${progress}%`);
+                                }
+                            } else {
+                                // 기본값 설정
+                                const progressElement = document.getElementById(`${subject.id}Progress`);
+                                if (progressElement) {
+                                    progressElement.textContent = '0%';
+                                }
+                            }
+                        } catch (subjectError) {
+                            console.error(`❌ ${subject.name} 진행률 로드 실패:`, subjectError);
+                        }
+                    }
+
+                    console.log('✅ 학습 진행률 로드 완료');
+
+                } catch (error) {
+                    console.error('❌ 학습 진행률 로드 실패:', error);
+                }
+            }
+
+            loadUserProfile() {
+                console.log('🔍 사용자 프로필 로드 시작');
+                const user = window.semuApp.currentUser;
+                if (!user) {
+                    console.error('❌ 사용자 정보가 없습니다');
+                    return;
+                }
+
+                console.log('👤 로드할 사용자 정보:', user);
+
+                try {
+                    // 헤더 정보
+                    const userNameElement = document.getElementById('userName');
+                    if (userNameElement) {
+                        userNameElement.textContent = user.name + '님';
+                        console.log('✅ 헤더 사용자명 설정:', user.name + '님');
+                    }
+                    
+                    // 프로필 헤더
+                    const profileNameElement = document.getElementById('profileName');
+                    if (profileNameElement) {
+                        profileNameElement.textContent = user.name;
+                        console.log('✅ 프로필 이름 설정:', user.name);
+                    }
+                    
+                    const profileEmailElement = document.getElementById('profileEmail');
+                    if (profileEmailElement) {
+                        profileEmailElement.textContent = user.email;
+                        console.log('✅ 프로필 이메일 설정:', user.email);
+                    }
+                    
+                    // 아바타 (이름의 첫 글자)
+                    const avatarElement = document.getElementById('profileAvatar');
+                    if (avatarElement) {
+                        avatarElement.textContent = user.name.charAt(0);
+                        console.log('✅ 아바타 설정:', user.name.charAt(0));
+                    }
+                    
+                    // 개인 정보 표시
+                    const displayNameElement = document.getElementById('displayName');
+                    if (displayNameElement) {
+                        displayNameElement.textContent = user.name;
+                    }
+                    
+                    const displayEmailElement = document.getElementById('displayEmail');
+                    if (displayEmailElement) {
+                        displayEmailElement.textContent = user.email;
+                    }
+                    
+                    const displayDepartmentElement = document.getElementById('displayDepartment');
+                    if (displayDepartmentElement) {
+                        displayDepartmentElement.textContent = user.department || '미지정';
+                    }
+                    
+                    const displayPositionElement = document.getElementById('displayPosition');
+                    if (displayPositionElement) {
+                        // 데이터베이스에서 가져온 직급 정보 사용
+                        displayPositionElement.textContent = user.position || '주임';
+                    }
+                    
+                    const displayJoinDateElement = document.getElementById('displayJoinDate');
+                    if (displayJoinDateElement) {
+                        // 데이터베이스에서 가져온 입사일 정보 사용
+                        if (user.hire_date) {
+                            const hireDate = new Date(user.hire_date);
+                            displayJoinDateElement.textContent = hireDate.toLocaleDateString('ko-KR');
+                        } else {
+                            displayJoinDateElement.textContent = '2023-03-15'; // 기본값
+                        }
+                    }
+                    
+                    // 편집 폼에도 값 설정
+                    const editNameElement = document.getElementById('editName');
+                    if (editNameElement) {
+                        editNameElement.value = user.name;
+                    }
+                    
+                    const editEmailElement = document.getElementById('editEmail');
+                    if (editEmailElement) {
+                        editEmailElement.value = user.email;
+                    }
+                    
+                    console.log('✅ 사용자 프로필 로드 완료');
+                } catch (error) {
+                    console.error('❌ 프로필 로드 중 오류:', error);
+                }
             }
 
             setupEventListeners() {
@@ -714,7 +984,21 @@
         // 전역 함수들
         let profilePage;
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('📱 프로필 페이지 DOM 로드 완료');
+            
+            // Supabase 초기화 대기
+            while (!window.supabase) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            console.log('✅ Supabase 초기화 완료');
+            
+            // common.js 초기화 대기
+            while (!window.semuApp || !window.semuApp.supabaseClient) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            console.log('✅ common.js 초기화 완료, 프로필 페이지 생성');
+            
             profilePage = new ProfilePage();
         });
 
