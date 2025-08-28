@@ -159,6 +159,18 @@
             text-decoration: underline;
         }
 
+        .admin-link {
+            color: #ff6b6b;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+
+        .admin-link:hover {
+            color: #ee5a24;
+            text-decoration: underline;
+        }
+
         .admin-quick-login {
             margin-top: 30px;
             padding: 20px;
@@ -239,14 +251,12 @@
                 
                 <div class="auth-links">
                     <p>계정이 없으신가요? <a href="./register.html" class="register-link">회원가입</a></p>
+                    <p>관리자이신가요? <a href="./admin-login.html" class="admin-link">
+                        <i class="fas fa-shield-alt"></i> 관리자 로그인
+                    </a></p>
                 </div>
                 
-                <div class="admin-quick-login">
-                    <h4><i class="fas fa-user-shield"></i> 관리자 로그인</h4>
-                    <button type="button" onclick="goToAdminLogin()" class="btn-admin-login">
-                        <i class="fas fa-shield-alt"></i> 관리자로 로그인
-                    </button>
-                </div>
+
                 
 
             </div>
@@ -271,24 +281,11 @@
             const loginForm = document.getElementById('loginForm');
             loginForm.addEventListener('submit', handleLogin);
             
-            // 세션 확인 후 자동 리다이렉트 (리다이렉트 루프 방지)
-            let redirectAttempted = false;
-            const currentUrl = new URL(window.location.href);
-            const redirectFrom = currentUrl.searchParams.get('redirect_from');
+            // 자동 리다이렉트 제거 - 사용자가 명시적으로 로그인할 때만 이동
+            console.log('📋 로그인 페이지 - 자동 리다이렉트 비활성화됨');
             
-            // 대시보드에서 온 리다이렉트인 경우 자동 리다이렉트 비활성화
-            if (redirectFrom === 'dashboard') {
-                console.log('🔄 대시보드에서 리다이렉트됨, 자동 리다이렉트 비활성화');
-                return;
-            }
-            
-            setTimeout(async () => {
-                if (window.semuApp && window.semuApp.currentUser && !redirectAttempted) {
-                    redirectAttempted = true;
-                    console.log('✅ 이미 로그인된 사용자 감지, 대시보드로 이동:', window.semuApp.currentUser.email);
-                    window.location.href = './dashboard.html?from_login=true';
-                }
-            }, 3000); // 더 긴 대기 시간으로 세션 복원 완료 보장
+            // 기존 세션이 있어도 사용자가 직접 로그인 버튼을 누를 때까지 대기
+            // 이렇게 하면 비밀번호 입력 시 갑작스러운 리다이렉트를 방지할 수 있습니다.
         });
 
         async function handleLogin(e) {
@@ -331,29 +328,7 @@
             }
         }
 
-        async function goToAdminLogin() {
-            console.log('🔐 관리자 로그인 시도');
-            
-            try {
-                // 관리자 계정으로 로그인 시도
-                const result = await window.semuApp.login('admin@semu.com', 'Admin123!');
-                
-                if (result.success) {
-                    console.log('✅ 관리자 로그인 성공, 어드민 페이지로 이동');
-                    showAlert('관리자로 로그인되었습니다!', 'success');
-                    
-                    setTimeout(() => {
-                        window.location.href = './admin.html';
-                    }, 1000);
-                } else {
-                    console.error('❌ 관리자 로그인 실패:', result.error);
-                    showAlert('관리자 로그인에 실패했습니다: ' + result.error, 'error');
-                }
-            } catch (error) {
-                console.error('❌ 관리자 로그인 오류:', error);
-                showAlert('관리자 로그인 중 오류가 발생했습니다.', 'error');
-            }
-        }
+
     </script>
 </body>
 </html>

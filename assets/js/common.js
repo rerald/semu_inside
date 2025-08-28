@@ -1,17 +1,21 @@
 // 세무인사이드 공통 JavaScript 유틸리티
 
 class SemuApp {
-    constructor() {
+    constructor(supabaseClient = null) {
         this.currentUser = null;
-        this.supabaseClient = null;
+        this.supabaseClient = supabaseClient;
         this.init();
     }
 
     async init() {
         console.log('🚀 세무인사이드 앱 초기화');
         
-        // Supabase 초기화
-        await this.initSupabase();
+        // Supabase 클라이언트가 전달되지 않은 경우에만 초기화
+        if (!this.supabaseClient) {
+            await this.initSupabase();
+        } else {
+            console.log('✅ 외부에서 전달된 Supabase 클라이언트 사용');
+        }
         
         // 인증 상태 확인
         await this.checkAuthState();
@@ -24,77 +28,36 @@ class SemuApp {
 
     async initSupabase() {
         try {
-            // Supabase 설정
             const SUPABASE_CONFIG = {
                 url: 'https://skpvtqohyspfsmvwrgoc.supabase.co',
                 anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNrcHZ0cW9oeXNwZnNtdndyZ29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNzU4ODUsImV4cCI6MjA3MTc1MTg4NX0.tMW3hiZR5JcXlbES2tKl1ZNOVRtYqGO04m-YSbqKUhY'
             };
 
-            // Supabase 라이브러리 로드 대기 (다양한 방법으로 확인)
+            // Supabase 라이브러리 로드 대기 (개선된 방법)
             let attempts = 0;
-            const maxAttempts = 100;
+            const maxAttempts = 50;
             
             console.log('🔍 Supabase 라이브러리 로딩 대기 중...');
             
             while (attempts < maxAttempts) {
-                // 더 정확한 Supabase 확인
-                let supabaseFound = false;
-                let supabaseLib = null;
-                
-                // 1. window.supabase 직접 확인
-                if (window.supabase && typeof window.supabase === 'object') {
-                    console.log('🔍 window.supabase 발견:', typeof window.supabase, Object.keys(window.supabase));
-                    
-                    // createClient 함수 확인
-                    if (window.supabase.createClient && typeof window.supabase.createClient === 'function') {
-                        console.log('✅ window.supabase.createClient 함수 발견!');
-                        supabaseLib = window.supabase;
-                        supabaseFound = true;
-                    } else {
-                        console.log('⚠️ window.supabase는 있지만 createClient가 없음:', Object.keys(window.supabase));
-                    }
-                }
-                
-                // 2. window.Supabase 확인
-                if (!supabaseFound && window.Supabase && typeof window.Supabase === 'object') {
-                    console.log('🔍 window.Supabase 발견:', typeof window.Supabase, Object.keys(window.Supabase));
-                    if (window.Supabase.createClient && typeof window.Supabase.createClient === 'function') {
-                        console.log('✅ window.Supabase.createClient 함수 발견!');
-                        supabaseLib = window.Supabase;
-                        supabaseFound = true;
-                    }
-                }
-                
-                if (supabaseFound) {
-                    console.log('✅ Supabase 라이브러리 발견!', supabaseLib);
+                // Supabase 확인
+                if (window.supabase && window.supabase.createClient) {
+                    console.log('✅ Supabase 라이브러리 발견!');
                     break;
                 }
                 
-                await new Promise(resolve => setTimeout(resolve, 100));
+                await new Promise(resolve => setTimeout(resolve, 200));
                 attempts++;
                 
-                if (attempts % 20 === 0) {
+                if (attempts % 10 === 0) {
                     console.log(`⏳ Supabase 라이브러리 대기 중... ${attempts}/${maxAttempts}`);
-                    console.log('현재 window 객체의 supabase 관련 속성:', 
-                        Object.keys(window).filter(key => key.toLowerCase().includes('supa')));
-                    
-                    // 상세 디버깅
-                    if (window.supabase) {
-                        console.log('📋 window.supabase 상세:', {
-                            type: typeof window.supabase,
-                            constructor: window.supabase.constructor?.name,
-                            keys: Object.keys(window.supabase),
-                            createClient: typeof window.supabase.createClient
-                        });
-                    }
                 }
             }
 
-            // Supabase 클라이언트 생성 시도
-            const supabaseLib = window.supabase || window.Supabase;
-            if (supabaseLib && supabaseLib.createClient) {
+            // Supabase 클라이언트 생성
+            if (window.supabase && window.supabase.createClient) {
                 try {
-                    this.supabaseClient = supabaseLib.createClient(
+                    this.supabaseClient = window.supabase.createClient(
                         SUPABASE_CONFIG.url,
                         SUPABASE_CONFIG.anonKey
                     );
@@ -539,6 +502,9 @@ document.addEventListener('DOMContentLoaded', () => {
     app = new SemuApp();
     window.semuApp = app; // 전역 접근 가능
 });
+
+// SemuApp 클래스를 전역으로 노출
+window.SemuApp = SemuApp;
 
 // 공통 유틸리티 함수들
 window.showAlert = (message, type) => {

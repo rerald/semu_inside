@@ -1926,20 +1926,44 @@
                 
                 console.log('✅ Supabase 세션 확인됨:', session.user.email);
                 
-                // Mock 사용자 생성 (실제 프로필이 없는 경우)
-                let profile = {
-                    id: session.user.id,
-                    name: session.user.user_metadata?.name || session.user.email.split('@')[0],
-                    email: session.user.email,
-                    role: session.user.email.includes('admin') ? 'super_admin' : 'employee',
-                    departments: { name: '관리팀', code: 'ADMIN' }
-                };
+                // profiles 테이블에서 실제 사용자 정보 가져오기 시도
+                let profile = null;
+                try {
+                    const { data: profileData, error: profileError } = await supabaseClient
+                        .from('profiles')
+                        .select('*, departments(name, code)')
+                        .eq('id', session.user.id)
+                        .single();
+                    
+                    if (profileError) {
+                        console.warn('⚠️ profiles 테이블 접근 실패, Mock 데이터 사용:', profileError.message);
+                        // Mock 데이터 사용 (fallback)
+                        profile = {
+                            id: session.user.id,
+                            name: session.user.user_metadata?.name || session.user.email.split('@')[0],
+                            email: session.user.email,
+                            role: session.user.email.includes('admin') ? 'super_admin' : 'employee',
+                            departments: { name: '관리팀', code: 'ADMIN' }
+                        };
+                    } else {
+                        console.log('✅ profiles 테이블에서 사용자 정보 로드 성공');
+                        profile = profileData;
+                    }
+                } catch (error) {
+                    console.warn('⚠️ profiles 테이블 접근 중 오류, Mock 데이터 사용:', error.message);
+                    // Mock 데이터 사용 (fallback)
+                    profile = {
+                        id: session.user.id,
+                        name: session.user.user_metadata?.name || session.user.email.split('@')[0],
+                        email: session.user.email,
+                        role: session.user.email.includes('admin') ? 'super_admin' : 'employee',
+                        departments: { name: '관리팀', code: 'ADMIN' }
+                    };
+                }
                 
-                // profiles 테이블 접근 문제로 인해 Mock 데이터만 사용
-                console.log('⚠️ Mock 프로필 사용:', profile.name);
-                console.log('📝 참고: profiles 테이블 접근 시 406 오류 발생하여 Mock 데이터 사용');
+                console.log('📋 최종 사용자 프로필:', profile);
                 
-                // 관리자 권한 확인
+                // 관리자 권한 확인 (super_admin, admin, 또는 특정 이메일 허용)
                 if (profile.role !== 'super_admin' && profile.role !== 'admin') {
                     console.warn('❌ 관리자 권한 부족:', profile.role);
                     showAdminError('관리자 권한이 필요합니다.');
@@ -5022,31 +5046,112 @@
 
         // 사용자 삭제
         async function deleteUser(userId, email) {
-            if (!confirm(`정말로 사용자 "${email}"를 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`)) {
+            if (!confirm(`정말로 사용자 "${email}"를 삭제하시겠습니까?\n\n⚠️ 주의: 해당 사용자의 모든 시험 기록과 권한도 함께 삭제됩니다.\n\n이 작업은 되돌릴 수 없습니다.`)) {
                 return;
             }
 
             try {
-                console.log('🗑️ 사용자 삭제 중:', userId);
+                console.log('🗑️ 사용자 및 관련 데이터 삭제 시작:', userId);
 
-                // profiles 테이블에서 사용자 삭제
-                const { error: profileError } = await window.supabaseClient
-                    .from('profiles')
-                    .delete()
-                    .eq('id', userId);
-
-                if (profileError) throw profileError;
-
-                // 참고: Supabase Auth에서 사용자를 삭제하려면 Admin API가 필요합니다.
-                // 현재는 profiles 테이블에서만 삭제하고, Auth는 수동으로 처리해야 합니다.
+                // 데이터베이스 함수를 사용한 안전한 삭제
+                console.log('🗑️ PostgreSQL 함수를 사용한 완전 삭제 시도...');
                 
-                console.log('✅ 사용자 삭제 완료');
-                showAdminAlert('사용자가 삭제되었습니다.', 'success');
+                const { data: deleteResult, error: rpcError } = await window.supabaseClient
+                    .rpc('delete_user_completely', { user_id: userId });
+
+                if (rpcError) {
+                    console.warn('⚠️ RPC 함수 실행 실패, 수동 삭제 시도...', rpcError);
+                    
+                    // RPC 함수가 없거나 실행 실패시 기존 방식으로 폴백
+                    // 1단계: 사용자의 시험 세션 조회
+                    const { data: sessions, error: sessionQueryError } = await window.supabaseClient
+                        .from('exam_sessions')
+                        .select('id')
+                        .eq('employee_id', userId);
+
+                    if (sessionQueryError) {
+                        console.warn('⚠️ 세션 조회 중 오류:', sessionQueryError);
+                    } else {
+                        console.log(`📋 찾은 시험 세션: ${sessions?.length || 0}개`);
+                    }
+
+                    // 2단계: 시험 답안 삭제 (세션이 있는 경우)
+                    if (sessions && sessions.length > 0) {
+                        const sessionIds = sessions.map(s => s.id);
+                        console.log('🗑️ 답안 데이터 삭제 중...');
+                        
+                        const { error: answersError } = await window.supabaseClient
+                            .from('exam_answers')
+                            .delete()
+                            .in('session_id', sessionIds);
+
+                        if (answersError) {
+                            console.warn('⚠️ 답안 삭제 중 오류:', answersError);
+                        } else {
+                            console.log('✅ 답안 데이터 삭제 완료');
+                        }
+                    }
+
+                    // 3단계: 시험 세션 삭제
+                    console.log('🗑️ 시험 세션 삭제 중...');
+                    const { error: sessionsError } = await window.supabaseClient
+                        .from('exam_sessions')
+                        .delete()
+                        .eq('employee_id', userId);
+
+                    if (sessionsError) {
+                        console.warn('⚠️ 세션 삭제 중 오류:', sessionsError);
+                    } else {
+                        console.log('✅ 시험 세션 삭제 완료');
+                    }
+
+                    // 4단계: 시험 권한 삭제
+                    console.log('🗑️ 시험 권한 삭제 중...');
+                    const { error: permissionsError } = await window.supabaseClient
+                        .from('exam_permissions')
+                        .delete()
+                        .eq('employee_id', userId);
+
+                    if (permissionsError) {
+                        console.warn('⚠️ 권한 삭제 중 오류:', permissionsError);
+                    } else {
+                        console.log('✅ 시험 권한 삭제 완료');
+                    }
+
+                    // 5단계: 프로필 삭제
+                    console.log('🗑️ 프로필 삭제 중...');
+                    const { error: profileError } = await window.supabaseClient
+                        .from('profiles')
+                        .delete()
+                        .eq('id', userId);
+
+                    if (profileError) throw profileError;
+                } else {
+                    // RPC 함수 성공
+                    console.log('✅ PostgreSQL 함수를 통한 삭제 성공:', deleteResult);
+                    
+                    if (!deleteResult.success) {
+                        throw new Error(deleteResult.error || '데이터베이스 함수 실행 중 오류 발생');
+                    }
+                }
+
+                console.log('✅ 사용자 및 모든 관련 데이터 삭제 완료');
+                showAdminAlert(`사용자 "${email}"이 모든 관련 데이터와 함께 삭제되었습니다.`, 'success');
                 await loadUserList(); // 목록 새로고침
 
             } catch (error) {
                 console.error('❌ 사용자 삭제 실패:', error);
-                showAdminAlert('사용자 삭제에 실패했습니다: ' + error.message, 'error');
+                
+                let errorMessage = '사용자 삭제에 실패했습니다.';
+                if (error.message.includes('foreign key')) {
+                    errorMessage = '다른 테이블에서 이 사용자를 참조하고 있어 삭제할 수 없습니다.';
+                } else if (error.message.includes('violates')) {
+                    errorMessage = '데이터 제약 조건으로 인해 삭제할 수 없습니다.';
+                } else {
+                    errorMessage = '삭제 중 오류 발생: ' + error.message;
+                }
+                
+                showAdminAlert(errorMessage, 'error');
             }
         }
 

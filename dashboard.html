@@ -500,22 +500,11 @@
                     
                     console.log('✅ 사용자 인증 확인됨:', window.semuApp.currentUser.email);
                 
-                    // 관리자 계정 체크 - 사용자 대시보드 접근 제한
+                    // 관리자도 사용자 대시보드 접근 허용
                     const user = window.semuApp.currentUser;
                     if (user.role === 'super_admin' || user.role === 'admin') {
-                        console.warn('⚠️ 관리자 계정으로 사용자 대시보드 접근 제한');
-                        if (confirm('관리자 계정입니다. 사용자 대시보드를 사용하려면 일반 계정으로 다시 로그인해주세요.')) {
-                            // 로그아웃 후 로그인 페이지로 이동
-                            window.semuApp.logout().then(() => {
-                                window.location.href = './login.html';
-                            }).catch(() => {
-                                window.location.href = './login.html';
-                            });
-                        } else {
-                            // 관리자 페이지로 이동
-                            window.location.href = './admin.html';
-                        }
-                        return;
+                        console.log('✅ 관리자 계정이 사용자 대시보드에 접근했습니다:', user.email);
+                        // 관리자도 일반 사용자처럼 대시보드를 사용할 수 있도록 허용
                     }
                 
                 // 사용자 정보 표시
