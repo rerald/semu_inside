@@ -379,10 +379,7 @@
                             <label for="department">부서 <span class="required">*</span></label>
                             <select id="department" name="department" class="form-control" required>
                                 <option value="">부서를 선택하세요</option>
-                                <option value="TAX">세무팀</option>
-                                <option value="AUDIT">감사팀</option>
-                                <option value="CONSULTING">컨설팅팀</option>
-                                <option value="ADMIN">관리팀</option>
+                                <!-- 부서 목록이 동적으로 로드됩니다 -->
                             </select>
                         </div>
                         
@@ -464,9 +461,57 @@
     <script src="./js/password-validation.js"></script>
     
     <script>
+        // 부서 목록 로드 함수
+        async function loadDepartments() {
+            try {
+                // semuApp과 Supabase가 준비될 때까지 기다리기
+                let attempts = 0;
+                while ((!window.semuApp || !window.semuApp.supabaseClient) && attempts < 100) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    attempts++;
+                }
+                
+                if (!window.semuApp || !window.semuApp.supabaseClient) {
+                    console.error('❌ Supabase 클라이언트를 찾을 수 없습니다');
+                    return;
+                }
+                
+                console.log('🔄 부서 목록 로드 시작...');
+                
+                const { data: departments, error } = await window.semuApp.supabaseClient
+                    .from('departments')
+                    .select('id, name, code')
+                    .order('name');
+                
+                if (error) throw error;
+                
+                console.log('📋 로드된 부서 수:', departments.length);
+                console.log('📋 부서 목록:', departments);
+                
+                // 부서 드롭다운 업데이트
+                const departmentSelect = document.getElementById('department');
+                departmentSelect.innerHTML = '<option value="">부서를 선택하세요</option>';
+                
+                departments.forEach(dept => {
+                    const option = document.createElement('option');
+                    option.value = dept.id; // UUID 사용
+                    option.textContent = dept.name;
+                    departmentSelect.appendChild(option);
+                });
+                
+                console.log('✅ 부서 목록 로드 완료:', departments.length, '개');
+            } catch (error) {
+                console.error('❌ 부서 목록 로드 실패:', error);
+                showAlert('부서 목록을 불러오는데 실패했습니다.', 'error');
+            }
+        }
+
         // 회원가입 페이지 전용 스크립트
         document.addEventListener('DOMContentLoaded', function() {
             console.log('📋 회원가입 페이지 로드됨');
+            
+            // 부서 목록 로드
+            loadDepartments();
             
             // 비밀번호 검증 초기화
             if (window.initPasswordValidation) {
@@ -524,13 +569,13 @@
                 name: formData.get('name').trim(),
                 email: formData.get('email').trim(),
                 password: password,
-                department: formData.get('department'),
+                department_id: formData.get('department'), // 부서 ID (UUID)
                 hire_date: formData.get('hire_date'),
                 phone: formData.get('phone').trim()
             };
             
             // 필수 필드 검증
-            if (!userData.name || !userData.email || !userData.password || !userData.department || !userData.hire_date) {
+            if (!userData.name || !userData.email || !userData.password || !userData.department_id || !userData.hire_date) {
                 showAlert('필수 항목을 모두 입력해주세요.', 'error');
                 return;
             }
