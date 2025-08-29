@@ -5372,7 +5372,7 @@
                 <div id="question-detail-modal" class="modal" style="display: none;">
                     <div class="modal-content modal-large">
                         <div class="modal-header">
-                            <h5 id="question-detail-title">문제별 상세 통계</h5>
+                            <h5 id="question-detail-title">문제별 상세 통계 <span id="modal-question-id"></span></h5>
                             <button class="close-btn" onclick="hideQuestionDetailModal()">&times;</button>
                         </div>
                         <div class="modal-body">
@@ -5474,6 +5474,11 @@
         }
 
         function displayQuestionDetail(question, answers) {
+            console.log('🔍 모달에 데이터 표시 중:', { question, answers });
+            
+            // 모달 제목에 문제 ID 표시
+            document.getElementById('modal-question-id').textContent = `(ID: ${question.id.substring(0, 8)}...)`;
+            
             // 문제 정보 표시
             document.getElementById('modal-question-content').innerHTML = `
                 <h6>문제 내용</h6>
@@ -5500,26 +5505,32 @@
 
             // 사용자 답안 테이블 표시
             const tbody = document.querySelector('#user-answers-table tbody');
-            tbody.innerHTML = answers.map(answer => {
-                const user = answer.exam_sessions.profiles;
-                const department = answer.exam_sessions.profiles.departments;
-                const answerText = getAnswerText(question, answer.answer);
-                const isCorrect = answer.is_correct;
-                
-                return `
-                    <tr>
-                        <td>${user.name}</td>
-                        <td>${department?.name || '미지정'}</td>
-                        <td>${answerText}</td>
-                        <td>
-                            <span class="answer-status ${isCorrect ? 'correct' : 'incorrect'}">
-                                ${isCorrect ? '<i class="fas fa-check"></i> 정답' : '<i class="fas fa-times"></i> 오답'}
-                            </span>
-                        </td>
-                        <td>${new Date(answer.created_at).toLocaleString('ko-KR')}</td>
-                    </tr>
-                `;
-            }).join('');
+            if (tbody) {
+                tbody.innerHTML = answers.map(answer => {
+                    const user = answer.exam_sessions.profiles;
+                    const department = answer.exam_sessions.profiles.departments;
+                    const answerText = getAnswerText(question, answer.answer);
+                    const isCorrect = answer.is_correct;
+                    
+                    return `
+                        <tr>
+                            <td>${user.name}</td>
+                            <td>${department?.name || '미지정'}</td>
+                            <td>${answerText}</td>
+                            <td>
+                                <span class="answer-status ${isCorrect ? 'correct' : 'incorrect'}">
+                                    ${isCorrect ? '<i class="fas fa-check"></i> 정답' : '<i class="fas fa-times"></i> 오답'}
+                                </span>
+                            </td>
+                            <td>${new Date(answer.created_at).toLocaleString('ko-KR')}</td>
+                        </tr>
+                    `;
+                }).join('');
+            } else {
+                console.error('❌ 사용자 답안 테이블 tbody를 찾을 수 없습니다.');
+            }
+            
+            console.log('✅ 모달 데이터 표시 완료');
         }
 
         function getAnswerText(question, answer) {
@@ -7002,6 +7013,9 @@
                     <td>${question.attempts}</td>
                 </tr>
             `).join('');
+            
+            // 문제별 ID 로깅 추가
+            console.log('📋 문제별 통계 테이블 업데이트 완료:', data.map(q => ({ id: q.id, content: q.content?.substring(0, 30) })));
         }
 
         function updateExamsStatsTable(data) {
