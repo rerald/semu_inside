@@ -2,13 +2,13 @@
 -- 개발 및 테스트용 데이터
 
 -- 샘플 카테고리 추가 (기본 데이터 외 추가)
-INSERT INTO categories (name, type, code, description) VALUES 
-('부가가치세 신고', 'area', 'VAT_FILING', '부가가치세 신고 관련 업무'),
-('소득세 계산', 'area', 'INCOME_CALC', '소득세 계산 및 절세'),
-('법인세 조정', 'area', 'CORP_ADJ', '법인세 세무조정'),
-('1장 총칙', 'chapter', 'CHAPTER_1', '부가가치세법 1장'),
-('2장 과세거래', 'chapter', 'CHAPTER_2', '부가가치세법 2장'),
-('3장 납세의무자', 'chapter', 'CHAPTER_3', '부가가치세법 3장');
+INSERT INTO categories (name, code, description) VALUES 
+('부가가치세 신고', 'VAT_FILING', '부가가치세 신고 관련 업무'),
+('소득세 계산', 'INCOME_CALC', '소득세 계산 및 절세'),
+('법인세 조정', 'CORP_ADJ', '법인세 세무조정'),
+('1장 총칙', 'CHAPTER_1', '부가가치세법 1장'),
+('2장 과세거래', 'CHAPTER_2', '부가가치세법 2장'),
+('3장 납세의무자', 'CHAPTER_3', '부가가치세법 3장');
 
 -- 샘플 문제 그룹 (지문)
 INSERT INTO question_groups (title, content, created_by) VALUES 

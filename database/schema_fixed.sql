@@ -27,11 +27,10 @@ CREATE TABLE profiles (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 카테고리 테이블 (세목, 과목, 영역 분류)
+-- 카테고리 테이블 (계층적 구조)
 CREATE TABLE categories (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(100) NOT NULL,
-    type VARCHAR(20) NOT NULL CHECK (type IN ('subject', 'area', 'chapter')), -- 세목, 영역, 장
     code VARCHAR(50),
     parent_id UUID REFERENCES categories(id),
     description TEXT,

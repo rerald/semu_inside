@@ -14,11 +14,11 @@ class AdminManager {
     getMockData() {
         return {
             categories: [
-                { name: '부가가치세', type: 'subject', code: 'VAT' },
-                { name: '소득세', type: 'subject', code: 'INCOME' },
-                { name: '법인세', type: 'subject', code: 'CORPORATE' },
-                { name: '원천세', type: 'subject', code: 'WITHHOLDING' },
-                { name: '기타', type: 'subject', code: 'OTHER' }
+                { name: '부가가치세', code: 'VAT' },
+                { name: '소득세', code: 'INCOME' },
+                { name: '법인세', code: 'CORPORATE' },
+                { name: '원천세', code: 'WITHHOLDING' },
+                { name: '기타', code: 'OTHER' }
             ],
             questions: [
                 {
@@ -103,7 +103,10 @@ class AdminManager {
             for (const category of this.mockData.categories) {
                 const { data: newCategory, error } = await window.supabase
                     .from('categories')
-                    .insert([category])
+                    .insert([{
+                        name: category.name,
+                        code: category.code
+                    }])
                     .select()
                     .single();
 
