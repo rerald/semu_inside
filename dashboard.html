@@ -1140,6 +1140,186 @@
             return difficultyMap[difficulty] || '보통';
         }
 
+        // 문제별 랜덤화 정보 생성 함수
+        async function generateQuestionRandomization(examId) {
+            try {
+                console.log('🔀 문제별 랜덤화 정보 생성 중:', examId);
+                
+                // 시험 문제 목록 가져오기
+                const { data: examQuestions, error: questionsError } = await window.supabaseClient
+                    .from('exam_questions')
+                    .select(`
+                        question_id,
+                        questions (
+                            id,
+                            choices,
+                            correct_answer_indices
+                        )
+                    `)
+                    .eq('exam_id', examId)
+                    .order('order_index');
+                
+                if (questionsError) {
+                    console.error('❌ 시험 문제 로드 실패:', questionsError);
+                    return {};
+                }
+                
+                // 각 문제별로 랜덤화 정보 생성
+                const questionRandomization = {};
+                examQuestions.forEach((eq, index) => {
+                    if (eq.questions) {
+                        const randomization = randomizeQuestionChoices(eq.questions);
+                        questionRandomization[eq.question_id] = {
+                            randomizedChoices: randomization.randomizedChoices,
+                            originalToNewMapping: randomization.originalToNewMapping,
+                            newCorrectIndices: randomization.newCorrectIndices,
+                            isRandomized: randomization.isRandomized
+                        };
+                    }
+                });
+                
+                console.log('✅ 문제별 랜덤화 정보 생성 완료:', Object.keys(questionRandomization).length + '개');
+                return questionRandomization;
+                
+            } catch (error) {
+                console.error('❌ 문제별 랜덤화 정보 생성 실패:', error);
+                return {};
+            }
+        }
+
+        // 기존 세션에 랜덤화 정보 추가하는 함수
+        async function addRandomizationToExistingSession(sessionId, examId) {
+            try {
+                console.log('🔀 기존 세션 랜덤화 정보 추가:', sessionId);
+                
+                // 공통 함수로 랜덤화 정보 생성
+                const questionRandomization = await generateQuestionRandomization(examId);
+                
+                // 기존 세션에 랜덤화 정보 업데이트
+                const { error: updateError } = await window.supabaseClient
+                    .from('exam_sessions')
+                    .update({ question_randomization: questionRandomization })
+                    .eq('id', sessionId);
+                
+                if (updateError) {
+                    console.error('❌ 랜덤화 정보 업데이트 실패:', updateError);
+                } else {
+                    console.log('✅ 기존 세션 랜덤화 정보 추가 완료');
+                }
+                
+            } catch (error) {
+                console.error('❌ 기존 세션 랜덤화 정보 추가 실패:', error);
+            }
+        }
+
+        // 문제별 랜덤화 정보 생성 함수
+        async function generateQuestionRandomization(examId) {
+            try {
+                console.log('🔀 문제별 랜덤화 정보 생성 중:', examId);
+                
+                // 시험 문제 목록 가져오기
+                const { data: examQuestions, error: questionsError } = await window.supabaseClient
+                    .from('exam_questions')
+                    .select(`
+                        question_id,
+                        questions (
+                            id,
+                            choices,
+                            correct_answer_indices
+                        )
+                    `)
+                    .eq('exam_id', examId)
+                    .order('order_index');
+                
+                if (questionsError) {
+                    console.error('❌ 시험 문제 로드 실패:', questionsError);
+                    return {};
+                }
+                
+                // 각 문제별로 랜덤화 정보 생성
+                const questionRandomization = {};
+                examQuestions.forEach((eq, index) => {
+                    if (eq.questions) {
+                        const randomization = randomizeQuestionChoices(eq.questions);
+                        questionRandomization[eq.question_id] = {
+                            randomizedChoices: randomization.randomizedChoices,
+                            originalToNewMapping: randomization.originalToNewMapping,
+                            newCorrectIndices: randomization.newCorrectIndices,
+                            isRandomized: randomization.isRandomized
+                        };
+                    }
+                });
+                
+                console.log('✅ 문제별 랜덤화 정보 생성 완료:', Object.keys(questionRandomization).length + '개');
+                return questionRandomization;
+                
+            } catch (error) {
+                console.error('❌ 문제별 랜덤화 정보 생성 실패:', error);
+                return {};
+            }
+        }
+
+        // 보기 랜덤화 함수 (시험 보안 강화용)
+        function randomizeQuestionChoices(question) {
+            try {
+                console.log('🔀 보기 랜덤화 시작:', question.id);
+                
+                // 보기가 없는 경우 원본 반환
+                if (!question.choices || !Array.isArray(question.choices) || question.choices.length === 0) {
+                    console.log('⚠️ 보기가 없어 랜덤화 건너뜀');
+                    return {
+                        randomizedChoices: question.choices || [],
+                        originalToNewMapping: [],
+                        newCorrectIndices: question.correct_answer_indices || [],
+                        isRandomized: false
+                    };
+                }
+                
+                // 보기 배열 복사
+                const choices = [...question.choices];
+                const originalIndices = choices.map((_, index) => index);
+                
+                console.log('📋 원본 보기 순서:', originalIndices);
+                console.log('📋 원본 정답 인덱스:', question.correct_answer_indices);
+                
+                // Fisher-Yates 셔플 알고리즘으로 랜덤화
+                for (let i = choices.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [choices[i], choices[j]] = [choices[j], choices[i]];
+                    [originalIndices[i], originalIndices[j]] = [originalIndices[j], originalIndices[i]];
+                }
+                
+                // 새로운 정답 인덱스 계산
+                const newCorrectIndices = (question.correct_answer_indices || []).map(originalIndex => 
+                    originalIndices.indexOf(originalIndex)
+                );
+                
+                const result = {
+                    randomizedChoices: choices,
+                    originalToNewMapping: originalIndices,
+                    newCorrectIndices: newCorrectIndices,
+                    isRandomized: true
+                };
+                
+                console.log('✅ 보기 랜덤화 완료:', {
+                    newOrder: originalIndices,
+                    newCorrectIndices: newCorrectIndices
+                });
+                
+                return result;
+                
+            } catch (error) {
+                console.error('❌ 보기 랜덤화 실패:', error);
+                // 오류 발생 시 원본 반환
+                return {
+                    randomizedChoices: question.choices || [],
+                    originalToNewMapping: [],
+                    newCorrectIndices: question.correct_answer_indices || [],
+                    isRandomized: false
+                };
+            }
+        }
+
         // 시험 시작 함수 (수정됨)
         async function startExam(examId) {
             try {
@@ -1180,12 +1360,49 @@
                     if (checkError && checkError.code === 'PGRST116') {
                         // 기존 세션이 없는 경우 - 새로 생성
                         console.log('🆕 새로운 시험 세션 생성');
+                        
+                        // 시험 문제 목록 가져오기
+                        const { data: examQuestions, error: questionsError } = await window.supabaseClient
+                            .from('exam_questions')
+                            .select(`
+                                question_id,
+                                questions (
+                                    id,
+                                    choices,
+                                    correct_answer_indices
+                                )
+                            `)
+                            .eq('exam_id', examId)
+                            .order('order_index');
+                        
+                        if (questionsError) {
+                            console.error('❌ 시험 문제 로드 실패:', questionsError);
+                            throw questionsError;
+                        }
+                        
+                        // 각 문제별로 랜덤화 정보 생성
+                        const questionRandomization = {};
+                        examQuestions.forEach((eq, index) => {
+                            if (eq.questions) {
+                                const randomization = randomizeQuestionChoices(eq.questions);
+                                questionRandomization[eq.question_id] = {
+                                    randomizedChoices: randomization.randomizedChoices,
+                                    originalToNewMapping: randomization.originalToNewMapping,
+                                    newCorrectIndices: randomization.newCorrectIndices,
+                                    isRandomized: randomization.isRandomized
+                                };
+                            }
+                        });
+                        
+                        console.log('🔀 문제별 랜덤화 완료:', Object.keys(questionRandomization).length + '개');
+                        
                         const { data: newSession, error: sessionError } = await window.supabaseClient
                             .from('exam_sessions')
                             .insert([{
                                 exam_id: examId,
                                 employee_id: window.semuApp.currentUser.id,
-                                status: 'in_progress'
+                                status: 'in_progress',
+                                question_randomization: questionRandomization
                             }])
                             .select()
                             .single();
@@ -1197,13 +1414,19 @@
                         // 다른 오류 발생
                         throw checkError;
                         
-                    } else {
-                        // 기존 세션이 있는 경우
-                        if (existingSession.status === 'in_progress') {
-                            // 진행 중인 세션 - 계속하기
-                            console.log('🔄 기존 진행 중인 세션 사용');
-                            sessionId = existingSession.id;
-                        } else if (existingSession.status === 'submitted') {
+                                            } else {
+                            // 기존 세션이 있는 경우
+                            if (existingSession.status === 'in_progress') {
+                                // 진행 중인 세션 - 계속하기
+                                console.log('🔄 기존 진행 중인 세션 사용');
+                                sessionId = existingSession.id;
+                                
+                                // 랜덤화 정보가 없는 경우 추가
+                                if (!existingSession.question_randomization) {
+                                    console.log('🔀 기존 세션에 랜덤화 정보 추가 중...');
+                                    await addRandomizationToExistingSession(existingSession.id, examId);
+                                }
+                            } else if (existingSession.status === 'submitted') {
                             // 이미 제출된 세션 - 재시도 확인
                             if (confirm('이미 제출된 시험입니다. 다시 응시하시겠습니까?\n\n기존 점수는 유지됩니다.')) {
                                 // 새로운 세션 생성
@@ -1212,7 +1435,8 @@
                                     .insert([{
                                         exam_id: examId,
                                         employee_id: window.semuApp.currentUser.id,
-                                        status: 'in_progress'
+                                        status: 'in_progress',
+                                        question_randomization: await generateQuestionRandomization(examId)
                                     }])
                                     .select()
                                     .single();

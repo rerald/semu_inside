@@ -2884,9 +2884,14 @@
             contentContainer.innerHTML = `
                 <div class="admin-section-header">
                     <h4>문제 관리</h4>
-                    <button class="btn btn-primary" onclick="showQuestionForm()">
-                        <i class="fas fa-plus"></i> 새 문제 등록
-                    </button>
+                    <div class="header-actions">
+                        <button class="btn btn-secondary" onclick="testRandomization()" title="보기 랜덤화 테스트">
+                            <i class="fas fa-random"></i> 랜덤화 테스트
+                        </button>
+                        <button class="btn btn-primary" onclick="showQuestionForm()">
+                            <i class="fas fa-plus"></i> 새 문제 등록
+                        </button>
+                    </div>
                 </div>
                 <div class="admin-content-body" id="questions-content">
                     <div class="questions-list" id="questions-list">
@@ -3293,19 +3298,63 @@
                     return;
                 }
 
+                console.log('🗑️ Supabase에서 문제 삭제 시도:', supabaseId);
+                
+                // 1단계: 참조 관계 확인
+                console.log('🔍 문제 참조 관계 확인 중...');
+                
+                // exam_questions에서 참조 확인
+                const { data: examRefs, error: examRefError } = await window.supabaseClient
+                    .from('exam_questions')
+                    .select('exam_id, order_index')
+                    .eq('question_id', supabaseId);
+                
+                if (examRefError) {
+                    console.error('❌ exam_questions 참조 확인 실패:', examRefError);
+                } else if (examRefs && examRefs.length > 0) {
+                    console.log('⚠️ 시험에서 사용 중인 문제:', examRefs);
+                    showAlert(`이 문제는 ${examRefs.length}개의 시험에서 사용 중입니다. 먼저 시험에서 제거해주세요.`, 'warning');
+                    return;
+                }
+                
+                // exam_answers에서 참조 확인
+                const { data: answerRefs, error: answerRefError } = await window.supabaseClient
+                    .from('exam_answers')
+                    .select('session_id')
+                    .eq('question_id', supabaseId);
+                
+                if (answerRefError) {
+                    console.error('❌ exam_answers 참조 확인 실패:', answerRefError);
+                } else if (answerRefs && answerRefs.length > 0) {
+                    console.log('⚠️ 답변에서 사용 중인 문제:', answerRefs);
+                    showAlert(`이 문제는 ${examRefs.length}개의 답변에서 사용 중입니다. 먼저 답변을 삭제해주세요.`, 'warning');
+                    return;
+                }
+                
+                // 2단계: 문제 삭제
+                console.log('✅ 참조 관계 없음 - 문제 삭제 진행');
+                
                 const { error } = await window.supabaseClient
                     .from('questions')
                     .delete()
                     .eq('id', supabaseId);
                 
                 if (error) {
-                    console.error('Supabase 삭제 오류:', error);
-                    showAlert('Supabase 삭제 중 오류가 발생했습니다.', 'warning');
-                } else {
-                    console.log('Supabase에서 문제 삭제 완료');
+                    console.error('❌ Supabase 삭제 오류:', error);
+                    throw error;
                 }
+                
+                console.log('✅ Supabase에서 문제 삭제 완료');
+                showAlert('문제가 성공적으로 삭제되었습니다.', 'success');
+                
             } catch (error) {
-                console.error('Supabase 삭제 중 오류:', error);
+                console.error('❌ Supabase 삭제 실패:', error);
+                
+                if (error.code === '23503') {
+                    showAlert('이 문제는 다른 곳에서 사용 중이어서 삭제할 수 없습니다. 먼저 참조 관계를 제거해주세요.', 'error');
+                } else {
+                    showAlert('문제 삭제에 실패했습니다: ' + error.message, 'error');
+                }
             }
         }
 
@@ -4385,7 +4434,8 @@
 
         async function loadExamsList() {
             try {
-                const { data: exams, error } = await window.supabaseClient
+                // 활성 상태의 시험지만 로드 (비활성화된 시험지는 별도 섹션에 표시)
+                const { data: activeExams, error: activeError } = await window.supabaseClient
                     .from('exams')
                     .select(`
                         id,
@@ -4397,9 +4447,30 @@
                         created_at,
                         exam_questions(count)
                     `)
+                    .in('status', ['active', 'draft', 'published', 'closed'])
                     .order('created_at', { ascending: false });
                 
-                if (error) throw error;
+                if (activeError) throw activeError;
+                
+                // 비활성화된 시험지도 로드
+                const { data: inactiveExams, error: inactiveError } = await window.supabaseClient
+                    .from('exams')
+                    .select(`
+                        id,
+                        title,
+                        description,
+                        duration,
+                        passing_score,
+                        status,
+                        created_at,
+                        exam_questions(count)
+                    `)
+                    .eq('status', 'inactive')
+                    .order('created_at', { ascending: false });
+                
+                if (inactiveError) throw inactiveError;
+                
+                const exams = [...(activeExams || []), ...(inactiveExams || [])];
                 
                 const examsList = document.getElementById('exams-list');
                 
@@ -4408,8 +4479,9 @@
                     return;
                 }
                 
-                const examsHtml = exams.map(exam => `
-                    <div class="exam-item">
+                // 활성 시험지 HTML 생성
+                const activeExamsHtml = (activeExams || []).map(exam => `
+                    <div class="exam-item ${exam.status === 'inactive' ? 'exam-inactive' : ''}">
                         <div class="exam-header">
                             <h5>${exam.title}</h5>
                             <div class="exam-meta">
@@ -4426,26 +4498,94 @@
                             </div>
                         </div>
                         <div class="exam-actions">
-                            <button class="btn btn-sm btn-outline-primary" onclick="editExam('${exam.id}')">
-                                <i class="fas fa-edit"></i> 수정
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="deleteExam('${exam.id}')">
-                                <i class="fas fa-trash"></i> 삭제
-                            </button>
-                            <button class="btn btn-sm btn-outline-warning" onclick="setupPermissionsForExam('${exam.id}')" title="사용자 권한 설정">
-                                <i class="fas fa-users"></i> 권한
-                            </button>
-                            ${exam.status === 'draft' ? 
-                                `<button class="btn btn-sm btn-outline-success" onclick="publishExam('${exam.id}')" title="시험 공개">
-                                    <i class="fas fa-globe"></i> 공개
-                                </button>` : 
-                                `<button class="btn btn-sm btn-outline-secondary" onclick="unpublishExam('${exam.id}')" title="시험 비공개">
-                                    <i class="fas fa-eye-slash"></i> 비공개
-                                </button>`
-                            }
+                            ${exam.status !== 'inactive' ? `
+                                <button class="btn btn-sm btn-outline-primary" onclick="editExam('${exam.id}')">
+                                    <i class="fas fa-edit"></i> 수정
+                                </button>
+                            ` : ''}
+                            
+                            <div class="btn-group" role="group">
+                                ${exam.status !== 'inactive' ? `
+                                    <button class="btn btn-sm btn-outline-warning" onclick="deactivateExam('${exam.id}')" title="시험지 비활성화 (응시 기록 보존)">
+                                        <i class="fas fa-eye-slash"></i> 비활성화
+                                    </button>
+                                ` : `
+                                    <button class="btn btn-sm btn-outline-success" onclick="reactivateExam('${exam.id}')" title="시험지 재활성화">
+                                        <i class="fas fa-eye"></i> 재활성화
+                                    </button>
+                                `}
+                                
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteExam('${exam.id}')" title="시험지 완전 삭제 (모든 데이터 손실)">
+                                    <i class="fas fa-trash"></i> 삭제
+                                </button>
+                            </div>
+                            
+                            ${exam.status !== 'inactive' ? `
+                                <button class="btn btn-sm btn-outline-warning" onclick="setupPermissionsForExam('${exam.id}')" title="사용자 권한 설정">
+                                    <i class="fas fa-users"></i> 권한
+                                </button>
+                                
+                                ${exam.status === 'draft' ? 
+                                    `<button class="btn btn-sm btn-outline-success" onclick="publishExam('${exam.id}')" title="시험 공개">
+                                        <i class="fas fa-globe"></i> 공개
+                                    </button>` : 
+                                    `<button class="btn btn-sm btn-outline-secondary" onclick="unpublishExam('${exam.id}')" title="시험 비공개">
+                                        <i class="fas fa-eye-slash"></i> 비공개
+                                    </button>`
+                                }
+                            ` : ''}
                         </div>
                     </div>
                 `).join('');
+                
+                // 비활성화된 시험지 HTML 생성
+                const inactiveExamsHtml = (inactiveExams || []).map(exam => `
+                    <div class="exam-item exam-inactive">
+                        <div class="exam-header">
+                            <h5>${exam.title}</h5>
+                            <div class="exam-meta">
+                                <span class="badge badge-${getStatusBadgeClass(exam.status)}">${getStatusDisplayName(exam.status)}</span>
+                                <span class="badge badge-info">${exam.duration}분</span>
+                                <span class="badge badge-secondary">합격점 ${exam.passing_score}%</span>
+                            </div>
+                        </div>
+                        <div class="exam-content">
+                            <p>${exam.description || '설명 없음'}</p>
+                            <div class="exam-stats">
+                                <small>문제 수: ${exam.exam_questions[0]?.count || 0}개</small>
+                                <small>생성일: ${new Date(exam.created_at).toLocaleDateString('ko-KR')}</small>
+                                <small class="text-warning">⚠️ 응시 기록 보존됨</small>
+                            </div>
+                        </div>
+                        <div class="exam-actions">
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-sm btn-outline-success" onclick="reactivateExam('${exam.id}')" title="시험지 재활성화">
+                                    <i class="fas fa-eye"></i> 재활성화
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteExam('${exam.id}')" title="시험지 완전 삭제 (모든 데이터 손실)">
+                                    <i class="fas fa-trash"></i> 삭제
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                
+                // 전체 HTML 구성
+                const examsHtml = `
+                    ${activeExams && activeExams.length > 0 ? `
+                        <div class="exam-section">
+                            <h5 class="section-title">활성 시험지</h5>
+                            ${activeExamsHtml}
+                        </div>
+                    ` : ''}
+                    
+                    ${inactiveExams && inactiveExams.length > 0 ? `
+                        <div class="exam-section">
+                            <h5 class="section-title text-warning">비활성화된 시험지 (응시 기록 보존)</h5>
+                            ${inactiveExamsHtml}
+                        </div>
+                    ` : ''}
+                `;
                 
                 examsList.innerHTML = examsHtml;
             } catch (error) {
@@ -4459,6 +4599,8 @@
                 case 'draft': return 'secondary';
                 case 'published': return 'success';
                 case 'closed': return 'danger';
+                case 'inactive': return 'warning';
+                case 'deleted': return 'dark';
                 default: return 'secondary';
             }
         }
@@ -4468,6 +4610,8 @@
                 case 'draft': return '초안';
                 case 'published': return '공개';
                 case 'closed': return '종료';
+                case 'inactive': return '비활성화';
+                case 'deleted': return '삭제됨';
                 default: return status;
             }
         }
@@ -4679,32 +4823,203 @@
         }
 
         async function deleteExam(examId) {
-            if (!confirm('정말로 이 시험지를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+            // 1단계: 참조 관계 확인
+            try {
+                console.log('🔍 시험지 참조 관계 확인 중:', examId);
+                
+                // exam_sessions에서 참조 확인
+                const { data: sessions, error: sessionsError } = await window.supabaseClient
+                    .from('exam_sessions')
+                    .select('id, employee_id, status, start_time')
+                    .eq('exam_id', examId);
+                
+                if (sessionsError) {
+                    console.error('❌ exam_sessions 참조 확인 실패:', sessionsError);
+                } else if (sessions && sessions.length > 0) {
+                    console.log('⚠️ 시험 응시 세션이 존재:', sessions);
+                    
+                    // 사용자에게 데이터 손실 경고
+                    const confirmed = confirm(
+                        `⚠️ 주의: 이 시험은 ${sessions.length}명이 응시했습니다.\n\n` +
+                        `삭제하면 모든 응시 기록과 성적이 사라집니다.\n\n` +
+                        `정말 삭제하시겠습니까?\n\n` +
+                        `(CASCADE 삭제로 모든 연관 데이터가 자동 삭제됩니다)`
+                    );
+                    
+                    if (!confirmed) {
+                        console.log('❌ 사용자가 시험지 삭제를 취소함');
+                        return;
+                    }
+                }
+                
+                // exam_permissions에서 참조 확인
+                const { data: permissions, error: permissionsError } = await window.supabaseClient
+                    .from('exam_permissions')
+                    .select('id, employee_id, department_id')
+                    .eq('exam_id', examId);
+                
+                if (permissionsError) {
+                    console.error('❌ exam_permissions 참조 확인 실패:', permissionsError);
+                } else if (permissions && permissions.length > 0) {
+                    console.log('⚠️ 시험 권한이 존재:', permissions);
+                }
+                
+                // 2단계: 최종 확인
+                const finalConfirm = confirm(
+                    `최종 확인:\n\n` +
+                    `시험지 "${examId}"를 완전 삭제하시겠습니까?\n\n` +
+                    `이 작업은 되돌릴 수 없습니다.`
+                );
+                
+                if (!finalConfirm) {
+                    console.log('❌ 사용자가 최종 확인을 취소함');
+                    return;
+                }
+                
+            } catch (error) {
+                console.error('❌ 참조 관계 확인 실패:', error);
+                showAlert('시험지 삭제 준비 중 오류가 발생했습니다.', 'error');
                 return;
             }
             
             try {
-                // 시험지-문제 매핑 먼저 삭제
-                const { error: mappingError } = await window.supabaseClient
-                    .from('exam_questions')
-                    .delete()
-                    .eq('exam_id', examId);
+                console.log('🗑️ 시험지 CASCADE 삭제 시도:', examId);
                 
-                if (mappingError) throw mappingError;
+                // CASCADE 삭제로 모든 연관 데이터가 자동 삭제됨
+                console.log('✅ 시험지 삭제 진행');
                 
-                // 시험지 삭제
                 const { error: examError } = await window.supabaseClient
                     .from('exams')
                     .delete()
                     .eq('id', examId);
                 
-                if (examError) throw examError;
+                if (examError) {
+                    console.error('❌ 시험지 삭제 실패:', examError);
+                    throw examError;
+                }
                 
+                console.log('✅ 시험지 삭제 완료');
                 showAlert('시험지가 성공적으로 삭제되었습니다!', 'success');
                 loadExamsSection();
+                
             } catch (error) {
-                console.error('시험지 삭제 오류:', error);
-                showAlert('시험지 삭제 중 오류가 발생했습니다.', 'error');
+                console.error('❌ 시험지 삭제 실패:', error);
+                
+                if (error.code === '23503') {
+                    showAlert('이 시험지는 다른 곳에서 사용 중이어서 삭제할 수 없습니다. 먼저 참조 관계를 제거해주세요.', 'error');
+                } else {
+                    showAlert('시험지 삭제 중 오류가 발생했습니다: ' + error.message, 'error');
+                }
+            }
+        }
+
+        // 시험지 비활성화 함수 (응시 기록 보존)
+        async function deactivateExam(examId) {
+            try {
+                console.log('🔒 시험지 비활성화 시도:', examId);
+                
+                // 1단계: 참조 관계 확인
+                const { data: sessions, error: sessionsError } = await window.supabaseClient
+                    .from('exam_sessions')
+                    .select('id, employee_id, status, start_time')
+                    .eq('exam_id', examId);
+                
+                if (sessionsError) {
+                    console.error('❌ exam_sessions 참조 확인 실패:', sessionsError);
+                    throw sessionsError;
+                }
+                
+                // 2단계: 사용자 확인
+                let confirmMessage = '시험지를 비활성화하시겠습니까?\n\n';
+                
+                if (sessions && sessions.length > 0) {
+                    confirmMessage += `⚠️ 이 시험은 ${sessions.length}명이 응시했습니다.\n`;
+                    confirmMessage += `비활성화하면:\n`;
+                    confirmMessage += `✅ 응시 기록과 성적은 보존됩니다\n`;
+                    confirmMessage += `❌ 새로운 응시는 불가능합니다\n`;
+                    confirmMessage += `❌ 시험 목록에서 숨겨집니다\n\n`;
+                } else {
+                    confirmMessage += `이 시험은 아직 응시자가 없습니다.\n`;
+                    confirmMessage += `비활성화하면 새로운 응시가 불가능합니다.\n\n`;
+                }
+                
+                confirmMessage += `정말 비활성화하시겠습니까?`;
+                
+                const confirmed = confirm(confirmMessage);
+                if (!confirmed) {
+                    console.log('❌ 사용자가 시험지 비활성화를 취소함');
+                    return;
+                }
+                
+                // 3단계: 시험지 비활성화
+                const { error: updateError } = await window.supabaseClient
+                    .from('exams')
+                    .update({ 
+                        status: 'inactive',
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', examId);
+                
+                if (updateError) {
+                    console.error('❌ 시험지 비활성화 실패:', updateError);
+                    throw updateError;
+                }
+                
+                console.log('✅ 시험지 비활성화 완료');
+                showAlert('시험지가 비활성화되었습니다. 응시 기록은 보존됩니다.', 'success');
+                
+                // 시험 목록 새로고침
+                loadExamsSection();
+                
+            } catch (error) {
+                console.error('❌ 시험지 비활성화 실패:', error);
+                showAlert('시험지 비활성화 중 오류가 발생했습니다: ' + error.message, 'error');
+            }
+        }
+
+        // 시험지 재활성화 함수
+        async function reactivateExam(examId) {
+            try {
+                console.log('🔓 시험지 재활성화 시도:', examId);
+                
+                // 사용자 확인
+                const confirmed = confirm(
+                    '시험지를 재활성화하시겠습니까?\n\n' +
+                    '재활성화하면:\n' +
+                    '✅ 새로운 응시가 가능해집니다\n' +
+                    '✅ 시험 목록에 다시 표시됩니다\n' +
+                    '✅ 기존 응시 기록은 그대로 유지됩니다\n\n' +
+                    '정말 재활성화하시겠습니까?'
+                );
+                
+                if (!confirmed) {
+                    console.log('❌ 사용자가 시험지 재활성화를 취소함');
+                    return;
+                }
+                
+                // 시험지 재활성화
+                const { error: updateError } = await window.supabaseClient
+                    .from('exams')
+                    .update({ 
+                        status: 'active',
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', examId);
+                
+                if (updateError) {
+                    console.error('❌ 시험지 재활성화 실패:', updateError);
+                    throw updateError;
+                }
+                
+                console.log('✅ 시험지 재활성화 완료');
+                showAlert('시험지가 재활성화되었습니다. 새로운 응시가 가능합니다.', 'success');
+                
+                // 시험 목록 새로고침
+                loadExamsSection();
+                
+            } catch (error) {
+                console.error('❌ 시험지 재활성화 실패:', error);
+                showAlert('시험지 재활성화 중 오류가 발생했습니다: ' + error.message, 'error');
             }
         }
 
@@ -5574,6 +5889,106 @@
                 return `${String.fromCharCode(65 + answerIndex)}. ${choiceText}`;
             } catch (error) {
                 return answer || '-';
+            }
+        }
+
+        // 보기 랜덤화 테스트 함수
+        async function testRandomization() {
+            try {
+                console.log('🧪 보기 랜덤화 테스트 시작...');
+                
+                // 첫 번째 문제 가져오기 (테스트용)
+                const { data: questions, error } = await window.supabaseClient
+                    .from('questions')
+                    .select('*')
+                    .limit(1);
+                
+                if (error || !questions || questions.length === 0) {
+                    console.error('❌ 테스트용 문제를 가져올 수 없습니다:', error);
+                    showAdminAlert('테스트용 문제를 가져올 수 없습니다.', 'error');
+                    return;
+                }
+                
+                const testQuestion = questions[0];
+                console.log('📋 테스트용 문제:', testQuestion);
+                
+                // 랜덤화 실행
+                const result1 = randomizeQuestionChoices(testQuestion);
+                const result2 = randomizeQuestionChoices(testQuestion);
+                const result3 = randomizeQuestionChoices(testQuestion);
+                
+                // 결과 비교
+                console.log('🔄 랜덤화 결과 비교:');
+                console.log('1차:', result1.randomizedChoices.map(c => c.content || c.text || c));
+                console.log('2차:', result2.randomizedChoices.map(c => c.content || c.text || c));
+                console.log('3차:', result3.randomizedChoices.map(c => c.content || c.text || c));
+                
+                showAdminAlert('랜덤화 테스트 완료! 콘솔을 확인하세요.', 'success');
+                
+            } catch (error) {
+                console.error('❌ 랜덤화 테스트 실패:', error);
+                showAdminAlert('랜덤화 테스트 중 오류가 발생했습니다.', 'error');
+            }
+        }
+
+        // 보기 랜덤화 함수 (시험 보안 강화용)
+        function randomizeQuestionChoices(question) {
+            try {
+                console.log('🔀 보기 랜덤화 시작:', question.id);
+                
+                // 보기가 없는 경우 원본 반환
+                if (!question.choices || !Array.isArray(question.choices) || question.choices.length === 0) {
+                    console.log('⚠️ 보기가 없어 랜덤화 건너뜀');
+                    return {
+                        randomizedChoices: question.choices || [],
+                        originalToNewMapping: [],
+                        newCorrectIndices: question.correct_answer_indices || [],
+                        isRandomized: false
+                    };
+                }
+                
+                // 보기 배열 복사
+                const choices = [...question.choices];
+                const originalIndices = choices.map((_, index) => index);
+                
+                console.log('📋 원본 보기 순서:', originalIndices);
+                console.log('📋 원본 정답 인덱스:', question.correct_answer_indices);
+                
+                // Fisher-Yates 셔플 알고리즘으로 랜덤화
+                for (let i = choices.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [choices[i], choices[j]] = [choices[j], choices[i]];
+                    [originalIndices[i], originalIndices[j]] = [originalIndices[j], originalIndices[i]];
+                }
+                
+                // 새로운 정답 인덱스 계산
+                const newCorrectIndices = (question.correct_answer_indices || []).map(originalIndex => 
+                    originalIndices.indexOf(originalIndex)
+                );
+                
+                const result = {
+                    randomizedChoices: choices,
+                    originalToNewMapping: originalIndices,
+                    newCorrectIndices: newCorrectIndices,
+                    isRandomized: true
+                };
+                
+                console.log('✅ 보기 랜덤화 완료:', {
+                    newOrder: originalIndices,
+                    newCorrectIndices: newCorrectIndices
+                });
+                
+                return result;
+                
+            } catch (error) {
+                console.error('❌ 보기 랜덤화 실패:', error);
+                // 오류 발생 시 원본 반환
+                return {
+                    randomizedChoices: question.choices || [],
+                    originalToNewMapping: [],
+                    newCorrectIndices: question.correct_answer_indices || [],
+                    isRandomized: false
+                };
             }
         }
 

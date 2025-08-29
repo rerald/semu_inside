@@ -624,7 +624,9 @@
                     if (questionsError) throw questionsError;
                     
                     // 3단계: 문제 데이터 구성
-                    const questions = examQuestions.map(eq => {
+                    console.log('🔍 exam_questions 데이터:', examQuestions);
+                    
+                    const questions = examQuestions.map((eq, index) => {
                         const question = eq.questions;
                         let options = [];
                         let correct = 0;
@@ -634,7 +636,7 @@
                             correct = question.correct_answer_indices?.[0] || 0;
                         }
                         
-                        return {
+                        const questionData = {
                             id: question.id,
                             text: question.title || question.content,
                             options: options,
@@ -642,6 +644,14 @@
                             type: question.type,
                             difficulty: question.difficulty
                         };
+                        
+                        console.log(`📝 문제 ${index + 1} 구성:`, {
+                            questionId: eq.question_id,
+                            orderIndex: eq.order_index,
+                            questionData: questionData
+                        });
+                        
+                        return questionData;
                     });
                     
                     // 4단계: 시험 데이터 구성
@@ -675,6 +685,31 @@
                     } else {
                         alert('시험 데이터를 불러올 수 없습니다. 다시 시도해주세요.');
                     }
+                }
+            }
+
+            async loadSessionRandomizationData(sessionId) {
+                try {
+                    console.log('🔀 세션 랜덤화 정보 로드 중:', sessionId);
+                    
+                    const { data: session, error } = await window.supabaseClient
+                        .from('exam_sessions')
+                        .select('question_randomization')
+                        .eq('id', sessionId)
+                        .single();
+                    
+                    if (error) {
+                        console.error('❌ 세션 랜덤화 정보 로드 실패:', error);
+                        this.sessionData = { question_randomization: {} };
+                        return;
+                    }
+                    
+                    this.sessionData = session;
+                    console.log('✅ 세션 랜덤화 정보 로드 완료:', this.sessionData);
+                    
+                } catch (error) {
+                    console.error('❌ 세션 랜덤화 정보 로드 실패:', error);
+                    this.sessionData = { question_randomization: {} };
                 }
             }
 
@@ -722,6 +757,9 @@
                         this.sessionId = existingSession.id;
                         console.log('🔄 기존 시험 세션 사용:', this.sessionId);
                         
+                        // 기존 세션의 랜덤화 정보 로드
+                        await this.loadSessionRandomizationData(existingSession.id);
+                        
                         // 시작 시간부터 경과 시간 계산
                         const startTime = new Date(existingSession.start_time);
                         const elapsedSeconds = Math.floor((Date.now() - startTime.getTime()) / 1000);
@@ -752,6 +790,9 @@
                         
                         this.sessionId = newSession.id;
                         console.log('🆕 새로운 시험 세션 생성:', this.sessionId);
+                        
+                        // 새로운 세션의 랜덤화 정보 로드
+                        await this.loadSessionRandomizationData(newSession.id);
                     }
                     
                 } catch (error) {
@@ -878,15 +919,66 @@
                 this.currentQuestion = index;
                 const question = this.examData.questions[index];
                 
+                console.log(`🔍 문제 ${index + 1} 표시:`, {
+                    questionId: question.id,
+                    text: question.text,
+                    options: question.options,
+                    correct: question.correct
+                });
+                
                 // 문제 내용 표시
                 document.getElementById('questionNumber').textContent = `문제 ${index + 1}`;
                 document.getElementById('questionText').textContent = question.text;
                 
-                // 선택지 생성
+                // 선택지 생성 (랜덤화 적용)
                 const optionsContainer = document.getElementById('questionOptions');
                 optionsContainer.innerHTML = '';
                 
-                question.options.forEach((option, optionIndex) => {
+                // 랜덤화된 보기 정보 가져오기
+                let displayOptions = question.options;
+                let correctAnswerIndex = question.correct;
+                
+                if (this.sessionData && this.sessionData.question_randomization && 
+                    this.sessionData.question_randomization[question.id]) {
+                    
+                    const randomization = this.sessionData.question_randomization[question.id];
+                    console.log('🔀 랜덤화 정보 적용:', question.id, randomization);
+                    
+                    if (randomization.isRandomized && randomization.randomizedChoices) {
+                        // 랜덤화된 보기 사용
+                        displayOptions = randomization.randomizedChoices;
+                        // 새로운 정답 인덱스 사용
+                        correctAnswerIndex = randomization.newCorrectIndices[0] || 0;
+                        console.log('✅ 랜덤화된 보기 적용:', {
+                            original: question.options,
+                            randomized: displayOptions,
+                            originalCorrect: question.correct,
+                            newCorrect: correctAnswerIndex
+                        });
+                        
+                        // 보기 데이터 구조 상세 분석
+                        console.log('🔍 랜덤화된 보기 상세 구조:', displayOptions.map((opt, idx) => ({
+                            index: idx,
+                            type: typeof opt,
+                            value: opt,
+                            content: opt?.content,
+                            text: opt?.text
+                        })));
+                        
+                        // 정답 인덱스 매핑 정보
+                        console.log('🎯 정답 인덱스 매핑:', {
+                            originalCorrect: question.correct,
+                            newCorrect: correctAnswerIndex,
+                            originalToNewMapping: randomization.originalToNewMapping,
+                            newToOriginalMapping: randomization.originalToNewMapping.map((_, idx) => 
+                                randomization.originalToNewMapping.indexOf(idx)
+                            )
+                        });
+                    }
+                }
+                
+                // 선택지 생성
+                displayOptions.forEach((option, optionIndex) => {
                     const optionDiv = document.createElement('div');
                     optionDiv.className = 'option';
                     optionDiv.onclick = () => this.selectAnswer(optionIndex);
@@ -895,9 +987,15 @@
                         optionDiv.classList.add('selected');
                     }
                     
+                    // 보기 텍스트 추출 (객체인 경우 content 속성 사용)
+                    let optionText = option;
+                    if (typeof option === 'object' && option !== null) {
+                        optionText = option.content || option.text || option.value || JSON.stringify(option);
+                    }
+                    
                     optionDiv.innerHTML = `
                         <div class="option-radio"></div>
-                        <div class="option-text">${String.fromCharCode(65 + optionIndex)}. ${option}</div>
+                        <div class="option-text">${String.fromCharCode(65 + optionIndex)}. ${optionText}</div>
                     `;
                     
                     optionsContainer.appendChild(optionDiv);
@@ -914,7 +1012,26 @@
             }
 
             selectAnswer(optionIndex) {
-                this.answers[this.currentQuestion] = optionIndex;
+                // 랜덤화된 순서의 인덱스를 원본 순서의 인덱스로 변환
+                let originalIndex = optionIndex;
+                
+                if (this.sessionData && this.sessionData.question_randomization) {
+                    const currentQuestion = this.examData.questions[this.currentQuestion];
+                    const randomization = this.sessionData.question_randomization[currentQuestion.id];
+                    
+                    if (randomization && randomization.isRandomized && randomization.originalToNewMapping) {
+                        // originalToNewMapping: [원본인덱스] = 새인덱스
+                        // 역매핑: 새인덱스 → 원본인덱스
+                        originalIndex = randomization.originalToNewMapping.indexOf(optionIndex);
+                        console.log('🔄 답변 인덱스 변환:', {
+                            randomizedIndex: optionIndex,
+                            originalIndex: originalIndex,
+                            mapping: randomization.originalToNewMapping
+                        });
+                    }
+                }
+                
+                this.answers[this.currentQuestion] = originalIndex;
                 this.showQuestion(this.currentQuestion); // 화면 새로고침
                 this.updateStats();
             }
