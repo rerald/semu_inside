@@ -285,7 +285,6 @@ class SemuApp {
                     options: {
                         data: {
                             name: userData.name,
-                            department: userData.department,
                             hire_date: userData.hire_date,
                             phone: userData.phone || null
                         }
@@ -294,32 +293,50 @@ class SemuApp {
 
                 if (error) throw error;
 
-                // 부서 ID 먼저 조회
-                console.log('📋 부서 정보 조회 중...');
-                let departmentId = null;
+                // 부서 ID 처리
+                console.log('📋 부서 정보 처리 중...');
+                let departmentId = userData.department_id; // UUID 직접 사용
                 
-                try {
-                    const { data: department, error: deptError } = await this.supabaseClient
-                        .from('departments')
-                        .select('id')
-                        .eq('code', userData.department.toUpperCase())
-                        .single();
+                // department_id가 유효한지 확인
+                if (departmentId) {
+                    try {
+                        const { data: department, error: deptError } = await this.supabaseClient
+                            .from('departments')
+                            .select('id')
+                            .eq('id', departmentId)
+                            .single();
 
-                    if (deptError) {
-                        console.warn('부서 조회 실패, 기본값 사용:', deptError.message);
-                        // 기본 부서 (첫 번째 부서) 사용
+                        if (deptError) {
+                            console.warn('부서 ID 유효성 검증 실패, 기본값 사용:', deptError.message);
+                            // 기본 부서 (첫 번째 부서) 사용
+                            const { data: defaultDept } = await this.supabaseClient
+                                .from('departments')
+                                .select('id')
+                                .limit(1)
+                                .single();
+                            departmentId = defaultDept?.id;
+                        } else {
+                            console.log('✅ 부서 ID 유효성 검증 완료:', departmentId);
+                        }
+                    } catch (error) {
+                        console.warn('부서 ID 검증 중 오류, 기본값 사용:', error.message);
+                        // 기본 부서 사용
                         const { data: defaultDept } = await this.supabaseClient
                             .from('departments')
                             .select('id')
                             .limit(1)
                             .single();
                         departmentId = defaultDept?.id;
-                    } else {
-                        departmentId = department.id;
-                        console.log('✅ 부서 ID 찾음:', departmentId);
                     }
-                } catch (error) {
-                    console.warn('부서 조회 중 오류, 계속 진행:', error.message);
+                } else {
+                    console.warn('부서 ID가 없음, 기본값 사용');
+                    // 기본 부서 사용
+                    const { data: defaultDept } = await this.supabaseClient
+                        .from('departments')
+                        .select('id')
+                        .limit(1)
+                        .single();
+                    departmentId = defaultDept?.id;
                 }
 
                 // 프로필 테이블에 사용자 정보 저장

@@ -2028,6 +2028,157 @@
                 flex-direction: column;
             }
         }
+
+        /* 문제별 통계 테이블 스타일 */
+        .question-content {
+            max-width: 300px;
+        }
+
+        .question-text {
+            font-weight: 500;
+            margin-bottom: 5px;
+            line-height: 1.4;
+            word-break: break-word;
+        }
+
+        .question-id {
+            font-size: 0.8rem;
+            color: #6c757d;
+            font-family: monospace;
+        }
+
+        .question-options {
+            max-width: 250px;
+        }
+
+        .option {
+            padding: 2px 0;
+            font-size: 0.9rem;
+            line-height: 1.3;
+        }
+
+        .option.correct {
+            color: #28a745;
+            font-weight: 600;
+        }
+
+        .correct-icon {
+            color: #28a745;
+            margin-left: 5px;
+        }
+
+        .subjective-option {
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        .group-option {
+            color: #17a2b8;
+            font-style: italic;
+        }
+
+        /* 테이블 셀 최대 너비 제한 */
+        #questions-stats-table td:nth-child(1) {
+            max-width: 300px;
+        }
+
+        #questions-stats-table td:nth-child(2) {
+            max-width: 250px;
+        }
+
+        #questions-stats-table td {
+            vertical-align: top;
+            padding: 12px 8px;
+        }
+
+        /* 문제별 상세 통계 모달 스타일 */
+        .modal-large {
+            max-width: 90%;
+            width: 90%;
+        }
+
+        .question-row:hover {
+            background-color: rgba(102, 126, 234, 0.1);
+        }
+
+        .question-info {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .question-content h6,
+        .question-options h6 {
+            margin-bottom: 10px;
+            color: var(--dark-gray);
+            font-weight: 600;
+        }
+
+        .question-content p {
+            margin: 0;
+            line-height: 1.6;
+            color: var(--dark-gray);
+        }
+
+        .options-list {
+            margin-top: 10px;
+        }
+
+        .question-stats {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+        }
+
+        .stat-item i {
+            color: var(--primary-color);
+        }
+
+        .user-answers-section {
+            margin-top: 30px;
+        }
+
+        .user-answers-section h6 {
+            margin-bottom: 15px;
+            color: var(--dark-gray);
+            font-weight: 600;
+        }
+
+        .answer-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .answer-status.correct {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .answer-status.incorrect {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .answer-status i {
+            font-size: 0.8rem;
+        }
     </style>
 </head>
 <body>
@@ -4998,8 +5149,8 @@
                                         <table id="questions-stats-table">
                                             <thead>
                                                 <tr>
-                                                    <th>문제 ID</th>
-                                                    <th>제목</th>
+                                                    <th>문제 내용</th>
+                                                    <th>보기</th>
                                                     <th>카테고리</th>
                                                     <th>난이도</th>
                                                     <th>정답률</th>
@@ -5203,6 +5354,195 @@
             
             // 부서 목록 로드
             await loadDepartmentOptions();
+        }
+
+        // 문제별 상세 통계 모달
+        function showQuestionDetailModal(questionId) {
+            // 모달이 없으면 먼저 생성
+            if (!document.getElementById('question-detail-modal')) {
+                createQuestionDetailModal();
+            }
+            loadQuestionDetailData(questionId);
+            document.getElementById('question-detail-modal').style.display = 'block';
+        }
+
+        function createQuestionDetailModal() {
+            const modalHtml = `
+                <!-- 문제별 상세 통계 모달 -->
+                <div id="question-detail-modal" class="modal" style="display: none;">
+                    <div class="modal-content modal-large">
+                        <div class="modal-header">
+                            <h5 id="question-detail-title">문제별 상세 통계</h5>
+                            <button class="close-btn" onclick="hideQuestionDetailModal()">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="question-info">
+                                <div class="question-content" id="modal-question-content"></div>
+                                <div class="question-options" id="modal-question-options"></div>
+                                <div class="question-stats">
+                                    <span class="stat-item">
+                                        <i class="fas fa-tag"></i> 카테고리: <span id="modal-category"></span>
+                                    </span>
+                                    <span class="stat-item">
+                                        <i class="fas fa-star"></i> 난이도: <span id="modal-difficulty"></span>
+                                    </span>
+                                    <span class="stat-item">
+                                        <i class="fas fa-percentage"></i> 정답률: <span id="modal-accuracy"></span>
+                                    </span>
+                                    <span class="stat-item">
+                                        <i class="fas fa-users"></i> 응시자: <span id="modal-attempts"></span>명
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div class="user-answers-section">
+                                <h6>사용자별 답안</h6>
+                                <div class="table-container">
+                                    <table id="user-answers-table">
+                                        <thead>
+                                            <tr>
+                                                <th>사용자</th>
+                                                <th>부서</th>
+                                                <th>선택한 답안</th>
+                                                <th>정답 여부</th>
+                                                <th>응시 시간</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- 사용자 답안 데이터가 여기에 표시됩니다 -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-secondary" onclick="hideQuestionDetailModal()">닫기</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // 모달 HTML을 body에 추가
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            console.log('✅ 문제별 상세 통계 모달 생성 완료');
+        }
+
+        function hideQuestionDetailModal() {
+            document.getElementById('question-detail-modal').style.display = 'none';
+        }
+
+        async function loadQuestionDetailData(questionId) {
+            try {
+                console.log('🔍 문제 상세 데이터 로드 중:', questionId);
+                
+                // 1. 문제 정보 로드
+                const { data: question, error: questionError } = await window.supabaseClient
+                    .from('questions')
+                    .select(`
+                        *,
+                        categories(name)
+                    `)
+                    .eq('id', questionId)
+                    .single();
+
+                if (questionError) throw questionError;
+
+                // 2. 해당 문제의 답안 데이터 로드
+                const { data: answers, error: answersError } = await window.supabaseClient
+                    .from('exam_answers')
+                    .select(`
+                        *,
+                        exam_sessions!inner(
+                            employee_id,
+                            profiles!inner(name, department_id, departments!inner(name))
+                        )
+                    `)
+                    .eq('question_id', questionId);
+
+                if (answersError) throw answersError;
+
+                console.log('📋 문제 정보:', question);
+                console.log('📋 답안 데이터:', answers);
+
+                // 3. 모달에 데이터 표시
+                displayQuestionDetail(question, answers);
+
+            } catch (error) {
+                console.error('❌ 문제 상세 데이터 로드 실패:', error);
+                showAdminAlert('문제 상세 데이터를 불러오는데 실패했습니다.', 'error');
+            }
+        }
+
+        function displayQuestionDetail(question, answers) {
+            // 문제 정보 표시
+            document.getElementById('modal-question-content').innerHTML = `
+                <h6>문제 내용</h6>
+                <p>${question.content || question.title || '내용 없음'}</p>
+            `;
+
+            // 문제 보기 표시
+            const optionsHtml = formatQuestionOptions(question);
+            document.getElementById('modal-question-options').innerHTML = `
+                <h6>보기</h6>
+                <div class="options-list">${optionsHtml}</div>
+            `;
+
+            // 통계 정보 표시
+            document.getElementById('modal-category').textContent = question.categories?.name || '미분류';
+            document.getElementById('modal-difficulty').textContent = getDifficultyText(question.difficulty);
+            
+            const totalAnswers = answers.length;
+            const correctAnswers = answers.filter(a => a.is_correct).length;
+            const accuracy = totalAnswers > 0 ? Math.round((correctAnswers / totalAnswers) * 100) : 0;
+            
+            document.getElementById('modal-accuracy').textContent = `${accuracy}%`;
+            document.getElementById('modal-attempts').textContent = totalAnswers;
+
+            // 사용자 답안 테이블 표시
+            const tbody = document.querySelector('#user-answers-table tbody');
+            tbody.innerHTML = answers.map(answer => {
+                const user = answer.exam_sessions.profiles;
+                const department = answer.exam_sessions.profiles.departments;
+                const answerText = getAnswerText(question, answer.answer);
+                const isCorrect = answer.is_correct;
+                
+                return `
+                    <tr>
+                        <td>${user.name}</td>
+                        <td>${department?.name || '미지정'}</td>
+                        <td>${answerText}</td>
+                        <td>
+                            <span class="answer-status ${isCorrect ? 'correct' : 'incorrect'}">
+                                ${isCorrect ? '<i class="fas fa-check"></i> 정답' : '<i class="fas fa-times"></i> 오답'}
+                            </span>
+                        </td>
+                        <td>${new Date(answer.created_at).toLocaleString('ko-KR')}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function getAnswerText(question, answer) {
+            if (!question.choices || !Array.isArray(question.choices)) {
+                return answer || '-';
+            }
+
+            try {
+                const answerIndex = parseInt(answer);
+                if (isNaN(answerIndex) || answerIndex < 0 || answerIndex >= question.choices.length) {
+                    return answer || '-';
+                }
+
+                const choice = question.choices[answerIndex];
+                let choiceText = choice;
+                if (typeof choice === 'object' && choice !== null) {
+                    choiceText = choice.content || choice.text || choice.value || JSON.stringify(choice);
+                }
+
+                return `${String.fromCharCode(65 + answerIndex)}. ${choiceText}`;
+            } catch (error) {
+                return answer || '-';
+            }
         }
 
         // 사용자 목록 로드
@@ -5937,6 +6277,8 @@
                 </div>
             `;
             
+
+            
             // 카테고리 목록 로드
             await loadCategoriesList();
             
@@ -5958,6 +6300,9 @@
 
         // 통계 분석 관련 함수들
         async function loadAllStats() {
+            // 문제별 상세 통계 모달 미리 생성
+            createQuestionDetailModal();
+            
             try {
                 console.log('📊 전체 통계 데이터 로딩 시작...');
                 
@@ -6010,12 +6355,39 @@
                 questionsLoading.style.display = 'block';
                 questionsContent.style.display = 'none';
 
-                // 1단계: 기본 문제 데이터 로드
+                // 1단계: 기본 문제 데이터 로드 (필요한 모든 필드 포함)
                 const { data: questions, error: questionsError } = await window.supabaseClient
                     .from('questions')
-                    .select('*');
+                    .select(`
+                        id,
+                        content,
+                        title,
+                        type,
+                        difficulty,
+                        category_id,
+                        choices,
+                        correct_answer_indices
+                    `);
 
                 if (questionsError) throw questionsError;
+
+                console.log('📋 로드된 문제 데이터:', questions);
+                console.log('📋 문제 수:', questions.length);
+                
+                // 보기 데이터 구조 확인
+                questions.forEach((q, index) => {
+                    if (q.choices) {
+                        console.log(`🔍 문제 ${index + 1} 보기 데이터:`, {
+                            id: q.id,
+                            type: q.type,
+                            choices: q.choices,
+                            choicesType: typeof q.choices,
+                            isArray: Array.isArray(q.choices),
+                            firstChoice: q.choices[0],
+                            firstChoiceType: typeof q.choices[0]
+                        });
+                    }
+                });
 
                 // 2단계: 카테고리 정보 로드
                 const { data: categories, error: categoriesError } = await window.supabaseClient
@@ -6069,7 +6441,11 @@
 
                     questionDetails.push({
                         id: question.id,
-                        title: question.content.substring(0, 50) + (question.content.length > 50 ? '...' : ''),
+                        content: question.content || question.title || '내용 없음',
+                        title: question.content ? (question.content.substring(0, 50) + (question.content.length > 50 ? '...' : '')) : (question.title || '제목 없음'),
+                        type: question.type,
+                        choices: question.choices,
+                        correct_answer_indices: question.correct_answer_indices,
                         category: categoryName,
                         difficulty: difficulty,
                         accuracy: accuracy,
@@ -6089,6 +6465,8 @@
 
                 // 전역 변수에 데이터 저장 (필터링용)
                 allQuestionsData = [...questionDetails];
+
+                console.log('📋 문제 상세 통계 데이터:', questionDetails);
 
                 // 테이블 데이터 업데이트
                 updateQuestionsStatsTable(questionDetails);
@@ -6602,10 +6980,19 @@
             if (!tbody) return;
 
             tbody.innerHTML = data.map(question => `
-                <tr>
-                    <td>${question.id}</td>
-                    <td>${question.title}</td>
-                    <td>${question.category}</td>
+                <tr class="question-row" onclick="showQuestionDetailModal('${question.id}')" style="cursor: pointer;">
+                    <td>
+                        <div class="question-content">
+                            <div class="question-text">${question.content || question.title || '내용 없음'}</div>
+                            <div class="question-id">ID: ${question.id.substring(0, 8)}...</div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="question-options">
+                            ${formatQuestionOptions(question)}
+                        </div>
+                    </td>
+                    <td>${question.category || '-'}</td>
                     <td>
                         <span class="difficulty-badge difficulty-${question.difficulty}">
                             ${getDifficultyText(question.difficulty)}
@@ -6679,6 +7066,46 @@
                 'super_admin': '최고 관리자'
             };
             return roleMap[role] || role;
+        }
+
+        // 문제 보기 포맷팅 함수
+        function formatQuestionOptions(question) {
+            if (!question) return '-';
+            
+            console.log('🔍 문제 보기 데이터:', question);
+            
+            // 객관식 문제인 경우
+            if (question.choices && Array.isArray(question.choices)) {
+                console.log('🔍 객관식 보기:', question.choices);
+                return question.choices.map((choice, index) => {
+                    // choice가 객체인지 문자열인지 확인
+                    let choiceText = choice;
+                    if (typeof choice === 'object' && choice !== null) {
+                        // 객체인 경우 content 또는 text 속성 사용
+                        choiceText = choice.content || choice.text || choice.value || JSON.stringify(choice);
+                    }
+                    
+                    const isCorrect = question.correct_answer_indices && 
+                                    question.correct_answer_indices.includes(index);
+                    
+                    return `<div class="option ${isCorrect ? 'correct' : ''}">
+                        ${String.fromCharCode(65 + index)}. ${choiceText}
+                        ${isCorrect ? ' <i class="fas fa-check correct-icon"></i>' : ''}
+                    </div>`;
+                }).join('');
+            }
+            
+            // 주관식 문제인 경우
+            if (question.type === 'subjective') {
+                return '<div class="subjective-option">주관식 문제</div>';
+            }
+            
+            // 그룹형 문제인 경우
+            if (question.type === 'group') {
+                return '<div class="group-option">그룹형 문제</div>';
+            }
+            
+            return '-';
         }
 
         function updateCategoryFilterOptions(categories) {
