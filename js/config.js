@@ -6,6 +6,70 @@ const SUPABASE_CONFIG = {
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNrcHZ0cW9oeXNwZnNtdndyZ29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNzU4ODUsImV4cCI6MjA3MTc1MTg4NX0.tMW3hiZR5JcXlbES2tKl1ZNOVRtYqGO04m-YSbqKUhY'
 };
 
+// GPT API 설정
+const GPT_CONFIG = {
+    // OpenAI API 키 설정 방법:
+    // 1. 직접 설정: apiKey: 'sk-...' (보안상 권장하지 않음)
+    // 2. 환경변수: process.env.OPENAI_API_KEY
+    // 3. 로컬스토리지: localStorage.getItem('openai_api_key')
+    // 4. 사용자 입력: prompt로 입력받기
+    
+    // 현재 설정 방법 (우선순위 순서)
+    get apiKey() {
+        // 1. 로컬스토리지에서 먼저 확인
+        const storedKey = localStorage.getItem('openai_api_key');
+        if (storedKey) return storedKey;
+        
+        // 2. 환경변수 확인
+        if (typeof process !== 'undefined' && process.env && process.env.OPENAI_API_KEY) {
+            return process.env.OPENAI_API_KEY;
+        }
+        
+        // 3. 기본값 (사용자가 설정해야 함)
+        return null;
+    },
+    
+    model: 'gpt-4o-mini', // 또는 'gpt-3.5-turbo'
+    maxTokens: 1000,
+    temperature: 0.3, // 일관된 채점을 위해 낮은 값 사용
+    
+    // 채점 프롬프트 설정
+    gradingPrompt: {
+        system: `당신은 우리 세무법인청년들의 교육담당입니다. 
+        이들이 준 답변은 우선 성의를 보여야 하며 기본 철학에 맞아야 합니다. 
+        그리고 모범답안에서 제시하는 단어나 개념과 일치도가 중요합니다. 
+        추가로 성의가 있고 그들이 어느정도 모범답안에 일치하는 개념을 일치하는 생각을 가지고 있으면 좋은 점수를 주시기 바랍니다.
+        
+        평가 기준:
+        1. 모범답안의 핵심 내용 포함 여부 (만점: 40점)
+        2. 논리적 구조와 설명의 명확성 (만점: 30점)
+        3. 핵심 개념·용어의 정확성 [보조 지표] (만점: 10점)
+           - 전문 용어를 사용하지 않아도 감점하지 마세요
+           - 개념을 일상어로 정확히 설명하면 높은 점수 가능
+           - 용어 오용·오해 유발 시에만 감점, 정확한 사용은 가산점
+        4. 창의성과 추가 인사이트 (만점: 20점)
+        
+        평가 시 다음 형식으로 응답해주세요:
+        총점: [0-100]점
+        
+        평가 의견:
+        [일반 텍스트로 작성, 마크다운 형식 사용하지 않음]
+        
+        점수 세부 내역:
+        - 항목1 (핵심 내용 포함): [획득점수]/40점 (이유)
+        - 항목2 (논리적 구조): [획득점수]/30점 (이유)
+        - 항목3 (개념·용어 정확성, 보조지표): [획득점수]/10점 (이유)
+        - 항목4 (창의성): [획득점수]/20점 (이유)
+        총점: [합계]/100점`,
+        
+        user: `문제: {question}
+        모범답안: {modelAnswer}
+        학생 답안: {studentAnswer}
+        
+        위 기준에 따라 평가해주세요.`
+    }
+};
+
 // 시험 설정
 const EXAM_CONFIG = {
     AUTO_SAVE_INTERVAL: 30000, // 30초마다 자동저장

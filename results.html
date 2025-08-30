@@ -289,6 +289,260 @@
                 text-align: center;
             }
         }
+        
+        /* 상세 분석 모달 스타일 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 900px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        .modal-header {
+            padding: 25px 30px;
+            border-bottom: 2px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: 15px 15px 0 0;
+        }
+        
+        .modal-header h3 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: white;
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+        }
+        
+        .modal-close:hover {
+            opacity: 1;
+        }
+        
+        .modal-body {
+            padding: 30px;
+        }
+        
+        .modal-footer {
+            padding: 25px 30px;
+            border-top: 2px solid #e9ecef;
+            border-radius: 0 0 15px 15px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            background: #f8f9fa;
+        }
+        
+        /* 분석 요약 스타일 */
+        .analysis-summary {
+            margin-bottom: 40px;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .analysis-summary h4 {
+            margin: 0 0 20px 0;
+            color: var(--primary-color);
+            font-size: 1.3rem;
+        }
+        
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+        }
+        
+        .summary-stats .stat-item {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e9ecef;
+        }
+        
+        .summary-stats .stat-label {
+            display: block;
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        
+        .summary-stats .stat-value {
+            display: block;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+        
+        /* 문항별 분석 스타일 */
+        .questions-analysis h4 {
+            margin: 0 0 25px 0;
+            color: var(--dark-gray);
+            font-size: 1.3rem;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--primary-color);
+        }
+        
+        .question-analysis-item {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+        
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .question-header h5 {
+            margin: 0;
+            color: var(--primary-color);
+            font-size: 1.2rem;
+        }
+        
+        .question-meta {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .question-type {
+            background: var(--primary-color);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .question-score {
+            background: #28a745;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+        
+        .question-content,
+        .answer-content,
+        .model-answer {
+            margin-bottom: 20px;
+        }
+        
+        .question-content h6,
+        .answer-content h6,
+        .model-answer h6 {
+            margin: 0 0 10px 0;
+            color: var(--dark-gray);
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        
+        .answer-text,
+        .model-answer-text {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+        
+        /* AI 채점 피드백 스타일 */
+        .grading-feedback {
+            background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
+            border: 1px solid #bbdefb;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .grading-feedback h6 {
+            margin: 0 0 15px 0;
+            color: var(--primary-color);
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .feedback-content {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            border: 1px solid #e1f5fe;
+        }
+        
+        .feedback-score {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e1f5fe;
+        }
+        
+        .ai-badge {
+            background: #ff6b35;
+            color:  white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        
+        .feedback-text {
+            line-height: 1.6;
+            margin-bottom: 10px;
+            white-space: pre-wrap;
+        }
+        
+        .feedback-time {
+            color: #666;
+            font-style: italic;
+        }
+        
+        .answer-timing {
+            margin-top: 15px;
+            text-align: right;
+        }
     </style>
 </head>
 <body>
@@ -904,8 +1158,224 @@
         }
         */
 
-        function viewDetails() {
-            showAlert('상세 분석 페이지는 곧 구현될 예정입니다.', 'info');
+        async function viewDetails() {
+            try {
+                // URL에서 시험 ID 가져오기
+                const urlParams = new URLSearchParams(window.location.search);
+                const examId = urlParams.get('exam');
+                
+                if (!examId) {
+                    showAlert('시험 정보를 찾을 수 없습니다.', 'error');
+                    return;
+                }
+                
+                // 상세 분석 모달 표시
+                await showDetailedAnalysisModal(examId);
+                
+            } catch (error) {
+                console.error('상세 분석 표시 실패:', error);
+                showAlert('상세 분석을 불러오는데 실패했습니다.', 'error');
+            }
+        }
+        
+        // 상세 분석 모달 표시
+        async function showDetailedAnalysisModal(examId) {
+            try {
+                // 답안 상세 정보 가져오기
+                const { data: answers, error } = await window.supabaseClient
+                    .from('exam_answers')
+                    .select(`
+                        *,
+                        questions (
+                            id,
+                            title,
+                            content,
+                            type,
+                            model_answer
+                        ),
+                        exam_sessions (
+                            start_time,
+                            submit_time
+                        )
+                    `)
+                    .eq('exam_sessions.exam_id', examId)
+                    .eq('exam_sessions.user_id', window.semuApp.currentUser.id);
+                
+                if (error) throw error;
+                
+                if (!answers || answers.length === 0) {
+                    showAlert('답안 정보를 찾을 수 없습니다.', 'error');
+                    return;
+                }
+                
+                // 모달 HTML 생성
+                const modalHtml = `
+                    <div class="modal-overlay" id="detailed-analysis-modal">
+                        <div class="modal-content" style="max-width: 900px; max-height: 90vh;">
+                            <div class="modal-header">
+                                <h3><i class="fas fa-chart-line"></i> 시험 상세 분석</h3>
+                                <button class="modal-close" onclick="closeDetailedAnalysisModal()">&times;</button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="analysis-summary">
+                                    <h4>📊 전체 요약</h4>
+                                    <div class="summary-stats">
+                                        <div class="stat-item">
+                                            <span class="stat-label">총 문제 수</span>
+                                            <span class="stat-value">${answers.length}개</span>
+                                        </div>
+                                        <div class="stat-item">
+                                            <span class="stat-label">AI 채점 완료</span>
+                                            <span class="stat-value">${answers.filter(a => a.ai_graded).length}개</span>
+                                        </div>
+                                        <div class="stat-item">
+                                            <span class="stat-label">수동 채점 완료</span>
+                                            <span class="stat-value">${answers.filter(a => !a.ai_graded && a.points !== null).length}개</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="questions-analysis">
+                                    <h4>📝 문항별 상세 분석</h4>
+                                    ${answers.map((answer, index) => `
+                                        <div class="question-analysis-item">
+                                            <div class="question-header">
+                                                <h5>${index + 1}번 문제</h5>
+                                                <div class="question-meta">
+                                                    <span class="question-type">${getQuestionTypeDisplay(answer.questions?.type)}</span>
+                                                    <span class="question-score">${answer.points || 0}점</span>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="question-content">
+                                                <h6>문제 내용</h6>
+                                                <p>${answer.questions?.title || answer.questions?.content || '내용 없음'}</p>
+                                            </div>
+                                            
+                                            <div class="answer-content">
+                                                <h6>내 답안</h6>
+                                                <div class="answer-text">${answer.answer || '답안 없음'}</div>
+                                            </div>
+                                            
+                                            ${answer.questions?.model_answer ? `
+                                                <div class="model-answer">
+                                                    <h6>모범답안</h6>
+                                                    <div class="model-answer-text">${answer.questions.model_answer}</div>
+                                                </div>
+                                            ` : ''}
+                                            
+                                            ${answer.feedback ? `
+                                                <div class="grading-feedback">
+                                                    <h6>${answer.ai_graded ? '🤖 AI 채점 피드백' : '👨‍🏫 교수자 피드백'}</h6>
+                                                    <div class="feedback-content">
+                                                        <div class="feedback-score">
+                                                            <strong>점수: ${answer.points || 0}점</strong>
+                                                            ${answer.ai_graded ? '<span class="ai-badge">AI 채점</span>' : ''}
+                                                        </div>
+                                                        <div class="feedback-text">${answer.feedback}</div>
+                                                        ${answer.ai_graded && answer.ai_graded_at ? `
+                                                            <small class="feedback-time">AI 채점 시간: ${new Date(answer.ai_graded_at).toLocaleString('ko-KR')}</small>
+                                                        ` : ''}
+                                                    </div>
+                                                </div>
+                                            ` : ''}
+                                            
+                                            ${answer.exam_sessions ? `
+                                                <div class="answer-timing">
+                                                    <small class="text-muted">
+                                                        소요시간: ${calculateTimeSpent(answer.exam_sessions.start_time, answer.exam_sessions.submit_time)}
+                                                    </small>
+                                                </div>
+                                            ` : ''}
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button class="btn btn-secondary" onclick="closeDetailedAnalysisModal()">닫기</button>
+                                <button class="btn btn-primary" onclick="exportAnalysisReport()">
+                                    <i class="fas fa-download"></i> 분석 리포트 다운로드
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // 기존 모달 제거 후 새 모달 추가
+                const existingModal = document.getElementById('detailed-analysis-modal');
+                if (existingModal) {
+                    existingModal.remove();
+                }
+                
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+                
+                // 모달 표시
+                const modal = document.getElementById('detailed-analysis-modal');
+                modal.style.display = 'flex';
+                
+            } catch (error) {
+                console.error('상세 분석 모달 생성 실패:', error);
+                showAlert('상세 분석을 불러오는데 실패했습니다.', 'error');
+            }
+        }
+        
+        // 상세 분석 모달 닫기
+        function closeDetailedAnalysisModal() {
+            const modal = document.getElementById('detailed-analysis-modal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+        
+        // 분석 리포트 다운로드
+        function exportAnalysisReport() {
+            // 간단한 텍스트 리포트 생성
+            const urlParams = new URLSearchParams(window.location.search);
+            const examId = urlParams.get('exam');
+            const score = window.resultsPage?.score || 0;
+            const totalQuestions = window.resultsPage?.totalQuestions || 0;
+            
+            let report = `시험 결과 분석 리포트\n`;
+            report += `========================\n\n`;
+            report += `시험 ID: ${examId}\n`;
+            report += `총점: ${score}/${totalQuestions} (${Math.round((score/totalQuestions)*100)}%)\n`;
+            report += `생성일: ${new Date().toLocaleString('ko-KR')}\n\n`;
+            
+            // 다운로드
+            const blob = new Blob([report], { type: 'text/plain;charset=utf-8' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `시험결과_분석_${examId}_${new Date().toISOString().split('T')[0]}.txt`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+        
+        // 문제 유형 표시
+        function getQuestionTypeDisplay(type) {
+            const typeMap = {
+                'multiple_choice': '객관식',
+                'subjective': '주관식',
+                'essay': '서술형'
+            };
+            return typeMap[type] || type || '기타';
+        }
+        
+        // 소요 시간 계산
+        function calculateTimeSpent(startTime, submitTime) {
+            if (!startTime || !submitTime) return '알 수 없음';
+            
+            const start = new Date(startTime);
+            const submit = new Date(submitTime);
+            const diffMs = submit - start;
+            const diffMins = Math.floor(diffMs / 60000);
+            
+            if (diffMins < 1) return '1분 미만';
+            if (diffMins < 60) return `${diffMins}분`;
+            
+            const hours = Math.floor(diffMins / 60);
+            const mins = diffMins % 60;
+            return `${hours}시간 ${mins}분`;
         }
     </script>
 </body>

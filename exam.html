@@ -10,16 +10,31 @@
         .exam-container {
             display: flex;
             flex-direction: column;
-            min-height: 600px;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
         }
 
         .exam-header {
-            background: var(--primary-color);
+            background: linear-gradient(135deg, var(--primary-color) 0%, #0056b3 100%);
             color: white;
-            padding: 20px 30px;
+            padding: 25px 35px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .exam-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="50" cy="10" r="0.5" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            opacity: 0.3;
         }
 
         .exam-info h2 {
@@ -98,7 +113,100 @@
         .exam-completion p {
             color: var(--medium-gray);
             font-size: 1.1rem;
-            margin-bottom: 30px;
+        }
+
+        /* 주관식 답안 입력 스타일 */
+        .subjective-answer-container {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 20px 0;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        .subjective-answer-container:hover {
+            border-color: var(--primary-color);
+            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.1);
+        }
+
+        .answer-label {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--dark-gray);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .answer-label::before {
+            content: "✍️";
+            font-size: 1.2rem;
+        }
+
+        .answer-textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 20px;
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            font-size: 1rem;
+            line-height: 1.6;
+            font-family: 'Noto Sans KR', sans-serif;
+            resize: vertical;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .answer-textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+            background: #f8f9ff;
+        }
+
+        .answer-textarea::placeholder {
+            color: #adb5bd;
+            font-style: italic;
+        }
+
+        .answer-info {
+            margin-top: 15px;
+            padding: 12px 16px;
+            background: rgba(0, 123, 255, 0.05);
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .answer-info small {
+            color: var(--primary-color);
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        /* 문제 표시 개선 */
+        .question-number {
+            color: var(--primary-color);
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            padding: 8px 16px;
+            background: rgba(0, 123, 255, 0.1);
+            border-radius: 8px;
+            display: inline-block;
+        }
+
+        .question-text {
+            font-size: 1.1rem;
+            line-height: 1.7;
+            color: var(--dark-gray);
+            margin-bottom: 25px;
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+            border-left: 4px solid var(--primary-color);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         }
 
         .completion-stats {
@@ -923,83 +1031,86 @@
                     questionId: question.id,
                     text: question.text,
                     options: question.options,
-                    correct: question.correct
+                    correct: question.correct,
+                    type: question.type
                 });
                 
                 // 문제 내용 표시
                 document.getElementById('questionNumber').textContent = `문제 ${index + 1}`;
                 document.getElementById('questionText').textContent = question.text;
                 
-                // 선택지 생성 (랜덤화 적용)
+                // 문제 유형에 따른 답안 입력 방식 결정
+                const questionType = question.type || 'subjective';
                 const optionsContainer = document.getElementById('questionOptions');
                 optionsContainer.innerHTML = '';
                 
-                // 랜덤화된 보기 정보 가져오기
-                let displayOptions = question.options;
-                let correctAnswerIndex = question.correct;
-                
-                if (this.sessionData && this.sessionData.question_randomization && 
-                    this.sessionData.question_randomization[question.id]) {
+                if (questionType === 'multiple_choice' || questionType === '객관식') {
+                    // 객관식 문제: 선택지 생성 (랜덤화 적용)
+                    let displayOptions = question.options;
+                    let correctAnswerIndex = question.correct;
                     
-                    const randomization = this.sessionData.question_randomization[question.id];
-                    console.log('🔀 랜덤화 정보 적용:', question.id, randomization);
-                    
-                    if (randomization.isRandomized && randomization.randomizedChoices) {
-                        // 랜덤화된 보기 사용
-                        displayOptions = randomization.randomizedChoices;
-                        // 새로운 정답 인덱스 사용
-                        correctAnswerIndex = randomization.newCorrectIndices[0] || 0;
-                        console.log('✅ 랜덤화된 보기 적용:', {
-                            original: question.options,
-                            randomized: displayOptions,
-                            originalCorrect: question.correct,
-                            newCorrect: correctAnswerIndex
-                        });
+                    if (this.sessionData && this.sessionData.question_randomization && 
+                        this.sessionData.question_randomization[question.id]) {
                         
-                        // 보기 데이터 구조 상세 분석
-                        console.log('🔍 랜덤화된 보기 상세 구조:', displayOptions.map((opt, idx) => ({
-                            index: idx,
-                            type: typeof opt,
-                            value: opt,
-                            content: opt?.content,
-                            text: opt?.text
-                        })));
+                        const randomization = this.sessionData.question_randomization[question.id];
+                        console.log('🔀 랜덤화 정보 적용:', question.id, randomization);
                         
-                        // 정답 인덱스 매핑 정보
-                        console.log('🎯 정답 인덱스 매핑:', {
-                            originalCorrect: question.correct,
-                            newCorrect: correctAnswerIndex,
-                            originalToNewMapping: randomization.originalToNewMapping,
-                            newToOriginalMapping: randomization.originalToNewMapping.map((_, idx) => 
-                                randomization.originalToNewMapping.indexOf(idx)
-                            )
-                        });
-                    }
-                }
-                
-                // 선택지 생성
-                displayOptions.forEach((option, optionIndex) => {
-                    const optionDiv = document.createElement('div');
-                    optionDiv.className = 'option';
-                    optionDiv.onclick = () => this.selectAnswer(optionIndex);
-                    
-                    if (this.answers[index] === optionIndex) {
-                        optionDiv.classList.add('selected');
+                        if (randomization.isRandomized && randomization.randomizedChoices) {
+                            displayOptions = randomization.randomizedChoices;
+                            correctAnswerIndex = randomization.newCorrectIndices[0] || 0;
+                        }
                     }
                     
-                    // 보기 텍스트 추출 (객체인 경우 content 속성 사용)
-                    let optionText = option;
-                    if (typeof option === 'object' && option !== null) {
-                        optionText = option.content || option.text || option.value || JSON.stringify(option);
-                    }
-                    
-                    optionDiv.innerHTML = `
-                        <div class="option-radio"></div>
-                        <div class="option-text">${String.fromCharCode(65 + optionIndex)}. ${optionText}</div>
+                    // 선택지 생성
+                    displayOptions.forEach((option, optionIndex) => {
+                        const optionDiv = document.createElement('div');
+                        optionDiv.className = 'option';
+                        optionDiv.onclick = () => this.selectAnswer(optionIndex);
+                        
+                        if (this.answers[index] === optionIndex) {
+                            optionDiv.classList.add('selected');
+                        }
+                        
+                        let optionText = option;
+                        if (typeof option === 'object' && option !== null) {
+                            optionText = option.content || option.text || option.value || JSON.stringify(option);
+                        }
+                        
+                        optionDiv.innerHTML = `
+                            <div class="option-radio"></div>
+                            <div class="option-text">${String.fromCharCode(65 + optionIndex)}. ${optionText}</div>
+                        `;
+                        
+                        optionsContainer.appendChild(optionDiv);
+                    });
+                } else {
+                    // 주관식 문제: 답안 입력 필드 생성
+                    const answerInput = document.createElement('div');
+                    answerInput.className = 'subjective-answer-container';
+                    answerInput.innerHTML = `
+                        <div class="answer-label">답안을 입력하세요:</div>
+                        <textarea 
+                            id="subjectiveAnswer" 
+                            class="answer-textarea" 
+                            placeholder="답안을 자유롭게 작성해주세요..."
+                            rows="8"
+                        >${this.answers[index] || ''}</textarea>
+                        <div class="answer-info">
+                            <small>자동 저장됩니다. 답안 작성 후 다른 문제로 이동하거나 시험을 제출할 수 있습니다.</small>
+                        </div>
                     `;
                     
-                    optionsContainer.appendChild(optionDiv);
-                });
+                    optionsContainer.appendChild(answerInput);
+                    
+                    // 답안 입력 이벤트 리스너 추가
+                    const textarea = answerInput.querySelector('#subjectiveAnswer');
+                    const self = this; // this 컨텍스트 보존
+                    textarea.addEventListener('input', (e) => {
+                        self.answers[index] = e.target.value;
+                        // 답안을 localStorage에 저장
+                        self.saveAnswerToLocalStorage();
+                    });
+                }
                 
                 // 네비게이션 버튼 업데이트
                 this.updateNavigation();
@@ -1009,6 +1120,17 @@
                 
                 // 표시 버튼 상태 업데이트
                 this.updateFlagButton();
+            }
+
+            // 답안을 localStorage에 저장하는 함수
+            saveAnswerToLocalStorage() {
+                try {
+                    // 현재 답안들을 localStorage에 저장
+                    localStorage.setItem('exam_answers', JSON.stringify(this.answers));
+                    console.log('✅ 답안이 localStorage에 저장되었습니다.');
+                } catch (error) {
+                    console.error('❌ 답안 저장 실패:', error);
+                }
             }
 
             selectAnswer(optionIndex) {
