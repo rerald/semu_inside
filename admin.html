@@ -1549,6 +1549,318 @@
             animation: fadeIn 0.3s ease-in;
         }
         
+        /* 답안 표시 스타일 */
+        .answer-content {
+            margin-bottom: 20px;
+        }
+        
+        .answer-content .form-label {
+            color: #495057;
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: block;
+        }
+        
+        .answer-content textarea[readonly] {
+            background-color: #f8f9fa;
+            border: 2px solid #e9ecef;
+            color: #495057;
+            font-weight: 500;
+        }
+        
+        .feedback-input .form-label {
+            color: #6c757d;
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: block;
+        }
+        
+        .feedback-input textarea {
+            border: 2px solid #dee2e6;
+            background-color: #ffffff;
+            width: 100%; /* 제출답안과 동일한 너비 */
+            resize: vertical; /* 세로 크기만 조절 가능 */
+        }
+        
+        /* 제출답안과 평가 의견의 크기 통일 */
+        .answer-content textarea,
+        .feedback-input textarea {
+            min-height: 120px; /* 최소 높이 설정 */
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        /* 평가 의견 섹션 스타일 */
+        .feedback-section {
+            margin-top: 20px;
+            width: 100%;
+        }
+        
+        .feedback-input {
+            width: 100%;
+        }
+        
+        /* 채점 섹션과 평가 의견 섹션 분리 */
+        .grading-section {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        /* 채점 문제 목록 스타일 */
+        .grading-question-item {
+            background: #ffffff;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            width: 100%;
+            gap: 20px; /* 제목과 버튼 사이 간격 */
+        }
+        
+        .question-title {
+            flex: 1;
+            min-width: 0; /* flexbox에서 텍스트 오버플로우 방지 */
+            width: 100%;
+        }
+        
+        .question-title h5 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: #495057;
+            word-wrap: break-word;
+            line-height: 1.4;
+            width: 100%;
+            max-width: none;
+            word-break: break-all; /* 모든 단어에서 줄바꿈 허용 */
+            overflow-wrap: break-word;
+            white-space: normal;
+        }
+        
+        .question-meta {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        
+        .question-actions {
+            flex-shrink: 0;
+            margin-left: 15px;
+        }
+        
+        .question-preview {
+            margin-top: 15px;
+            width: 100%;
+        }
+        
+        .question-preview p {
+            margin: 0;
+            color: #6c757d;
+            font-size: 14px;
+            line-height: 1.6;
+            word-wrap: break-word;
+            white-space: normal; /* 줄바꿈을 자연스럽게 처리 */
+            width: 100%;
+            max-width: none; /* 최대 너비 제한 해제 */
+            overflow-wrap: break-word; /* 긴 단어 강제 줄바꿈 */
+            hyphens: auto; /* 하이픈 자동 추가 */
+        }
+        
+        /* 문제 내용이 전체 폭을 사용하도록 강제 */
+        .grading-questions-list {
+            width: 100%;
+        }
+        
+        .grading-questions-list .grading-question-item {
+            width: 100%;
+            max-width: none;
+        }
+        
+        /* 문제 미리보기 텍스트 강제 줄바꿈 */
+        .question-preview p {
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        /* 문제 내용이 전체 폭을 사용하도록 추가 강화 */
+        .question-preview {
+            display: block;
+            width: 100%;
+            max-width: none;
+            overflow: hidden;
+        }
+        
+        .question-preview p {
+            width: 100% !important;
+            max-width: none !important;
+            word-break: break-all; /* 모든 단어에서 줄바꿈 허용 */
+            overflow-wrap: break-word;
+            white-space: normal;
+            line-height: 1.5;
+            margin: 0;
+            padding: 0;
+        }
+        
+        /* 문제 제목도 전체 폭 사용 */
+        .question-title h5 {
+            width: 100% !important;
+            max-width: none !important;
+            word-break: break-all;
+            overflow-wrap: break-word;
+            display: block;
+            box-sizing: border-box;
+            padding: 0;
+            margin: 0 0 10px 0;
+        }
+        
+        /* 문제 제목 영역 강제 확장 */
+        .question-title {
+            flex: 1;
+            width: 100% !important;
+            max-width: none !important;
+            min-width: 0;
+            overflow: hidden;
+        }
+        
+        /* 문제 헤더 전체 폭 강제 */
+        .question-header {
+            width: 100% !important;
+            max-width: none !important;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 20px;
+            box-sizing: border-box;
+        }
+        
+        /* API 키 설정 토글 스타일 */
+        .api-key-setup-area.compact {
+            transition: all 0.3s ease;
+        }
+        
+        .api-key-toggle {
+            cursor: pointer;
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+        
+        .api-key-toggle:hover {
+            background: #e9ecef;
+            border-color: #dee2e6;
+        }
+        
+        .toggle-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .toggle-header i.fa-key {
+            color: #007bff;
+        }
+        
+        .toggle-icon {
+            margin-left: auto;
+            transition: transform 0.3s ease;
+            color: #6c757d;
+        }
+        
+        .toggle-status {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #6c757d;
+        }
+        
+        .api-key-form {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        /* 접힌 상태 스타일 */
+        .api-key-setup-area.collapsed .api-key-toggle {
+            background: #ffffff;
+            border-color: #dee2e6;
+        }
+        
+        /* 시험 정보 표시 스타일 */
+        .exam-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+        }
+        
+        .exam-info h6 {
+            margin: 0 0 15px 0;
+            color: #495057;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .exam-info h6 i {
+            color: #007bff;
+            margin-right: 8px;
+        }
+        
+        .exam-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .exam-item {
+            padding: 10px;
+            background: #ffffff;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+        }
+        
+        .exam-title {
+            margin-bottom: 8px;
+            color: #495057;
+            font-size: 14px;
+        }
+        
+        .exam-dates {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            font-size: 12px;
+            color: #6c757d;
+        }
+        
+        .exam-date {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .exam-date i {
+            font-size: 11px;
+            width: 12px;
+        }
+        
         .ai-grading-complete {
             display: flex;
             align-items: center;
@@ -1561,426 +1873,6 @@
         
         .ai-grading-complete .text-success {
             color: #28a745 !important;
-        }
-        
-        /* 채점보기 UI 개선 스타일 */
-        .answer-item {
-            border: 1px solid #e9ecef;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-            background: #fff;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .answer-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid #e9ecef;
-        }
-        
-        .user-info strong {
-            font-size: 16px;
-            color: #333;
-        }
-        
-        .user-info small {
-            color: #666;
-            margin-left: 10px;
-        }
-        
-        .answer-meta {
-            display: flex;
-            gap: 15px;
-            font-size: 14px;
-        }
-        
-        .time-spent, .current-score {
-            padding: 4px 8px;
-            background: #f8f9fa;
-            border-radius: 4px;
-            color: #495057;
-        }
-        
-        .answer-content {
-            margin-bottom: 20px;
-        }
-        
-        .answer-content h6 {
-            color: #495057;
-            margin-bottom: 10px;
-            font-weight: 600;
-        }
-        
-        .answer-text-display {
-            background: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 6px;
-            padding: 15px;
-            font-size: 14px;
-            line-height: 1.6;
-            color: #333;
-            white-space: pre-line;
-            min-height: 80px;
-            text-align: left;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-        }
-        
-        /* 원답안 텍스트 내 공백 제거 */
-        .answer-text-display::before,
-        .answer-text-display::after {
-            content: none;
-        }
-        
-        .grading-section {
-            margin-bottom: 20px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 6px;
-        }
-        
-        .manual-grading {
-            margin-top: 15px;
-        }
-        
-        .score-input {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .score-input label {
-            font-weight: 600;
-            color: #495057;
-            min-width: 60px;
-        }
-        
-        .score-input input {
-            width: 100px;
-        }
-        
-        .feedback-section {
-            border-top: 1px solid #e9ecef;
-            padding-top: 20px;
-        }
-        
-        .feedback-section h6 {
-            color: #495057;
-            margin-bottom: 15px;
-            font-weight: 600;
-        }
-        
-        .feedback-display {
-            margin-bottom: 20px;
-        }
-        
-        .feedback-content {
-            background: #e3f2fd;
-            border: 1px solid #bbdefb;
-            border-radius: 6px;
-            padding: 15px;
-            font-size: 14px;
-            line-height: 1.6;
-            color: #1565c0;
-            white-space: pre-line;
-            margin-bottom: 10px;
-            text-align: left;
-        }
-        
-        .feedback-meta {
-            text-align: right;
-            font-size: 12px;
-        }
-        
-        .no-feedback {
-            padding: 15px;
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 6px;
-            text-align: center;
-        }
-        
-        .feedback-edit label {
-            font-weight: 600;
-            color: #495057;
-            margin-bottom: 8px;
-            display: block;
-        }
-        
-        .feedback-edit textarea {
-            border: 1px solid #ced4da;
-            border-radius: 6px;
-        }
-        
-        .feedback-edit textarea:focus {
-            border-color: #007bff;
-            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-        }
-        
-        /* AI 채점 상세 결과 스타일 */
-        .ai-grading-detail {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border: 1px solid #dee2e6;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-            text-align: left;
-        }
-        
-        /* AI 채점 상세 결과 내부 여백 조정 */
-        .ai-grading-detail > * {
-            padding-left: 0 !important;
-            margin-left: 0 !important;
-        }
-        
-        .ai-grading-detail h6 {
-            color: #495057;
-            margin-bottom: 15px;
-            font-weight: 600;
-            border-bottom: 2px solid #007bff;
-            padding-bottom: 8px;
-        }
-        
-        .detailed-scores {
-            margin-bottom: 20px;
-            text-align: left;
-        }
-        
-        .scores-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-        
-        .score-item {
-            background: white;
-            border: 1px solid #dee2e6;
-            border-radius: 6px;
-            padding: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        
-        .score-label {
-            font-weight: 500;
-            color: #495057;
-            font-size: 14px;
-        }
-        
-        .score-value {
-            font-weight: 600;
-            color: #007bff;
-            font-size: 16px;
-        }
-        
-        .total-score {
-            text-align: center;
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white;
-            padding: 15px;
-            border-radius: 8px;
-            font-size: 18px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-        
-        .calculation-process, .grading-criteria {
-            background: white;
-            border: 1px solid #dee2e6;
-            border-radius: 6px;
-            padding: 15px;
-            margin-bottom: 15px;
-            text-align: left;
-        }
-        
-        /* AI 채점 상세 결과 내 모든 컨테이너 강제 좌측 정렬 */
-        .ai-grading-detail .detailed-scores,
-        .ai-grading-detail .calculation-process,
-        .ai-grading-detail .grading-criteria {
-            text-align: left !important;
-            padding-left: 15px !important;
-            padding-right: 15px !important;
-        }
-        
-        /* AI 채점 상세 결과 내 모든 텍스트 컨텐츠 강제 좌측 정렬 */
-        .ai-grading-detail .process-content,
-        .ai-grading-detail .criteria-content,
-        .ai-grading-detail .detailed-scores > div,
-        .ai-grading-detail .calculation-process > div,
-        .ai-grading-detail .grading-criteria > div {
-            text-align: left !important;
-            padding-left: 0 !important;
-            margin-left: 0 !important;
-            text-indent: 0 !important;
-        }
-        
-        .calculation-process h6, .grading-criteria h6 {
-            color: #495057;
-            margin-bottom: 10px;
-            font-weight: 600;
-            border-bottom: 1px solid #dee2e6;
-            padding-bottom: 5px;
-        }
-        
-        .process-content, .criteria-content {
-            font-size: 14px;
-            line-height: 1.6;
-            color: #495057;
-            white-space: pre-line;
-            text-align: left;
-            padding: 10px;
-        }
-        
-        .ai-grading-meta {
-            text-align: center;
-            padding: 10px;
-            background: rgba(0, 123, 255, 0.1);
-            border-radius: 6px;
-            border: 1px solid rgba(0, 123, 255, 0.2);
-        }
-        
-        /* 모든 텍스트 내용을 좌측 정렬 */
-        .ai-grading-detail .process-content,
-        .ai-grading-detail .criteria-content,
-        .ai-grading-detail .feedback-content,
-        .ai-grading-detail .detailed-scores,
-        .ai-grading-detail .calculation-process,
-        .ai-grading-detail .grading-criteria {
-            text-align: left !important;
-        }
-        
-        /* AI 채점 상세 결과 내 모든 텍스트 요소 강제 좌측 정렬 */
-        .ai-grading-detail * {
-            text-align: left !important;
-        }
-        
-        /* AI 채점 상세 결과 내 특정 요소들 추가 정렬 */
-        .ai-grading-detail h6,
-        .ai-grading-detail p,
-        .ai-grading-detail div,
-        .ai-grading-detail span,
-        .ai-grading-detail small {
-            text-align: left !important;
-            padding-left: 0 !important;
-            margin-left: 0 !important;
-        }
-        
-        /* AI 채점 메타데이터만 중앙 정렬 유지 */
-        .ai-grading-detail .ai-grading-meta {
-            text-align: center !important;
-        }
-        
-        .ai-grading-meta small {
-            color: #007bff;
-            font-weight: 500;
-        }
-        
-        /* 테이블 형태 답안 목록 스타일 */
-        .answers-table-container {
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-        
-        .table-controls {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 20px;
-            border-bottom: 1px solid #dee2e6;
-            background: #f8f9fa;
-        }
-        
-        .table-info .total-count {
-            font-weight: 600;
-            color: #495057;
-            font-size: 16px;
-        }
-        
-        .table-actions .btn {
-            margin-left: 10px;
-        }
-        
-        .answers-table {
-            margin-bottom: 0;
-        }
-        
-        .answers-table th {
-            border-top: none;
-            font-weight: 600;
-            color: #495057;
-            background: #343a40;
-            color: white;
-        }
-        
-        .answer-row:hover {
-            background-color: #f8f9fa;
-        }
-        
-        .student-info strong {
-            color: #495057;
-            font-size: 14px;
-        }
-        
-        .question-info strong {
-            color: #495057;
-            font-size: 14px;
-        }
-        
-        .answer-preview {
-            color: #6c757d;
-            font-size: 13px;
-            line-height: 1.4;
-            cursor: help;
-        }
-        
-        .score-display {
-            font-size: 16px;
-            font-weight: 600;
-        }
-        
-        .score-display.text-success {
-            color: #28a745 !important;
-        }
-        
-        .score-display.text-warning {
-            color: #ffc107 !important;
-        }
-        
-        .score-display.text-danger {
-            color: #dc3545 !important;
-        }
-        
-        .action-buttons {
-            display: flex;
-            gap: 5px;
-        }
-        
-        .action-buttons .btn {
-            padding: 4px 8px;
-            font-size: 12px;
-        }
-        
-        .badge {
-            font-size: 11px;
-            padding: 4px 8px;
-        }
-        
-        .badge-success {
-            background-color: #28a745;
-            color: white;
-        }
-        
-        .badge-warning {
-            background-color: #ffc107;
-            color: #212529;
         }
         
         @keyframes fadeIn {
@@ -3373,6 +3265,10 @@
                 
                 // 인증 상태 확인
                 await checkAuthAndPermissions();
+                
+                // 데이터베이스 상태 점검
+                console.log('🏥 데이터베이스 상태 점검 시작...');
+                await performDatabaseHealthCheck();
                 
                 // UI 초기화
                 initializeAdminUI();
@@ -7114,13 +7010,19 @@
                     <p>주관식 문항의 AI 자동 채점 및 수동 채점 수정을 진행합니다.</p>
                 </div>
                 <div class="admin-content-body" id="grading-content">
-                    <!-- API 키 설정 영역 -->
-                    <div id="api-key-setup-area" class="page-form-container" style="margin-bottom: 20px;">
-                        <div class="page-form-header">
-                            <h3><i class="fas fa-key"></i> GPT API 설정</h3>
-                            <p>AI 자동 채점을 위해 OpenAI API 키를 설정해주세요.</p>
+                    <!-- API 키 설정 영역 (토글 기능) -->
+                    <div id="api-key-setup-area" class="page-form-container compact" style="margin-bottom: 20px;">
+                        <div class="api-key-toggle" onclick="toggleApiKeySetup()">
+                            <div class="toggle-header">
+                                <i class="fas fa-key"></i>
+                                <span>GPT API 설정</span>
+                                <i class="fas fa-chevron-down toggle-icon" id="api-toggle-icon"></i>
+                            </div>
+                            <div class="toggle-status" id="api-toggle-status">
+                                <!-- API 키 상태가 여기에 표시됩니다 -->
+                            </div>
                         </div>
-                        <div class="api-key-form">
+                        <div class="api-key-form" id="api-key-form" style="display: none;">
                             <div class="form-group">
                                 <label for="openai-api-key">OpenAI API 키</label>
                                 <div class="input-group">
@@ -7206,39 +7108,8 @@
                     </div>
                     
                     <div id="grading-questions-list" style="display: none;">
-                        <!-- 테이블 형태 답안 목록 -->
-                        <div class="answers-table-container">
-                            <div class="table-controls">
-                                <div class="table-info">
-                                    <span class="total-count">총 0개 답안</span>
-                                </div>
-                                <div class="table-actions">
-                                    <button class="btn btn-outline-secondary btn-sm" onclick="refreshAnswersTable()">
-                                        <i class="fas fa-sync-alt"></i> 새로고침
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <div class="table-responsive">
-                                <table class="table table-hover answers-table">
-                                    <thead class="table-dark">
-                                        <tr>
-                                            <th scope="col" style="width: 15%;">학생 정보</th>
-                                            <th scope="col" style="width: 25%;">문제</th>
-                                            <th scope="col" style="width: 20%;">답안 미리보기</th>
-                                            <th scope="col" style="width: 10%;">점수</th>
-                                            <th scope="col" style="width: 10%;">상태</th>
-                                            <th scope="col" style="width: 10%;">소요시간</th>
-                                            <th scope="col" style="width: 10%;">작업</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="answers-table-body">
-                                        <!-- 답안 행들이 여기에 동적으로 추가됩니다 -->
-                                    </tbody>
-                                </table>
-                            </div>
+                        <!-- 문제별 채점 목록이 여기에 표시됩니다 -->
                         </div>
-                    </div>
                     </div>
                 </div>
             `;
@@ -7286,44 +7157,49 @@
                     return;
                 }
                 
-                // 각 문제별로 답안 데이터 조회
+                // 각 문제별로 답안 데이터와 시험 정보 조회
                 const questionsWithAnswers = [];
                 for (const question of questions) {
                     try {
-                        console.log(`🔍 문제 ${question.id} 답안 조회 중...`);
+                        console.log(`🔍 문제 ${question.id} 답안 및 시험 정보 조회 중...`);
                         
-                    // 1단계: exam_answers에서 답안 데이터 조회
-                    const { data: answers, error: answersError } = await window.supabaseClient
-                        .from('exam_answers')
-                        .select('*')
-                        .eq('question_id', question.id)
-                        .not('answer', 'is', null);
-                    
-                    if (answersError) {
+                        // 1단계: exam_answers에서 답안 데이터 조회
+                        const { data: answers, error: answersError } = await window.supabaseClient
+                            .from('exam_answers')
+                            .select('*')
+                            .eq('question_id', question.id)
+                            .not('answer', 'is', null);
+                        
+                        if (answersError) {
                             console.error(`문제 ${question.id} 답안 조회 오류:`, answersError);
-                        continue;
-                    }
-                    
-                    if (answers && answers.length > 0) {
+                            continue;
+                        }
+                        
+                        if (answers && answers.length > 0) {
                             console.log(`📝 문제 ${question.id}에 ${answers.length}개 답안 발견`);
                             
-                        // 2단계: 각 답안에 대한 추가 정보 조회
-                        const answersWithDetails = [];
-                        for (const answer of answers) {
-                            try {
+                            // 2단계: 각 답안에 대한 추가 정보 조회
+                            const answersWithDetails = [];
+                            const examIds = new Set();
+                            
+                            for (const answer of answers) {
+                                try {
                                     // exam_sessions 정보 조회 (session_id가 있는 경우만)
                                     let sessionData = null;
                                     if (answer.session_id) {
                                         const { data: session, error: sessionError } = await window.supabaseClient
-                                    .from('exam_sessions')
-                                    .select('exam_id, employee_id, start_time, submit_time')
-                                    .eq('id', answer.session_id)
-                                    .single();
-                                
-                                if (sessionError) {
-                                    console.warn('세션 정보 조회 실패:', sessionError);
+                                            .from('exam_sessions')
+                                            .select('exam_id, employee_id, start_time, submit_time')
+                                            .eq('id', answer.session_id)
+                                            .single();
+                                        
+                                        if (sessionError) {
+                                            console.warn('세션 정보 조회 실패:', sessionError);
                                         } else {
                                             sessionData = session;
+                                            if (session.exam_id) {
+                                                examIds.add(session.exam_id);
+                                            }
                                         }
                                     }
                                     
@@ -7331,36 +7207,57 @@
                                     let profileData = null;
                                     if (sessionData?.employee_id) {
                                         const { data: profile, error: profileError } = await window.supabaseClient
-                                    .from('profiles')
-                                    .select('email, name')
-                                    .eq('id', sessionData.employee_id)
-                                    .single();
-                                
-                                if (profileError) {
-                                    console.warn('프로필 정보 조회 실패:', profileError);
+                                            .from('profiles')
+                                            .select('email, name')
+                                            .eq('id', sessionData.employee_id)
+                                            .single();
+                                        
+                                        if (profileError) {
+                                            console.warn('프로필 정보 조회 실패:', profileError);
                                         } else {
                                             profileData = profile;
                                         }
+                                    }
+                                    
+                                    // 통합된 답안 데이터 생성
+                                    answersWithDetails.push({
+                                        ...answer,
+                                        exam_session: sessionData,
+                                        profile: profileData || {}
+                                    });
+                                    
+                                } catch (error) {
+                                    console.warn('답안 상세 정보 조회 실패:', error);
+                                    answersWithDetails.push(answer);
                                 }
-                                
-                                // 통합된 답안 데이터 생성
-                                answersWithDetails.push({
-                                    ...answer,
-                                    exam_session: sessionData,
-                                    profile: profileData || {}
-                                });
-                                
-                            } catch (error) {
-                                console.warn('답안 상세 정보 조회 실패:', error);
-                                answersWithDetails.push(answer);
                             }
-                        }
-                        
-                        questionsWithAnswers.push({
-                            question: question,
-                            answers: answersWithDetails,
-                            examCount: new Set(answersWithDetails.map(a => a.exam_session?.exam_id).filter(Boolean)).size
-                        });
+                            
+                            // 3단계: 시험 정보 조회
+                            const examDetails = [];
+                            for (const examId of examIds) {
+                                try {
+                                    const { data: exam, error: examError } = await window.supabaseClient
+                                        .from('exams')
+                                        .select('title, created_at, start_time, end_time')
+                                        .eq('id', examId)
+                                        .single();
+                                    
+                                    if (examError) {
+                                        console.warn(`시험 ${examId} 정보 조회 실패:`, examError);
+                                    } else {
+                                        examDetails.push(exam);
+                                    }
+                                } catch (error) {
+                                    console.warn(`시험 ${examId} 정보 조회 실패:`, error);
+                                }
+                            }
+                            
+                            questionsWithAnswers.push({
+                                question: question,
+                                answers: answersWithDetails,
+                                examCount: examIds.size,
+                                examDetails: examDetails
+                            });
                         }
                     } catch (error) {
                         console.error(`문제 ${question.id} 처리 중 오류:`, error);
@@ -7446,11 +7343,9 @@
             }
         }
 
-        // 테이블 형태로 답안 목록 표시
+        // 채점 문제 목록 표시
         function displayGradingQuestions(questionsWithAnswers) {
             const container = document.getElementById('grading-questions-list');
-            const tableBody = document.getElementById('answers-table-body');
-            const totalCountEl = document.querySelector('.total-count');
             
             if (questionsWithAnswers.length === 0) {
                 container.innerHTML = `
@@ -7462,87 +7357,62 @@
                 return;
             }
             
-            // 모든 답안을 하나의 배열로 통합
-            const allAnswers = [];
-            questionsWithAnswers.forEach(qwa => {
-                qwa.answers.forEach(answer => {
-                    allAnswers.push({
-                        ...answer,
-                        question: qwa.question,
-                        examCount: qwa.examCount
-                    });
-                });
-            });
-            
-            // 총 답안 수 업데이트
-            if (totalCountEl) {
-                totalCountEl.textContent = `총 ${allAnswers.length}개 답안`;
-            }
-            
-            // 테이블 행 생성
-            const tableRows = allAnswers.map(answer => `
-                <tr class="answer-row" data-answer-id="${answer.id}" data-question-id="${answer.question.id}">
-                    <td>
-                        <div class="student-info">
-                            <strong>${answer.profiles?.name || answer.user_name || '이름 없음'}</strong>
-                            <br><small class="text-muted">${answer.profiles?.email || answer.user_email || '이메일 없음'}</small>
+            const html = questionsWithAnswers.map(qwa => `
+                <div class="grading-question-item" data-question-id="${qwa.question.id}">
+                    <div class="question-header">
+                        <div class="question-title">
+                            <h5>${qwa.question.title || '제목 없음'}</h5>
                         </div>
-                    </td>
-                    <td>
-                        <div class="question-info">
-                            <strong>${answer.question.title || answer.question.content || '제목 없음'}</strong>
-                            <br><small class="text-muted">${answer.exam_name || '시험명 없음'}</small>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="answer-preview" title="${answer.answer || '답안이 없습니다.'}">
-                            ${(answer.answer || '답안이 없습니다.').substring(0, 50)}${(answer.answer || '').length > 50 ? '...' : ''}
-                        </div>
-                    </td>
-                    <td>
-                        <span class="score-display ${answer.points >= 80 ? 'text-success' : answer.points >= 60 ? 'text-warning' : 'text-danger'}">
-                            <strong>${answer.points || 0}점</strong>
-                        </span>
-                    </td>
-                    <td>
-                        ${answer.ai_graded ? 
-                            '<span class="badge badge-success">AI채점완료</span>' : 
-                            '<span class="badge badge-warning">대기중</span>'
-                        }
-                    </td>
-                    <td>
-                        <small class="text-muted">${answer.time_spent || 'N/A'}</small>
-                    </td>
-                    <td>
-                        <div class="action-buttons">
-                            <button class="btn btn-outline-info btn-sm" onclick="showGradingDetail('${answer.question.id}', '${answer.id}')" title="상세보기">
-                                <i class="fas fa-eye"></i>
+                        <div class="question-actions">
+                            <button class="btn btn-sm btn-primary" onclick="viewQuestionGrading('${qwa.question.id}')">
+                                <i class="fas fa-eye"></i> 채점 보기
                             </button>
-                            ${!answer.ai_graded ? `
-                                <button class="btn btn-primary btn-sm" onclick="startAIGradingForAnswer('${answer.id}')" title="AI채점">
-                                    <i class="fas fa-robot"></i>
-                                </button>
-                            ` : ''}
                         </div>
-                    </td>
-                </tr>
+                    </div>
+                    <div class="question-preview">
+                        <p>${qwa.question.content || qwa.question.text || '내용 없음'}</p>
+                    </div>
+                    <div class="question-meta">
+                        <span class="badge badge-primary">주관식</span>
+                        <span class="badge badge-secondary">${qwa.examCount}개 시험</span>
+                        <span class="badge badge-info">${qwa.answers.length}개 답안</span>
+                    </div>
+                    ${qwa.examDetails && qwa.examDetails.length > 0 ? `
+                        <div class="exam-info">
+                            <h6><i class="fas fa-file-alt"></i> 출제된 시험 정보</h6>
+                            <div class="exam-list">
+                                ${qwa.examDetails.map(exam => `
+                                    <div class="exam-item">
+                                        <div class="exam-title">
+                                            <strong>${exam.title || '제목 없음'}</strong>
+                                        </div>
+                                        <div class="exam-dates">
+                                            <span class="exam-date">
+                                                <i class="fas fa-calendar-plus"></i> 
+                                                생성일: ${formatDate(exam.created_at)}
+                                            </span>
+                                            ${exam.start_time ? `
+                                                <span class="exam-date">
+                                                    <i class="fas fa-play"></i> 
+                                                    시작일: ${formatDate(exam.start_time)}
+                                                </span>
+                                            ` : ''}
+                                            ${exam.end_time ? `
+                                                <span class="exam-date">
+                                                    <i class="fas fa-stop"></i> 
+                                                    종료일: ${formatDate(exam.end_time)}
+                                                </span>
+                                            ` : ''}
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
             `).join('');
             
-            // 테이블 본문 업데이트
-            if (tableBody) {
-                tableBody.innerHTML = tableRows;
-            }
-        }
-
-        // 테이블 새로고침
-        async function refreshAnswersTable() {
-            try {
-                console.log('🔄 답안 테이블 새로고침 중...');
-                await loadGradingQuestions();
-                console.log('✅ 답안 테이블 새로고침 완료');
-            } catch (error) {
-                console.error('❌ 답안 테이블 새로고침 실패:', error);
-            }
+            container.innerHTML = html;
         }
 
         // 문제별 채점 상세 보기
@@ -7661,137 +7531,44 @@
                                                     </span>
                                                 </div>
                                             </div>
-                                            
-                                            <!-- 원답안 표시 -->
                                             <div class="answer-content">
-                                                <h6><i class="fas fa-pen"></i> 원답안</h6>
-                                                <div class="answer-text-display">
-                                                    ${(answer.answer || '답안이 없습니다.').trim()}
-                                                </div>
+                                                <label class="form-label"><strong>제출답안:</strong></label>
+                                                <textarea class="form-control" rows="4" readonly>${answer.answer}</textarea>
                                             </div>
-                                            
-                                            <!-- AI 채점 상태 -->
-                                            <div class="grading-section">
-                                                <div class="ai-grading" id="ai-grading-${answer.id}">
-                                                    ${answer.ai_graded ? `
-                                                        <div class="ai-grading-complete">
-                                                            <i class="fas fa-check-circle text-success"></i>
-                                                            <small class="text-muted">AI 채점 완료 (${answer.points || 0}점)</small>
-                                                            <button class="btn btn-sm btn-outline-secondary" onclick="startAIGradingForAnswer('${answer.id}')" title="재채점">
-                                                                <i class="fas fa-redo"></i>
-                                                            </button>
+                                                                                            <div class="grading-section">
+                                                    <div class="ai-grading" id="ai-grading-${answer.id}">
+                                                        ${answer.ai_graded ? `
+                                                            <div class="ai-grading-complete">
+                                                                <i class="fas fa-check-circle text-success"></i>
+                                                                <small class="text-muted">AI 채점 완료 (${answer.points || 0}점)</small>
+                                                                <button class="btn btn-sm btn-outline-secondary" onclick="startAIGradingForAnswer('${answer.id}')" title="재채점">
+                                                                    <i class="fas fa-redo"></i>
+                                                                </button>
+                                                            </div>
+                                                        ` : `
+                                                        <button class="btn btn-sm btn-outline-primary" onclick="startAIGradingForAnswer('${answer.id}')">
+                                                            <i class="fas fa-robot"></i> AI 채점
+                                                        </button>
+                                                        `}
+                                                    </div>
+                                                    <div class="manual-grading">
+                                                        <div class="score-input">
+                                                            <label>점수:</label>
+                                                            <input type="number" class="form-control" min="0" max="100" 
+                                                                   value="${answer.points || 0}" 
+                                                                   onchange="updateAnswerScore('${answer.id}', this.value)">
                                                         </div>
-                                                    ` : `
-                                                    <button class="btn btn-sm btn-outline-primary" onclick="startAIGradingForAnswer('${answer.id}')">
-                                                        <i class="fas fa-robot"></i> AI 채점
-                                                    </button>
-                                                    `}
-                                                </div>
-                                                
-                                                <!-- 수동 채점 영역 -->
-                                                <div class="manual-grading">
-                                                    <div class="score-input">
-                                                        <label><i class="fas fa-star"></i> 점수:</label>
-                                                        <input type="number" class="form-control" min="0" max="100" 
-                                                               value="${answer.points || 0}" 
-                                                               onchange="updateAnswerScore('${answer.id}', this.value)">
                                                     </div>
                                                 </div>
-                                            </div>
-                                            
-                                            <!-- AI 채점 상세 결과 표시 -->
-                                            ${answer.ai_graded ? `
-                                                <div class="ai-grading-detail">
-                                                    <h6><i class="fas fa-robot"></i> AI 채점 상세 결과</h6>
-                                                    
-                                                    <!-- 세부점수 표시 -->
-                                                    ${answer.ai_detailed_scores ? `
-                                                        <div class="detailed-scores">
-                                                            <h6><i class="fas fa-chart-bar"></i> 세부점수</h6>
-                                                            <div class="scores-grid">
-                                                                <div class="score-item">
-                                                                    <span class="score-label">핵심 내용 포함</span>
-                                                                    <span class="score-value">${answer.ai_detailed_scores.itemScores?.item1 || 'N/A'}/40점</span>
-                                                                </div>
-                                                                <div class="score-item">
-                                                                    <span class="score-label">논리적 구조</span>
-                                                                    <span class="score-value">${answer.ai_detailed_scores.itemScores?.item2 || 'N/A'}/30점</span>
-                                                                </div>
-                                                                <div class="score-item">
-                                                                    <span class="score-label">개념·용어 정확성</span>
-                                                                    <span class="score-value">${answer.ai_detailed_scores.itemScores?.item3 || 'N/A'}/10점</span>
-                                                                </div>
-                                                                <div class="score-item">
-                                                                    <span class="score-label">창의성</span>
-                                                                    <span class="score-value">${answer.ai_detailed_scores.itemScores?.item4 || 'N/A'}/20점</span>
-                                                                </div>
-                                                            </div>
-                                                            <div class="total-score">
-                                                                <strong>총점: ${answer.points || 0}/100점</strong>
-                                                            </div>
-                                                        </div>
-                                                    ` : ''}
-                                                    
-                                                    <!-- 계산 과정 표시 -->
-                                                    ${answer.ai_calculation_process ? `
-                                                        <div class="calculation-process">
-                                                            <h6><i class="fas fa-calculator"></i> 총점 계산 과정</h6>
-                                                            <div class="process-content">
-                                                                ${answer.ai_calculation_process}
-                                                            </div>
-                                                        </div>
-                                                    ` : ''}
-                                                    
-                                                    <!-- 평가 기준 표시 -->
-                                                    ${answer.ai_grading_criteria ? `
-                                                        <div class="grading-criteria">
-                                                            <h6><i class="fas fa-list-check"></i> 평가 기준</h6>
-                                                            <div class="criteria-content">
-                                                                ${answer.ai_grading_criteria}
-                                                            </div>
-                                                        </div>
-                                                    ` : ''}
-                                                    
-                                                    <!-- AI 채점 메타데이터 -->
-                                                    <div class="ai-grading-meta">
-                                                        <small class="text-muted">
-                                                            🤖 AI 채점 완료 | 
-                                                            ${answer.ai_graded_at ? new Date(answer.ai_graded_at).toLocaleString('ko-KR') : '시간 정보 없음'} | 
-                                                            버전: ${answer.ai_grading_version || 'v1.0'}
-                                                        </small>
+                                                
+                                                <div class="feedback-section">
+                                                    <div class="feedback-input">
+                                                        <label class="form-label"><strong>평가 의견:</strong></label>
+                                                        <textarea class="form-control" rows="4" 
+                                                                  placeholder="평가 의견을 입력하세요..."
+                                                                  onchange="updateAnswerFeedback('${answer.id}', this.value)">${answer.feedback || ''}</textarea>
                                                     </div>
                                                 </div>
-                                            ` : ''}
-                                            
-                                            <!-- 평가의견 표시 -->
-                                            <div class="feedback-section">
-                                                <h6><i class="fas fa-comments"></i> 평가의견</h6>
-                                                <div class="feedback-display">
-                                                    ${answer.feedback ? `
-                                                        <div class="feedback-content">
-                                                            ${answer.feedback}
-                                                        </div>
-                                                        <div class="feedback-meta">
-                                                            <small class="text-muted">
-                                                                ${answer.ai_graded ? '🤖 AI 채점' : '👨‍🏫 수동 채점'} | 
-                                                                ${answer.graded_at ? new Date(answer.graded_at).toLocaleString('ko-KR') : '시간 정보 없음'}
-                                                            </small>
-                                                        </div>
-                                                    ` : `
-                                                        <div class="no-feedback">
-                                                            <em class="text-muted">아직 평가의견이 없습니다.</em>
-                                                        </div>
-                                                    `}
-                                                </div>
-                                                
-                                                <!-- 평가의견 수정 -->
-                                                <div class="feedback-edit">
-                                                    <label><i class="fas fa-edit"></i> 평가의견 수정:</label>
-                                                    <textarea class="form-control" rows="3" 
-                                                              placeholder="평가 의견을 입력하거나 수정하세요..."
-                                                              onchange="updateAnswerFeedback('${answer.id}', this.value)">${answer.feedback || ''}</textarea>
-                                                </div>
-                                            </div>
                                         </div>
                                     `).join('')}
                                 </div>
@@ -8013,17 +7790,14 @@
                 const gradingResult = await performAIGrading(question, answer);
                 
                 // 채점 결과 적용
-                const savedData = await applyAIGradingResult(answerId, gradingResult);
+                await applyAIGradingResult(answerId, gradingResult);
                 
                 // UI 업데이트
                 console.log('🔄 UI 업데이트 시작...');
                 updateAnswerGradingUI(answerId, gradingResult);
                 console.log('🔄 UI 업데이트 완료');
                 
-                // 채점 목록 새로고침
-                await loadGradingQuestions();
-                
-                showAlert('🎉 AI 채점이 완료되었습니다!', 'success');
+                showAlert('AI 채점이 완료되었습니다!', 'success');
                 
             } catch (error) {
                 console.error('AI 채점 실패:', error);
@@ -8041,91 +7815,6 @@
             }
         }
 
-        // AI 채점용 GPT 프롬프트 생성
-        function createAIGradingPrompt(question, answer) {
-            const questionContent = question.content || question.text || question.title || '문제 내용 없음';
-            const studentAnswer = answer.answer || '답안 없음';
-            const modelAnswer = question.model_answer || '모범답안 없음';
-            
-            // 체계적인 평가 기준 정의
-            const gradingCriteria = {
-                item1: {
-                    name: '핵심 내용 포함',
-                    maxScore: 40,
-                    description: '모범답안의 핵심 내용을 얼마나 잘 포함하고 있는지 평가',
-                    examples: ['핵심 개념 설명', '주요 포인트 언급', '핵심 메시지 전달']
-                },
-                item2: {
-                    name: '논리적 구조',
-                    maxScore: 30,
-                    description: '답안의 논리적 구조와 설명의 명확성 평가',
-                    examples: ['논리적 흐름', '구조적 설명', '이해하기 쉬운 구성']
-                },
-                item3: {
-                    name: '개념·용어 정확성',
-                    maxScore: 10,
-                    description: '핵심 개념과 용어를 얼마나 정확하게 사용했는지 평가',
-                    examples: ['정확한 용어 사용', '개념의 올바른 이해', '전문성 표현']
-                },
-                item4: {
-                    name: '창의성',
-                    maxScore: 20,
-                    description: '창의적인 접근과 추가적 인사이트 제공 여부 평가',
-                    examples: ['독창적 관점', '새로운 아이디어', '실무 적용 가능성']
-                }
-            };
-            
-            // 시스템 프롬프트 구성
-            const systemPrompt = `당신은 세무법인 세무인사이드의 교육담당자입니다. 
-            학생들의 답안을 객관적이고 공정하게 평가해주세요.
-
-**평가 기준:**
-${Object.entries(gradingCriteria).map(([key, item]) => 
-    `• ${item.name} (${item.maxScore}점): ${item.description}`
-).join('\n')}
-
-**평가 원칙:**
-1. 성의를 가지고 작성된 답안임을 고려하여 너무 엄격하게 평가하지 마세요
-2. 각 항목별로 구체적인 이유와 함께 점수를 부여하세요
-3. 개선점과 장점을 균형있게 평가하세요
-4. 총점은 각 항목 점수의 합계로 계산하세요
-
-**응답 형식 (반드시 이 형식으로 답변하세요):**
-평가 의견:
-[전체적인 답안에 대한 종합적인 평가 의견을 2-3문장으로 작성]
-
-점수 세부 내역:
-- 항목1 (핵심 내용 포함): [획득점수]/40점 [구체적인 이유와 평가 근거]
-- 항목2 (논리적 구조): [획득점수]/30점 [구체적인 이유와 평가 근거]
-- 항목3 (개념·용어 정확성): [획득점수]/10점 [구체적인 이유와 평가 근거]
-- 항목4 (창의성): [획득점수]/20점 [구체적인 이유와 평가 근거]
-
-총점: [합계]/100점
-
-**주의사항:**
-- 각 항목의 점수는 반드시 해당 항목의 최대점수를 초과하지 않아야 합니다
-- 총점은 4개 항목 점수의 합계여야 합니다
-- 평가 의견은 구체적이고 건설적이어야 합니다`;
-
-            // 사용자 프롬프트 구성
-            const userPrompt = `**문제:**
-${questionContent}
-
-**모범답안 (참고용):**
-${modelAnswer}
-
-**학생 답안:**
-${studentAnswer}
-
-위 평가 기준에 따라 학생 답안을 평가해주세요.`;
-
-            return {
-                systemPrompt,
-                userPrompt,
-                gradingCriteria
-            };
-        }
-
         // AI 채점 실행 (GPT API 호출)
         async function performAIGrading(question, answer) {
             try {
@@ -8137,16 +7826,17 @@ ${studentAnswer}
                     throw new Error('OpenAI API 키가 설정되지 않았습니다. 관리자 설정에서 API 키를 입력해주세요.');
                 }
                 
-                // 체계적인 프롬프트 생성
-                const { systemPrompt, userPrompt, gradingCriteria } = createAIGradingPrompt(question, answer);
+                // GPT API 호출을 위한 프롬프트 구성
+                const prompt = GPT_CONFIG.gradingPrompt.user
+                    .replace('{question}', question.title || question.content || '')
+                    .replace('{modelAnswer}', question.model_answer || '')
+                    .replace('{studentAnswer}', answer.answer || '');
                 
-                console.log('📝 AI 채점 프롬프트 생성됨:', { 
-                    systemPrompt: systemPrompt.substring(0, 200) + '...',
-                    userPrompt: userPrompt.substring(0, 200) + '...',
-                    gradingCriteria: Object.keys(gradingCriteria)
-                });
+                const systemPrompt = GPT_CONFIG.gradingPrompt.system;
                 
-                // GPT API 호출
+                console.log('📝 AI 채점 프롬프트:', { prompt, systemPrompt });
+                
+                // OpenAI API 호출
                 const response = await fetch('https://api.openai.com/v1/chat/completions', {
                     method: 'POST',
                     headers: {
@@ -8154,16 +7844,13 @@ ${studentAnswer}
                         'Authorization': `Bearer ${apiKey}`
                     },
                     body: JSON.stringify({
-                        model: GPT_CONFIG.model || 'gpt-3.5-turbo',
+                        model: GPT_CONFIG.model,
                         messages: [
                             { role: 'system', content: systemPrompt },
-                            { role: 'user', content: userPrompt }
+                            { role: 'user', content: prompt }
                         ],
-                        max_tokens: GPT_CONFIG.maxTokens || 1500,
-                        temperature: GPT_CONFIG.temperature || 0.3,
-                        top_p: 0.9,
-                        frequency_penalty: 0.1,
-                        presence_penalty: 0.1
+                        max_tokens: GPT_CONFIG.maxTokens,
+                        temperature: GPT_CONFIG.temperature
                     })
                 });
 
@@ -8177,13 +7864,11 @@ ${studentAnswer}
                 
                 console.log('🤖 AI 응답:', aiResponse);
                 
-                // 응답 파싱 및 검증
-                const parsedResponse = parseAIGradingResponse(aiResponse, gradingCriteria);
+                // AI 응답 파싱
+                const gradingResult = parseAIGradingResponse(aiResponse);
                 
-                // 응답 검증
-                validateAIGradingResponse(parsedResponse, gradingCriteria);
-                
-                return parsedResponse;
+                console.log('✅ AI 채점 완료:', gradingResult);
+                return gradingResult;
                 
             } catch (error) {
                 console.error('❌ AI 채점 API 호출 실패:', error);
@@ -8191,116 +7876,59 @@ ${studentAnswer}
             }
         }
 
-        // AI 채점 응답 검증
-        function validateAIGradingResponse(parsedResponse, gradingCriteria) {
-            const errors = [];
-            
-            // 필수 필드 확인
-            if (!parsedResponse.score && parsedResponse.score !== 0) {
-                errors.push('총점이 파싱되지 않았습니다.');
-            }
-            
-            if (!parsedResponse.feedback) {
-                errors.push('평가 의견이 파싱되지 않았습니다.');
-            }
-            
-            if (!parsedResponse.detailedScores) {
-                errors.push('세부점수가 파싱되지 않았습니다.');
-            }
-            
-            // 점수 범위 검증
-            if (parsedResponse.score < 0 || parsedResponse.score > 100) {
-                errors.push(`총점이 유효하지 않습니다: ${parsedResponse.score}점`);
-            }
-            
-            // 세부점수 합계 검증
-            if (parsedResponse.detailedScores) {
-                const expectedTotal = Object.values(gradingCriteria).reduce((sum, item) => sum + item.maxScore, 0);
-                if (parsedResponse.score !== expectedTotal) {
-                    errors.push(`총점과 세부점수 합계가 일치하지 않습니다. 총점: ${parsedResponse.score}, 예상: ${expectedTotal}`);
-                }
-            }
-            
-            if (errors.length > 0) {
-                console.warn('⚠️ AI 채점 응답 검증 경고:', errors);
-                // 경고는 로그만 남기고 계속 진행
-            }
-            
-            return errors.length === 0;
-        }
-
-        // AI 채점 응답 파싱 (개선된 버전)
-        function parseAIGradingResponse(aiResponse, gradingCriteria) {
+        // AI 채점 응답 파싱
+        function parseAIGradingResponse(aiResponse) {
             try {
                 console.log('🔍 AI 응답 파싱 시작:', aiResponse);
                 
-                // 총점 추출 (새로운 형식: "총점: X/100점")
-                const totalScoreMatch = aiResponse.match(/총점:\s*(\d+)\/100점/);
-                const score = totalScoreMatch ? parseInt(totalScoreMatch[1]) : 0;
+                // 총점 추출 - 세부 평가 결과의 총점을 우선 사용
+                let score = 0;
                 
-                // 평가 의견 추출
+                // 먼저 세부 평가 결과의 총점을 찾기
+                const detailedTotalMatch = aiResponse.match(/세부 평가 결과:[\s\S]*?총점:\s*(\d+)\/100점/);
+                if (detailedTotalMatch) {
+                    score = parseInt(detailedTotalMatch[1]);
+                } else {
+                    // 세부 평가 결과가 없는 경우 일반 총점 사용
+                    const totalScoreMatch = aiResponse.match(/총점:\s*(\d+)점/);
+                    score = totalScoreMatch ? parseInt(totalScoreMatch[1]) : 0;
+                }
+                
+                // 평가 의견 추출 (총점 다음부터 점수 세부 내역 전까지)
                 const feedbackMatch = aiResponse.match(/평가 의견:\s*([\s\S]*?)(?=점수 세부 내역:|$)/);
                 const feedback = feedbackMatch ? feedbackMatch[1].trim() : '';
                 
-                // 점수 세부 내역 추출 및 파싱
-                const detailedScoresMatch = aiResponse.match(/점수 세부 내역:\s*([\s\S]*?)(?=총점:|$)/);
+                // 점수 세부 내역 추출
+                const detailedScoresMatch = aiResponse.match(/점수 세부 내역:\s*([\s\S]*)/);
                 let detailedScores = '';
-                let itemScores = {};
                 let calculatedTotal = 0;
                 
                 if (detailedScoresMatch) {
                     const detailedText = detailedScoresMatch[1];
                     const scoreLines = detailedText.split('\n').filter(line => line.trim().startsWith('-'));
                     
-                    // 각 항목별 점수 파싱
-                    scoreLines.forEach(line => {
-                        const trimmedLine = line.trim();
-                        
-                        // 항목1 (핵심 내용 포함): X/40점 [이유]
-                        const item1Match = trimmedLine.match(/항목1\s*\(핵심 내용 포함\):\s*(\d+)\/40점/);
-                        if (item1Match) {
-                            const itemScore = parseInt(item1Match[1]);
-                            itemScores.item1 = itemScore;
-                            calculatedTotal += itemScore;
-                        }
-                        
-                        // 항목2 (논리적 구조): X/30점 [이유]
-                        const item2Match = trimmedLine.match(/항목2\s*\(논리적 구조\):\s*(\d+)\/30점/);
-                        if (item2Match) {
-                            const itemScore = parseInt(item2Match[1]);
-                            itemScores.item2 = itemScore;
-                            calculatedTotal += itemScore;
-                        }
-                        
-                        // 항목3 (개념·용어 정확성): X/10점 [이유]
-                        const item3Match = trimmedLine.match(/항목3\s*\(개념·용어 정확성\):\s*(\d+)\/10점/);
-                        if (item3Match) {
-                            const itemScore = parseInt(item3Match[1]);
-                            itemScores.item3 = itemScore;
-                            calculatedTotal += itemScore;
-                        }
-                        
-                        // 항목4 (창의성): X/20점 [이유]
-                        const item4Match = trimmedLine.match(/항목4\s*\(창의성\):\s*(\d+)\/20점/);
-                        if (item4Match) {
-                            const itemScore = parseInt(item4Match[1]);
-                            itemScores.item4 = itemScore;
-                            calculatedTotal += itemScore;
-                        }
-                    });
+                    // 평가 기준 설명 추가
+                    detailedScores = `평가 기준:\n`;
+                    detailedScores += `• 항목1: 모범답안의 핵심 내용 포함 여부 (만점: 40점)\n`;
+                    detailedScores += `• 항목2: 논리적 구조와 설명의 명확성 (만점: 30점)\n`;
+                    detailedScores += `• 항목3: 핵심 개념·용어의 정확성 [보조지표] (만점: 10점)\n`;
+                    detailedScores += `  ※ 전문용어 미사용은 감점 없음, 개념을 일상어로 정확히 설명하면 높은 점수\n`;
+                    detailedScores += `• 항목4: 창의성과 추가 인사이트 (만점: 20점)\n\n`;
                     
-                    // 세부점수 텍스트 구성
-                    detailedScores = `세부 평가 결과:\n`;
-                    detailedScores += `• 항목1 (핵심 내용 포함): ${itemScores.item1 || 0}/40점\n`;
-                    detailedScores += `• 항목2 (논리적 구조): ${itemScores.item2 || 0}/30점\n`;
-                    detailedScores += `• 항목3 (개념·용어 정확성): ${itemScores.item3 || 0}/10점\n`;
-                    detailedScores += `• 항목4 (창의성): ${itemScores.item2 || 0}/20점\n`;
-                    detailedScores += `\n총점 계산: ${calculatedTotal}/100점`;
-                }
-                
-                // 파싱 결과 검증
-                if (calculatedTotal !== score) {
-                    console.warn(`⚠️ 점수 불일치: 파싱된 총점 ${calculatedTotal} vs AI 응답 총점 ${score}`);
+                    detailedScores += `세부 평가 결과:\n`;
+                    detailedScores += scoreLines.map(line => {
+                        // "5/40점" 형태에서 실제 점수(5) 추출
+                        const scoreMatch = line.match(/(\d+)\/\d+점/);
+                        const score = scoreMatch ? parseInt(scoreMatch[1]) : 0;
+                        calculatedTotal += score;
+                        console.log(`📊 ${line.trim()} → ${score}점`);
+                        return line.trim();
+                    }).join('\n');
+                    
+                    // 총점 계산 결과 추가 (실제 계산된 점수 사용)
+                    detailedScores += `\n\n총점: ${calculatedTotal}/100점`;
+                    
+                    console.log('🔢 세부 점수 계산 결과:', { calculatedTotal, scoreLines });
                 }
                 
                 // 마크다운 형식 제거 및 일반 텍스트로 변환
@@ -8321,7 +7949,6 @@ ${studentAnswer}
                     score: Math.max(0, Math.min(100, score)), // 0-100 범위 제한
                     feedback: cleanFeedback,
                     detailedScores: cleanDetailedScores,
-                    itemScores: itemScores,
                     calculatedTotal: calculatedTotal,
                     aiGraded: true,
                     gradedAt: new Date().toISOString(),
@@ -8337,7 +7964,6 @@ ${studentAnswer}
                     score: 0,
                     feedback: 'AI 채점 결과를 파싱할 수 없습니다.',
                     detailedScores: '',
-                    itemScores: {},
                     calculatedTotal: 0,
                     aiGraded: true,
                     gradedAt: new Date().toISOString(),
@@ -8354,121 +7980,49 @@ ${studentAnswer}
                 // 업데이트할 데이터 준비
                 const updateData = {
                     points: gradingResult.score,
-                    feedback: gradingResult.feedback,
+                    feedback: gradingResult.detailedScores || gradingResult.feedback, // 상세 점수를 우선 저장
                     updated_at: new Date().toISOString()
                 };
                 
-                // AI 채점 전용 컬럼 설정
-                updateData.ai_graded = true;
-                updateData.ai_graded_at = gradingResult.gradedAt || new Date().toISOString();
-                updateData.graded_at = new Date().toISOString();
-                updateData.ai_graded_by = 'ai';  // AI 채점 시스템 구분
-                updateData.graded_by = null;  // 수동 채점자용이므로 AI 채점 시에는 NULL
-                
-                // 세부점수 및 계산 과정 저장
-                if (gradingResult.itemScores) {
-                    updateData.ai_detailed_scores = {
-                        itemScores: gradingResult.itemScores,
-                        criteria: gradingResult.detailedScores,
-                        totalScore: gradingResult.score,
-                        maxScore: 100,
-                        gradingTime: new Date().toISOString()
-                    };
+                // ai_graded 컬럼이 존재하는 경우에만 추가
+                try {
+                    // 먼저 테이블 스키마 확인
+                    const { data: schemaData, error: schemaError } = await window.supabaseClient
+                        .from('exam_answers')
+                        .select('*')
+                        .limit(1);
+                    
+                    if (!schemaError && schemaData && schemaData.length > 0) {
+                        const hasAiGraded = 'ai_graded' in schemaData[0];
+                        const hasAiGradedAt = 'ai_graded_at' in schemaData[0];
+                        
+                        if (hasAiGraded) {
+                            updateData.ai_graded = true;
+                        }
+                        if (hasAiGradedAt) {
+                            updateData.ai_graded_at = gradingResult.gradedAt;
+                        }
+                        
+                        console.log('📋 스키마 확인 결과:', { hasAiGraded, hasAiGradedAt });
+                    }
+                } catch (schemaCheckError) {
+                    console.warn('스키마 확인 실패, 기본 컬럼만 사용:', schemaCheckError);
                 }
-                
-                // 총점 계산 과정 설명
-                updateData.ai_calculation_process = `총점 ${gradingResult.score}점은 다음과 같이 계산되었습니다:
-• 항목1 (핵심 내용 포함): ${gradingResult.itemScores?.item1 || 0}/40점
-• 항목2 (논리적 구조): ${gradingResult.itemScores?.item2 || 0}/30점  
-• 항목3 (개념·용어 정확성): ${gradingResult.itemScores?.item3 || 0}/10점
-• 항목4 (창의성): ${gradingResult.itemScores?.item4 || 0}/20점
-합계: ${gradingResult.score}/100점`;
-                
-                // 평가 기준 저장
-                updateData.ai_grading_criteria = `평가 기준:
-• 항목1: 모범답안의 핵심 내용 포함 여부 (만점: 40점)
-• 항목2: 논리적 구조와 설명의 명확성 (만점: 30점)  
-• 항목3: 핵심 개념·용어의 정확성 (만점: 10점)
-• 항목4: 창의성과 추가적 인사이트 (만점: 20점)
-총점: 100점`;
-                
-                // AI 채점 시스템 버전
-                updateData.ai_grading_version = 'v1.0';
                 
                 console.log('📝 업데이트할 데이터:', updateData);
                 
-                // 1차 시도: 데이터베이스 함수 사용 (더 안전함)
-                let { data, error } = await window.supabaseClient
-                    .rpc('apply_ai_grading', {
-                        answer_id: answerId,
-                        grading_score: gradingResult.score,
-                        grading_feedback: gradingResult.feedback
-                    });
-                
-                // 함수 실행 실패 시 기존 방식으로 대체
-                if (error && error.message.includes('function') || error && error.message.includes('does not exist')) {
-                    console.warn('⚠️ AI 채점 함수 없음, 직접 업데이트 방식 사용:', error.message);
-                    
-                    const { data: directData, error: directError } = await window.supabaseClient
-                        .from('exam_answers')
-                        .update(updateData)
-                        .eq('id', answerId)
-                        .select();
-                    
-                    data = directData;
-                    error = directError;
-                }
-                
-                // 특정 컬럼 오류 시 기본 컬럼만으로 재시도
-                if (error && (error.message.includes('ai_graded') || error.message.includes('column') || error.message.includes('does not exist'))) {
-                    console.warn('⚠️ AI 관련 컬럼 없음, 기본 컬럼만으로 재시도:', error.message);
-                    
-                    const basicUpdateData = {
-                        points: gradingResult.score,
-                        feedback: gradingResult.feedback,
-                        updated_at: new Date().toISOString(),
-                        graded_at: new Date().toISOString(),
-                        ai_graded_by: 'ai'  // AI 채점 시스템 구분
-                    };
-                    
-                    const { data: retryData, error: retryError } = await window.supabaseClient
-                        .from('exam_answers')
-                        .update(basicUpdateData)
-                        .eq('id', answerId)
-                        .select();
-                    
-                    if (retryError) {
-                        console.error('❌ 기본 컬럼 업데이트도 실패:', retryError);
-                        throw retryError;
-                    }
-                    
-                    data = retryData;
-                    console.log('✅ 기본 컬럼으로 저장 완료');
-                } else if (error) {
+                // Supabase에 채점 결과 저장
+                const { error } = await window.supabaseClient
+                    .from('exam_answers')
+                    .update(updateData)
+                    .eq('id', answerId);
+
+                if (error) {
                     console.error('❌ Supabase 업데이트 오류:', error);
                     throw error;
                 }
                 
-                console.log('✅ AI 채점 결과 저장 완료:', { answerId, savedData: data });
-                
-                // 로컬 상태도 업데이트
-                if (window.gradingAnswers && Array.isArray(window.gradingAnswers)) {
-                    const answerIndex = window.gradingAnswers.findIndex(ans => ans.id === answerId);
-                    if (answerIndex !== -1) {
-                        window.gradingAnswers[answerIndex] = {
-                            ...window.gradingAnswers[answerIndex],
-                            points: gradingResult.score,
-                            feedback: gradingResult.feedback,
-                            ai_graded: true,
-                            ai_graded_at: gradingResult.gradedAt || new Date().toISOString(),
-                            ai_graded_by: 'ai',  // AI 채점 시스템 구분
-                            graded_at: new Date().toISOString()
-                        };
-                        console.log('🔄 로컬 상태 업데이트 완료');
-                    }
-                }
-                
-                return data;
+                console.log('✅ AI 채점 결과 저장 완료:', answerId);
                 
             } catch (error) {
                 console.error('❌ AI 채점 결과 저장 실패:', error);
@@ -8505,11 +8059,19 @@ ${studentAnswer}
                     console.log('✅ 기존 점수 표시:', answer.points);
                 }
                 
-                // 평가 의견 텍스트 영역 업데이트
-                const feedbackTextarea = answerElement.querySelector('textarea');
+                // 평가 의견 텍스트 영역 업데이트 (평가 의견만, 제출답안은 제외)
+                const feedbackTextarea = answerElement.querySelector('textarea[placeholder*="평가 의견"]');
                 if (feedbackTextarea && answer.feedback) {
-                    feedbackTextarea.value = answer.feedback;
-                    console.log('✅ 기존 평가 의견 표시:', answer.feedback);
+                    // AI 채점된 답안의 경우 상세 점수 표시, 그렇지 않으면 기본 평가 의견 표시
+                    let displayContent = answer.feedback;
+                    
+                    // AI 채점된 답안이고 상세 점수가 포함된 경우
+                    if (answer.ai_graded && answer.feedback && answer.feedback.includes('평가 기준:')) {
+                        displayContent = answer.feedback; // 이미 상세 점수가 저장되어 있음
+                    }
+                    
+                    feedbackTextarea.value = displayContent;
+                    console.log('✅ 기존 평가 의견 표시:', displayContent);
                 }
                 
                 // AI 채점 상태 표시 (ai_graded가 true인 경우)
@@ -8566,8 +8128,8 @@ ${studentAnswer}
                     console.warn('⚠️ 점수 입력 필드를 찾을 수 없음');
                 }
 
-                // 평가 의견 텍스트 영역 업데이트
-                const feedbackTextarea = answerElement.querySelector('textarea');
+                // 평가 의견 텍스트 영역 업데이트 (평가 의견만, 제출답안은 제외)
+                const feedbackTextarea = answerElement.querySelector('textarea[placeholder*="평가 의견"]');
                 if (feedbackTextarea) {
                     // 점수 세부 내역만 표시 (중복 제거)
                     let displayContent = '';
@@ -8653,6 +8215,45 @@ ${studentAnswer}
             }
         }
 
+        // 날짜 포맷팅 함수
+        function formatDate(dateString) {
+            if (!dateString) return '날짜 없음';
+            
+            try {
+                const date = new Date(dateString);
+                if (isNaN(date.getTime())) return '날짜 없음';
+                
+                return date.toLocaleDateString('ko-KR', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } catch (error) {
+                return '날짜 없음';
+            }
+        }
+        
+        // API 키 토글 함수
+        function toggleApiKeySetup() {
+            const apiKeyForm = document.getElementById('api-key-form');
+            const toggleIcon = document.getElementById('api-toggle-icon');
+            const isVisible = apiKeyForm.style.display !== 'none';
+            
+            if (isVisible) {
+                // 숨기기
+                apiKeyForm.style.display = 'none';
+                toggleIcon.className = 'fas fa-chevron-down toggle-icon';
+                document.getElementById('api-key-setup-area').classList.add('collapsed');
+            } else {
+                // 보이기
+                apiKeyForm.style.display = 'block';
+                toggleIcon.className = 'fas fa-chevron-up toggle-icon';
+                document.getElementById('api-key-setup-area').classList.remove('collapsed');
+            }
+        }
+        
         // API 키 관리 함수들
         function saveApiKey() {
             const apiKeyInput = document.getElementById('openai-api-key');
@@ -8722,6 +8323,7 @@ ${studentAnswer}
         
         function updateApiKeyStatus(isValid, message) {
             const statusDiv = document.getElementById('api-key-status');
+            const toggleStatus = document.getElementById('api-toggle-status');
             const startAiBtn = document.getElementById('start-ai-grading-btn');
             
             if (isValid) {
@@ -8730,6 +8332,9 @@ ${studentAnswer}
                         <i class="fas fa-check-circle"></i> ${message}
                     </div>
                 `;
+                toggleStatus.innerHTML = `
+                    <span class="text-success"><i class="fas fa-check-circle"></i> API 키 설정됨</span>
+                `;
                 startAiBtn.disabled = false;
                 startAiBtn.title = 'AI 자동 채점을 시작합니다';
             } else {
@@ -8737,6 +8342,9 @@ ${studentAnswer}
                     <div class="alert alert-warning">
                         <i class="fas fa-exclamation-triangle"></i> ${message}
                     </div>
+                `;
+                toggleStatus.innerHTML = `
+                    <span class="text-warning"><i class="fas fa-exclamation-triangle"></i> API 키 미설정</span>
                 `;
                 startAiBtn.disabled = true;
                 startAiBtn.title = 'API 키를 먼저 설정해주세요';
@@ -9067,7 +8675,7 @@ ${studentAnswer}
                                         <table id="questions-stats-table">
                                             <thead>
                                                 <tr>
-                                                    <th>문제 내용</th>
+                                                    <th>문제 타이틀</th>
                                                     <th>보기</th>
                                                     <th>카테고리</th>
                                                     <th>난이도</th>
@@ -10670,7 +10278,11 @@ ${studentAnswer}
                         difficulty,
                         category_id,
                         choices,
-                        correct_answer_indices
+                        correct_answer_indices,
+                        explanation,
+                        model_answer,
+                        created_at,
+                        updated_at
                     `);
 
                 if (questionsError) throw questionsError;
@@ -10745,8 +10357,8 @@ ${studentAnswer}
 
                     questionDetails.push({
                         id: question.id,
-                        content: question.content || question.title || '내용 없음',
-                        title: question.content ? (question.content.substring(0, 50) + (question.content.length > 50 ? '...' : '')) : (question.title || '제목 없음'),
+                        content: question.title || question.content || '내용 없음',
+                        title: question.title || question.content || '제목 없음',
                         type: question.type,
                         choices: question.choices,
                         correct_answer_indices: question.correct_answer_indices,
@@ -11287,7 +10899,7 @@ ${studentAnswer}
                 <tr class="question-row" onclick="showQuestionDetailModal('${question.id}')" style="cursor: pointer;">
                     <td>
                         <div class="question-content">
-                            <div class="question-text">${question.content || question.title || '내용 없음'}</div>
+                            <div class="question-text">${question.title || question.content || '제목 없음'}</div>
                             <div class="question-id">ID: ${question.id.substring(0, 8)}...</div>
                         </div>
                     </td>
@@ -13345,6 +12957,121 @@ ${studentAnswer}
             } catch (error) {
                 console.error('❌ 시험 비공개 오류:', error);
                 showAlert(`시험 비공개에 실패했습니다: ${error.message}`, 'error');
+            }
+        }
+
+        // 데이터베이스 스키마 상태 확인
+        async function checkDatabaseSchema() {
+            try {
+                console.log('🔍 데이터베이스 스키마 상태 확인 중...');
+                
+                // exam_answers 테이블 스키마 확인
+                const { data: schemaData, error: schemaError } = await window.supabaseClient
+                    .from('exam_answers')
+                    .select('*')
+                    .limit(1);
+                
+                if (schemaError) {
+                    console.error('❌ 스키마 확인 실패:', schemaError);
+                    return false;
+                }
+                
+                if (schemaData && schemaData.length > 0) {
+                    const sampleRecord = schemaData[0];
+                    const schemaInfo = {
+                        기본컬럼: {
+                            id: 'id' in sampleRecord,
+                            session_id: 'session_id' in sampleRecord,
+                            question_id: 'question_id' in sampleRecord,
+                            answer: 'answer' in sampleRecord,
+                            points: 'points' in sampleRecord,
+                            feedback: 'feedback' in sampleRecord,
+                            updated_at: 'updated_at' in sampleRecord
+                        },
+                        AI채점컬럼: {
+                            ai_graded: 'ai_graded' in sampleRecord,
+                            ai_graded_at: 'ai_graded_at' in sampleRecord,
+                            ai_graded_by: 'ai_graded_by' in sampleRecord,
+                            ai_detailed_scores: 'ai_detailed_scores' in sampleRecord,
+                            ai_calculation_process: 'ai_calculation_process' in sampleRecord,
+                            ai_grading_criteria: 'ai_grading_criteria' in sampleRecord,
+                            ai_grading_version: 'ai_grading_version' in sampleRecord
+                        }
+                    };
+                    
+                    console.log('📋 exam_answers 테이블 스키마 정보:', schemaInfo);
+                    
+                    // 누락된 컬럼 확인
+                    const missingColumns = [];
+                    Object.entries(schemaInfo.AI채점컬럼).forEach(([key, exists]) => {
+                        if (!exists) missingColumns.push(key);
+                    });
+                    
+                    if (missingColumns.length > 0) {
+                        console.warn('⚠️ 누락된 AI 채점 컬럼들:', missingColumns);
+                    } else {
+                        console.log('✅ 모든 AI 채점 컬럼이 존재합니다.');
+                    }
+                    
+                    return true;
+                }
+                
+                return false;
+                
+            } catch (error) {
+                console.error('❌ 스키마 확인 중 오류:', error);
+                return false;
+            }
+        }
+
+        // 데이터베이스 연결 및 스키마 상태 종합 점검
+        async function performDatabaseHealthCheck() {
+            try {
+                console.log('🏥 데이터베이스 상태 종합 점검 시작...');
+                
+                // 1. 기본 연결 확인
+                console.log('🔗 1단계: 기본 연결 확인...');
+                if (!window.supabaseClient) {
+                    console.error('❌ Supabase 클라이언트가 초기화되지 않았습니다.');
+                    return false;
+                }
+                console.log('✅ Supabase 클라이언트 정상');
+                
+                // 2. 스키마 상태 확인
+                console.log('🔍 2단계: 스키마 상태 확인...');
+                const schemaOk = await checkDatabaseSchema();
+                if (!schemaOk) {
+                    console.error('❌ 스키마 상태 확인 실패');
+                    return false;
+                }
+                
+                // 3. 테이블 접근성 확인
+                console.log('📊 3단계: 테이블 접근성 확인...');
+                const tables = ['questions', 'exam_answers', 'profiles', 'exam_sessions'];
+                for (const table of tables) {
+                    try {
+                        const { data, error } = await window.supabaseClient
+                            .from(table)
+                            .select('*')
+                            .limit(1);
+                        
+                        if (error) {
+                            console.error(`❌ ${table} 테이블 접근 실패:`, error);
+                            return false;
+                        }
+                        console.log(`✅ ${table} 테이블 접근 성공`);
+                    } catch (tableError) {
+                        console.error(`❌ ${table} 테이블 접근 중 오류:`, tableError);
+                        return false;
+                    }
+                }
+                
+                console.log('✅ 데이터베이스 상태 종합 점검 완료 - 모든 항목 정상');
+                return true;
+                
+            } catch (error) {
+                console.error('❌ 데이터베이스 상태 점검 중 오류:', error);
+                return false;
             }
         }
     </script>

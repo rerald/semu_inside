@@ -81,6 +81,23 @@
             font-size: 1.2rem;
             opacity: 0.9;
         }
+        
+        .score-details {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 1rem;
+            opacity: 0.8;
+        }
+        
+        .earned-points {
+            color: #90EE90;
+            font-weight: 600;
+        }
+        
+        .total-points {
+            color: #E0E0E0;
+            font-weight: 600;
+        }
 
         .stats-grid {
             display: grid;
@@ -590,6 +607,9 @@
                         <div class="score-display">
                             <div class="score-number" id="scoreNumber">...</div>
                             <div class="score-label">점</div>
+                            <div class="score-details" id="scoreDetails">
+                                <span class="earned-points" id="earnedPoints">...</span> / <span class="total-points" id="totalPoints">...</span>점
+                            </div>
                         </div>
                     </div>
 
@@ -884,7 +904,10 @@
                             *,
                             questions (
                                 title,
-                                content
+                                content,
+                                type,
+                                choices,
+                                correct_answer_indices
                             )
                         `)
                         .eq('session_id', session.id)
@@ -892,24 +915,53 @@
                     
                     if (answersError) throw answersError;
                     
-                    // 3단계: 결과 데이터 구성
-                    this.score = session.score || 0;
-                    this.totalQuestions = session.total_points || 0;
+                    // 3단계: 결과 데이터 구성 - 실제 답안 데이터로 점수 재계산
+                    // 각 문제의 배점을 고려하여 점수 계산
+                    let totalPoints = 0;
+                    let earnedPoints = 0;
+                    
+                    answers.forEach(answer => {
+                        // 문제별 배점 (기본값 1점)
+                        const questionPoints = answer.points || 1;
+                        totalPoints += questionPoints;
+                        
+                        // 정답인 경우 배점만큼 점수 획득
+                        if (answer.is_correct) {
+                            earnedPoints += questionPoints;
+                        }
+                    });
+                    
+                    // 백분율 점수 계산 (0-100)
+                    this.score = totalPoints > 0 ? Math.round((earnedPoints / totalPoints) * 100) : 0;
+                    this.totalQuestions = answers.length;
                     
                     const correctAnswers = answers.filter(a => a.is_correct).length;
                     const incorrectAnswers = answers.filter(a => !a.is_correct).length;
+                    
+                    console.log('📊 점수 계산 상세:', {
+                        earnedPoints,
+                        totalPoints,
+                        calculatedScore: this.score,
+                        correctAnswers,
+                        incorrectAnswers,
+                        answersCount: answers.length,
+                        sessionScore: session.score,
+                        sessionTotalPoints: session.total_points
+                    });
                     
                     this.examData = {
                         title: session.exams?.title || '시험 결과',
                         correctAnswers: correctAnswers,
                         incorrectAnswers: incorrectAnswers,
                         timeUsed: session.duration_minutes || 0,
+                        earnedPoints: earnedPoints,
+                        totalPoints: totalPoints,
                         questions: answers.map(answer => ({
                             id: answer.question_id,
                             correct: answer.is_correct,
                             text: answer.questions?.title || answer.questions?.content || '문제 내용 없음',
                             userAnswer: answer.answer,
-                            points: answer.points
+                            points: answer.points || 1
                         }))
                     };
                     
@@ -937,6 +989,12 @@
                 // 점수 표시
                 document.getElementById('scoreNumber').textContent = this.score;
                 document.getElementById('circleScore').textContent = this.score;
+                
+                // 점수 상세 정보 표시
+                if (this.examData.earnedPoints !== undefined && this.examData.totalPoints !== undefined) {
+                    document.getElementById('earnedPoints').textContent = this.examData.earnedPoints;
+                    document.getElementById('totalPoints').textContent = this.examData.totalPoints;
+                }
                 
                 // 결과 아이콘 및 제목 업데이트
                 this.updateResultIcon();

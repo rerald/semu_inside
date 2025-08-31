@@ -86,3 +86,4 @@ GRANT EXECUTE ON FUNCTION check_ai_grading_columns() TO anon;
 
 -- 현재 상태 확인
 SELECT * FROM check_ai_grading_columns();
+

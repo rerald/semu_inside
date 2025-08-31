@@ -91,3 +91,4 @@ SELECT
     created_at
 FROM exam_answers 
 LIMIT 5;
+
