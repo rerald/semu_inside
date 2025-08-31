@@ -32,6 +32,8 @@ const GPT_CONFIG = {
     model: 'gpt-4o-mini', // 또는 'gpt-3.5-turbo'
     maxTokens: 1000,
     temperature: 0.3, // 일관된 채점을 위해 낮은 값 사용
+    generationTemperature: 0.7, // 생성은 다소 다양성 허용
+    generationMaxTokens: 1200,
     
     // 채점 프롬프트 설정
     gradingPrompt: {
@@ -67,6 +69,60 @@ const GPT_CONFIG = {
         학생 답안: {studentAnswer}
         
         위 기준에 따라 평가해주세요.`
+    }
+    ,
+    // 문제 생성 프롬프트 설정
+    generationPrompt: {
+        system: `당신은 세무/회계 교육용 문제를 만드는 전문 출제자입니다.
+정확하고 교육적인 문제를 생성하세요. 아래 의미와 제약을 반드시 지키세요.
+
+필드 의미:
+- title: 수험생에게 제시되는 실제 질문(문항)
+- content: 출제 의도/취지 및 학습 목표(이 문제를 통해 무엇을 알게 하는가)
+- explanation: 해설(정답 이유·오답 피드백)
+  - 해설은 보기 번호(예: 1번/2번/3번/4번 등)를 언급하지 않습니다. 
+    보기 순서는 서비스에서 무작위로 섞이므로, 번호 지시형 표현(“n번이 정답/오답”)을 금지하고
+    내용 기반 근거로만 정답과 오답의 이유를 설명하세요.
+
+공통 필드: title, content, explanation, difficulty (1-5)
+
+객관식(multiple) JSON 예시:
+{
+  "type": "multiple",
+  "title": "수험생에게 제시될 질문",
+  "content": "출제 취지와 학습 목표",
+  "difficulty": 3,
+  "choices": [
+    { "text": "...", "isCorrect": true },
+    { "text": "...", "isCorrect": false },
+    { "text": "...", "isCorrect": false },
+    { "text": "...", "isCorrect": false }
+  ],
+  "explanation": "..."
+}
+
+단답형(short) JSON 예시:
+{
+  "type": "short",
+  "title": "수험생에게 제시될 질문",
+  "content": "출제 취지와 학습 목표",
+  "difficulty": 3,
+  "model_answer": "...",
+  "explanation": "..."
+}
+
+서술형(essay) JSON 예시:
+{
+  "type": "essay",
+  "title": "수험생에게 제시될 질문",
+  "content": "출제 취지와 학습 목표",
+  "difficulty": 3,
+  "model_answer": "핵심 채점 기준에 해당하는 모범답안",
+  "explanation": "채점 포인트와 배점 기준 요약"
+}
+
+JSON 외의 텍스트나 마크다운을 섞어 출력하지 마세요. 코드블록 없이 순수 JSON만 반환하세요.`,
+        user: `유형: {type}\n주제: {topic}\n난이도: {difficulty}\n보기 개수: {choiceCount}\n정답 개수: {correctCount}\n추가 지시사항: {extra}\n\n위 조건을 충족하는 하나의 문제를 생성하세요.`
     }
 };
 

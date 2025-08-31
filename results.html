@@ -713,6 +713,8 @@
                 this.score = null;
                 this.totalQuestions = null;
                 this.examData = null;
+                this.examStats = { averageScore: 70, totalParticipants: 1 };
+                this.examScores = [];
                 this.isDataLoaded = false;
                 
                 this.init();
@@ -824,16 +826,19 @@
                         // URL 파라미터 데이터 로드 완료
                         this.isDataLoaded = true;
                     } else {
-                        // 기본값 설정
+                        // exam 파라미터가 없는 경우 - 사용자에게 안내
                         this.score = 0;
                         this.totalQuestions = 0;
                         this.examData = {
-                            title: '시험 결과 없음',
+                            title: '시험 결과를 찾을 수 없습니다',
                             correctAnswers: 0,
                             incorrectAnswers: 0,
                             timeUsed: 0,
                             questions: []
                         };
+                        
+                        // 사용자에게 안내 메시지 표시
+                        this.showNoResultMessage();
                         
                         // 기본값도 로드 완료로 처리
                         this.isDataLoaded = true;
@@ -897,7 +902,35 @@
                     
                     if (sessionError) throw sessionError;
                     
-                    // 2단계: 개별 답변 결과 조회
+                    // 1-1단계: 전체 시험 통계 조회 (평균 점수, 참가자 수 등)
+                    const { data: examStats, error: statsError } = await window.supabaseClient
+                        .from('exam_sessions')
+                        .select('score, total_points')
+                        .eq('exam_id', examId)
+                        .eq('status', 'submitted');
+                    
+                    if (statsError) {
+                        console.warn('⚠️ 시험 통계 조회 실패, 기본값 사용:', statsError);
+                        this.examStats = { averageScore: 70, totalParticipants: 1 };
+                    } else {
+                        // 평균 점수 계산
+                        const validScores = examStats.filter(s => s.score !== null && s.total_points !== null);
+                        const averageScore = validScores.length > 0 
+                            ? Math.round(validScores.reduce((sum, s) => sum + (s.score || 0), 0) / validScores.length)
+                            : 70;
+                        
+                        this.examStats = {
+                            averageScore: averageScore,
+                            totalParticipants: examStats.length
+                        };
+                        this.examScores = examStats;
+                        
+                        console.log('📊 시험 통계:', this.examStats);
+                    }
+                    
+                    if (sessionError) throw sessionError;
+                    
+                    // 2단계: 개별 답변 결과 조회 (배점 정보 포함)
                     const { data: answers, error: answersError } = await window.supabaseClient
                         .from('exam_answers')
                         .select(`
@@ -915,20 +948,60 @@
                     
                     if (answersError) throw answersError;
                     
+                    // 2-1단계: 시험 문제별 배점 정보 조회
+                    const { data: examQuestions, error: examQuestionsError } = await window.supabaseClient
+                        .from('exam_questions')
+                        .select('question_id, points')
+                        .eq('exam_id', examId);
+                    
+                    if (examQuestionsError) throw examQuestionsError;
+                    
+                    // 배점 정보를 맵으로 변환
+                    const pointsMap = {};
+                    examQuestions.forEach(eq => {
+                        pointsMap[eq.question_id] = eq.points || 1;
+                    });
+                    
+                    console.log('🔍 시험 문제별 배점:', pointsMap);
+                    
+                    if (answersError) throw answersError;
+                    
                     // 3단계: 결과 데이터 구성 - 실제 답안 데이터로 점수 재계산
                     // 각 문제의 배점을 고려하여 점수 계산
                     let totalPoints = 0;
                     let earnedPoints = 0;
                     
+                    console.log('🔍 답안 데이터 상세:', answers);
+                    
                     answers.forEach(answer => {
-                        // 문제별 배점 (기본값 1점)
-                        const questionPoints = answer.points || 1;
-                        totalPoints += questionPoints;
-                        
-                        // 정답인 경우 배점만큼 점수 획득
-                        if (answer.is_correct) {
-                            earnedPoints += questionPoints;
+                        const qType = answer.questions?.type;
+                        // 문제의 최대 배점: 설정된 배점 우선, 없으면 주관식/서술형 100점 기본, 그 외 1점
+                        const maxPoints = (pointsMap[answer.question_id] && pointsMap[answer.question_id] > 0)
+                            ? pointsMap[answer.question_id]
+                            : (qType === 'subjective' || qType === 'essay' || qType === '주관식') ? 100 : 1;
+                        totalPoints += maxPoints;
+
+                        let earnedForThis = 0;
+                        if (qType === 'multiple_choice' || qType === '객관식') {
+                            // 객관식: 정답이면 배점 전액, 아니면 0
+                            earnedForThis = answer.is_correct ? maxPoints : 0;
+                        } else {
+                            // 주관식/서술형: 채점된 점수 사용(없으면 0), 최대 배점까지 캡
+                            const gradedPoints = Number(answer.points) || 0;
+                            earnedForThis = Math.max(0, Math.min(gradedPoints, maxPoints));
                         }
+
+                        earnedPoints += earnedForThis;
+
+                        console.log(`📝 답안 ${answer.question_id}:`, {
+                            answer: answer.answer,
+                            isCorrect: answer.is_correct,
+                            gradedPoints: answer.points,
+                            maxPoints,
+                            usedEarned: earnedForThis,
+                            questionType: qType,
+                            questionData: answer.questions
+                        });
                     });
                     
                     // 백분율 점수 계산 (0-100)
@@ -946,7 +1019,14 @@
                         incorrectAnswers,
                         answersCount: answers.length,
                         sessionScore: session.score,
-                        sessionTotalPoints: session.total_points
+                        sessionTotalPoints: session.total_points,
+                        pointsMap: pointsMap,
+                        answers: answers.map(a => ({
+                            questionId: a.question_id,
+                            isCorrect: a.is_correct,
+                            points: a.points,
+                            examQuestionPoints: pointsMap[a.question_id]
+                        }))
                     });
                     
                     this.examData = {
@@ -961,7 +1041,7 @@
                             correct: answer.is_correct,
                             text: answer.questions?.title || answer.questions?.content || '문제 내용 없음',
                             userAnswer: answer.answer,
-                            points: answer.points || 1
+                            points: pointsMap[answer.question_id] || 1
                         }))
                     };
                     
@@ -977,6 +1057,56 @@
                 }
             }
 
+            showNoResultMessage() {
+                // 시험 결과가 없을 때 안내 메시지 표시
+                const resultHeader = document.querySelector('.result-header');
+                if (resultHeader) {
+                    resultHeader.innerHTML = `
+                        <div class="result-icon" style="color: #ffc107;">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <h1 class="result-title">시험 결과를 찾을 수 없습니다</h1>
+                        <p class="result-subtitle">URL에 시험 ID가 포함되지 않았거나, 해당 시험 결과가 존재하지 않습니다.</p>
+                        
+                        <div class="score-display" style="opacity: 0.5;">
+                            <div class="score-number">-</div>
+                            <div class="score-label">점</div>
+                            <div class="score-details">
+                                <span class="earned-points">-</span> / <span class="total-points">-</span>점
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // 액션 버튼 업데이트
+                const actionButtons = document.querySelector('.action-buttons');
+                if (actionButtons) {
+                    actionButtons.innerHTML = `
+                        <a href="./dashboard.html" class="btn btn-primary btn-large">
+                            <i class="fas fa-home"></i> 대시보드로 돌아가기
+                        </a>
+                        <a href="./exam.html" class="btn btn-outline btn-large">
+                            <i class="fas fa-edit"></i> 시험 응시하기
+                        </a>
+                    `;
+                }
+                
+                // 다른 섹션들 숨기기
+                const sectionsToHide = [
+                    '.chart-container',
+                    '.stats-grid',
+                    '.detailed-results',
+                    '.recommendations'
+                ];
+                
+                sectionsToHide.forEach(selector => {
+                    const element = document.querySelector(selector);
+                    if (element) {
+                        element.style.display = 'none';
+                    }
+                });
+            }
+
             updateUI() {
                 // 데이터가 로드되지 않았으면 UI 업데이트 하지 않음
                 if (!this.isDataLoaded || this.score === null) {
@@ -986,9 +1116,9 @@
                 
                 console.log('🎨 UI 업데이트 시작:', { score: this.score, total: this.totalQuestions });
                 
-                // 점수 표시
-                document.getElementById('scoreNumber').textContent = this.score;
-                document.getElementById('circleScore').textContent = this.score;
+                // 점수 표시 - earnedPoints를 사용하여 실제 획득 점수 표시
+                document.getElementById('scoreNumber').textContent = this.examData.earnedPoints || 0;
+                document.getElementById('circleScore').textContent = this.examData.earnedPoints || 0;
                 
                 // 점수 상세 정보 표시
                 if (this.examData.earnedPoints !== undefined && this.examData.totalPoints !== undefined) {
@@ -1046,20 +1176,50 @@
                 document.getElementById('timeUsed').textContent = this.examData.timeUsed;
                 document.getElementById('accuracy').textContent = this.score;
                 
-                // 평균과 비교
-                const averageScore = 70; // Mock 평균 점수
+                // 실제 평균과 비교
+                const averageScore = this.examStats?.averageScore || 70;
+                const totalParticipants = this.examStats?.totalParticipants || 1;
                 const difference = this.score - averageScore;
                 const comparisonElement = document.getElementById('comparison');
                 
+                // 백분위 계산 (간단한 방식)
+                let percentile = '평가 불가';
+                if (totalParticipants > 1) {
+                    // 현재 점수가 전체 참가자 중 어느 위치에 있는지 계산
+                    const currentScore = this.examData.earnedPoints || 0;
+                    const totalPossibleScore = this.examData.totalPoints || 1;
+                    const currentPercentage = Math.round((currentScore / totalPossibleScore) * 100);
+                    
+                    // 전체 참가자 중 현재 백분율보다 낮은 점수를 받은 사람 수 계산
+                    const lowerScores = (this.examScores || []).filter(s => {
+                        if (s.score === null || s.total_points === null) return false;
+                        const participantPercentage = Math.round((s.score / s.total_points) * 100);
+                        return participantPercentage < currentPercentage;
+                    }).length;
+                    
+                    percentile = Math.round(((lowerScores + 1) / totalParticipants) * 100);
+                }
+                
                 if (difference > 0) {
-                    comparisonElement.textContent = `${difference}점 높음`;
+                    comparisonElement.innerHTML = `${Math.abs(difference)}점 높음<br><small>전체 평균: ${averageScore}점 (${totalParticipants}명 참가)</small>`;
                     comparisonElement.style.color = '#28a745';
                 } else if (difference < 0) {
-                    comparisonElement.textContent = `${Math.abs(difference)}점 낮음`;
+                    comparisonElement.innerHTML = `${Math.abs(difference)}점 낮음<br><small>전체 평균: ${averageScore}점 (${totalParticipants}명 참가)</small>`;
                     comparisonElement.style.color = '#dc3545';
                 } else {
-                    comparisonElement.textContent = '평균과 동일';
+                    comparisonElement.innerHTML = `평균과 동일<br><small>전체 평균: ${averageScore}점 (${totalParticipants}명 참가)</small>`;
                     comparisonElement.style.color = '#6c757d';
+                }
+                
+                // 백분위 정보 추가
+                const percentileElement = document.createElement('p');
+                percentileElement.style.cssText = 'color: var(--medium-gray); margin-top: 10px; font-size: 0.9em;';
+                percentileElement.innerHTML = `백분위: <strong>${percentile}%</strong>`;
+                
+                const chartContainer = document.querySelector('.chart-container');
+                if (chartContainer && !chartContainer.querySelector('.percentile-info')) {
+                    percentileElement.className = 'percentile-info';
+                    chartContainer.appendChild(percentileElement);
                 }
             }
 

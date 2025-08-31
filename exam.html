@@ -734,6 +734,7 @@
                     // 3단계: 문제 데이터 구성
                     console.log('🔍 exam_questions 데이터:', examQuestions);
                     
+                    const pointsMap = {};
                     const questions = examQuestions.map((eq, index) => {
                         const question = eq.questions;
                         let options = [];
@@ -744,13 +745,27 @@
                             correct = question.correct_answer_indices?.[0] || 0;
                         }
                         
+                        const parsedPoints = parseInt(eq.points);
+                        const maxPoints = Number.isFinite(parsedPoints) && parsedPoints > 0
+                            ? parsedPoints
+                            : (question.type === 'subjective' || question.type === 'essay' || question.type === '주관식') ? 100 : 1;
+                        pointsMap[question.id] = maxPoints;
+
+                        console.log(`🔍 문제 ${index + 1} 원본 데이터:`, {
+                            question: question,
+                            choices: question.choices,
+                            correct_answer_indices: question.correct_answer_indices,
+                            correct: correct
+                        });
+                        
                         const questionData = {
                             id: question.id,
                             text: question.title || question.content,
                             options: options,
                             correct: correct,
                             type: question.type,
-                            difficulty: question.difficulty
+                            difficulty: question.difficulty,
+                            maxPoints: maxPoints
                         };
                         
                         console.log(`📝 문제 ${index + 1} 구성:`, {
@@ -771,6 +786,8 @@
                         passing_score: exam.passing_score,
                         questions: questions
                     };
+                    this.pointsMap = pointsMap;
+                    this.totalMaxPoints = Object.values(pointsMap).reduce((sum, v) => sum + (Number(v) || 0), 0);
                     
                     this.timeRemaining = this.examData.duration;
                     this.examDuration = exam.duration; // 시험 시간 저장
@@ -917,9 +934,22 @@
                     const answeredCount = Object.keys(this.answers).length;
                     const totalQuestions = this.examData.questions.length;
                     
-                    // 채점 수행
-                    const score = this.calculateScore();
-                    const totalPoints = totalQuestions;
+                    // 배점 기반 점수 계산
+                    const totalPoints = this.totalMaxPoints && this.totalMaxPoints > 0 ? this.totalMaxPoints : totalQuestions;
+                    let earnedPoints = 0;
+                    Object.entries(this.answers).forEach(([qIndex, aIndex]) => {
+                        const idx = parseInt(qIndex);
+                        const q = this.examData.questions[idx];
+                        if (!q) return;
+                        const maxP = this.pointsMap?.[q.id] || (q.type === 'multiple_choice' || q.type === '객관식' ? 1 : 100);
+                        if (q.type === 'multiple_choice' || q.type === '객관식') {
+                            earnedPoints += (aIndex === q.correct) ? maxP : 0;
+                        } else {
+                            // 주관식은 자동 제출 시 0점, 추후 채점 반영됨
+                            earnedPoints += 0;
+                        }
+                    });
+                    const score = totalPoints > 0 ? Math.round((earnedPoints / totalPoints) * 100) : 0;
                     
                     console.log('📊 자동 제출 점수 계산:', { score, totalPoints, answers: this.answers });
                     
@@ -960,15 +990,30 @@
                     // 2. 개별 답변 저장
                     const answerPromises = Object.entries(this.answers).map(async ([questionIndex, answerIndex]) => {
                         const question = this.examData.questions[parseInt(questionIndex)];
-                        const isCorrect = answerIndex === question.correct;
+                        
+                        let isCorrect = false;
+                        let points = 0;
+                        const maxPoints = this.pointsMap?.[question.id] || (question.type === 'multiple_choice' || question.type === '객관식' ? 1 : 100);
+                        
+                        // 문제 유형에 따른 채점 로직
+                        if (question.type === 'multiple_choice' || question.type === '객관식') {
+                            // 객관식: 정답 인덱스와 비교
+                            isCorrect = answerIndex === question.correct;
+                            points = isCorrect ? maxPoints : 0;
+                        } else {
+                            // 주관식: 일단 정답으로 설정하고 나중에 수동/AI 채점으로 수정
+                            isCorrect = true;
+                            points = 0;
+                        }
                         
                         const { error: answerError } = await window.supabaseClient
                             .from('exam_answers')
                             .insert({
                                 session_id: this.sessionId,
+                                question_id: question.id,
                                 answer: answerIndex.toString(),
                                 is_correct: isCorrect,
-                                points: isCorrect ? 1 : 0
+                                points: points
                             });
                         
                         if (answerError) {
@@ -1371,9 +1416,21 @@
                 
                 clearInterval(this.timer);
                 
-                // 채점 수행
-                const score = this.calculateScore();
-                const totalPoints = totalQuestions; // 각 문제당 1점
+                // 배점 기반 점수 계산
+                const totalPoints = this.totalMaxPoints && this.totalMaxPoints > 0 ? this.totalMaxPoints : totalQuestions;
+                let earnedPoints = 0;
+                Object.entries(this.answers).forEach(([qIndex, aIndex]) => {
+                    const idx = parseInt(qIndex);
+                    const q = this.examData.questions[idx];
+                    if (!q) return;
+                    const maxP = this.pointsMap?.[q.id] || (q.type === 'multiple_choice' || q.type === '객관식' ? 1 : 100);
+                    if (q.type === 'multiple_choice' || q.type === '객관식') {
+                        earnedPoints += (aIndex === q.correct) ? maxP : 0;
+                    } else {
+                        earnedPoints += 0;
+                    }
+                });
+                const score = totalPoints > 0 ? Math.round((earnedPoints / totalPoints) * 100) : 0;
                 
                 console.log('📊 시험 점수 계산:', { score, totalPoints, answers: this.answers });
                 
@@ -1416,7 +1473,31 @@
                     // 2. 개별 답변 저장
                     const answerPromises = Object.entries(this.answers).map(async ([questionIndex, answerIndex]) => {
                         const question = this.examData.questions[parseInt(questionIndex)];
-                        const isCorrect = answerIndex === question.correct;
+                        
+                        let isCorrect = false;
+                        let points = 0;
+                        const maxPoints = this.pointsMap?.[question.id] || (question.type === 'multiple_choice' || question.type === '객관식' ? 1 : 100);
+                        
+                        // 문제 유형에 따른 채점 로직
+                        if (question.type === 'multiple_choice' || question.type === '객관식') {
+                            // 객관식: 정답 인덱스와 비교
+                            isCorrect = answerIndex === question.correct;
+                            points = isCorrect ? maxPoints : 0;
+                        } else {
+                            // 주관식: 일단 정답으로 설정하고 나중에 수동/AI 채점으로 수정
+                            isCorrect = true;
+                            points = 0;
+                        }
+                        
+                        console.log('🔍 답안 저장 상세:', {
+                            questionIndex: questionIndex,
+                            answerIndex: answerIndex,
+                            questionCorrect: question.correct,
+                            questionType: question.type,
+                            isCorrect: isCorrect,
+                            points: points,
+                            questionData: question
+                        });
                         
                         const { error: answerError } = await window.supabaseClient
                             .from('exam_answers')
@@ -1425,7 +1506,7 @@
                                 question_id: question.id,
                                 answer: answerIndex.toString(),
                                 is_correct: isCorrect,
-                                points: isCorrect ? 1 : 0
+                                points: points
                             });
                         
                         if (answerError) {
@@ -1480,7 +1561,20 @@
                     // 2단계: 개별 답변 저장
                     const answerPromises = Object.entries(this.answers).map(async ([questionIndex, answerIndex]) => {
                         const question = this.examData.questions[parseInt(questionIndex)];
-                        const isCorrect = answerIndex === question.correct;
+                        
+                        let isCorrect = false;
+                        let points = 0;
+                        
+                        // 문제 유형에 따른 채점 로직
+                        if (question.type === 'multiple_choice' || question.type === '객관식') {
+                            // 객관식: 정답 인덱스와 비교
+                            isCorrect = answerIndex === question.correct;
+                            points = isCorrect ? 1 : 0;
+                        } else {
+                            // 주관식: 일단 정답으로 설정하고 나중에 수동/AI 채점으로 수정
+                            isCorrect = true;
+                            points = 1;
+                        }
                         
                         const { error: answerError } = await window.supabaseClient
                             .from('exam_answers')
@@ -1489,7 +1583,7 @@
                                 question_id: question.id,
                                 answer: answerIndex.toString(),
                                 is_correct: isCorrect,
-                                points: isCorrect ? 1 : 0
+                                points: points
                             });
                         
                         if (answerError) {
