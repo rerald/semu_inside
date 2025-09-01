@@ -6,9 +6,23 @@ on:
   pull_request:
     branches: [ main ]
 
+# GitHub Pages 권한 설정
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 동시 실행 제한
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     
     steps:
     - name: Checkout
@@ -25,14 +39,3 @@ jobs:
     - name: Deploy to GitHub Pages
       id: deployment
       uses: actions/deploy-pages@v4
-
-# GitHub Pages 권한 설정
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-# 동시 실행 제한
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
