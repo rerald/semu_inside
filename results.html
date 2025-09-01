@@ -787,11 +787,11 @@
             margin-left: 35px;
         }
         
-        .answer-section, .model-answer-section, .feedback-section {
+        .answer-section, .explanation-section, .model-answer-section, .feedback-section {
             margin-bottom: 20px;
         }
         
-        .answer-section h5, .model-answer-section h5, .feedback-section h5 {
+        .answer-section h5, .explanation-section h5, .model-answer-section h5, .feedback-section h5 {
             color: var(--dark-gray);
             margin-bottom: 12px;
             font-size: 1.1rem;
@@ -824,13 +824,18 @@
             font-style: italic;
         }
         
-        .model-answer-box, .feedback-box {
+        .model-answer-box, .feedback-box, .explanation-box {
             background: #e3f2fd;
             border: 1px solid #bbdefb;
             border-radius: 10px;
             padding: 15px;
             font-size: 1rem;
             line-height: 1.5;
+        }
+        
+        .explanation-box {
+            background: #fff3e0;
+            border: 1px solid #ffcc80;
         }
         
         .feedback-score-info {
@@ -2329,6 +2334,8 @@
                             title,
                             content,
                             type,
+                            explanation,
+                            model_answer,
                             choices,
                             question_options (
                                 id,
@@ -2556,23 +2563,31 @@
                                         return '';
                                     })()}
                                     
+${(() => {
+                                        // 객관식 문제가 아닌 경우에만 '내 답안' 섹션을 표시
+                                        if (question?.type !== 'multiple_choice' && question?.type !== '객관식') {
+                                            return `
                                     <div class="answer-section">
                                         <h5>내 답안</h5>
                                         <div class="my-answer-box" style="${answer?.is_correct ? 'background-color: #e3f2fd; border-color: #2196f3; color: #1976d2;' : 'background-color: #ffebee; border-color: #f44336; color: #c62828;'}">
                                             ${(() => {
                                                 if (!answer) return '<span class="no-answer">미답변</span>';
-                                                
-                                                if ((question?.type === 'multiple_choice' || question?.type === '객관식') && originalChoices.length > 0) {
-                                                    const userAnswerIndex = parseInt(answer.answer || '-1');
-                                                    const userSelectedChoice = originalChoices[userAnswerIndex];
-                                                    if (userSelectedChoice) {
-                                                        return `<strong>${String.fromCharCode(65 + userAnswerIndex)}번:</strong> ${userSelectedChoice.text || userSelectedChoice.content || userSelectedChoice}`;
-                                                    }
-                                                }
                                                 return answer.answer || '답안 없음';
                                             })()}
                                         </div>
-                                    </div>
+                                    </div>`;
+                                        }
+                                        return '';
+                                    })()}
+                                    
+                                    ${question?.explanation ? `
+                                        <div class="explanation-section">
+                                            <h5>📖 문제 해설</h5>
+                                            <div class="explanation-box">
+                                                ${question.explanation}
+                                            </div>
+                                        </div>
+                                    ` : ''}
                                     
                                     ${question?.model_answer ? `
                                         <div class="model-answer-section">
@@ -2660,7 +2675,9 @@
                             id,
                             title,
                             content,
-                            type
+                            type,
+                            explanation,
+                            model_answer
                         )
                     `)
                     .eq('exam_id', examId)
@@ -2999,3 +3016,4 @@
     </script>
 </body>
 </html>
+
