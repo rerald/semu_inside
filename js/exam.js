@@ -47,6 +47,7 @@ class ExamManager {
                     *,
                     questions (
                         *,
+                        choices,
                         question_options (*),
                         question_groups (*)
                     )
@@ -217,13 +218,32 @@ class ExamManager {
 
     // 객관식 문제 렌더링
     renderMultipleChoice(question) {
-        const options = question.question_options || [];
+        let options = [];
+        
+        // 1차: question_options 테이블에서 조회된 선택지 사용
+        if (question.question_options && question.question_options.length > 0) {
+            options = question.question_options.sort((a, b) => a.order_index - b.order_index);
+            console.log(`🔍 시험 응시: question_options에서 ${options.length}개 선택지 로드됨`);
+        } 
+        // 2차: questions.choices 필드에서 선택지 조회 (관리자 패널 방식)
+        else if (question.choices && Array.isArray(question.choices) && question.choices.length > 0) {
+            options = question.choices.map((choice, index) => ({
+                id: `choice-${index}`, // 임시 ID 생성
+                content: choice.text || choice.content || choice,
+                is_correct: choice.isCorrect || choice.is_correct || false,
+                order_index: index
+            }));
+            console.log(`🔍 시험 응시: choices 필드에서 ${options.length}개 선택지 로드됨`);
+        } else {
+            console.warn(`⚠️ 시험 응시: 문제 ${question.id}에 선택지가 없습니다!`);
+            return '<div class="no-options">선택지가 없습니다.</div>';
+        }
         
         return `
             <div class="answer-options">
                 ${options.map((option, index) => `
                     <label class="option" for="option-${option.id}">
-                        <input type="radio" id="option-${option.id}" name="question-${question.id}" value="${option.id}">
+                        <input type="radio" id="option-${option.id}" name="question-${question.id}" value="${index}" data-option-id="${option.id}" data-is-correct="${option.is_correct}">
                         <span class="option-text">${Utils.escapeHtml(option.content)}</span>
                     </label>
                 `).join('')}
@@ -250,11 +270,12 @@ class ExamManager {
         const savedAnswer = this.answers[questionId];
         if (!savedAnswer) return;
 
-        // 객관식 답안 복원
+        // 객관식 답안 복원 (인덱스 기반)
         const radioInput = document.querySelector(`input[name="question-${questionId}"][value="${savedAnswer}"]`);
         if (radioInput) {
             radioInput.checked = true;
             radioInput.closest('.option').classList.add('selected');
+            console.log(`🔍 답안 복원: 문제 ${questionId}, 선택지 인덱스 ${savedAnswer}`);
         }
 
         // 주관식 답안 복원
@@ -274,7 +295,10 @@ class ExamManager {
                     document.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
                     e.target.closest('.option').classList.add('selected');
                     
-                    // 답안 저장
+                    // 디버깅 정보 로그
+                    console.log(`🎯 답안 선택: 문제 ${question.id}, 선택지 인덱스 ${e.target.value}, 정답 여부: ${e.target.dataset.isCorrect}`);
+                    
+                    // 답안 저장 (인덱스로 저장)
                     this.saveAnswer(question.id, e.target.value);
                 });
             });
@@ -417,6 +441,7 @@ class ExamManager {
 
         // 시험 제출
         document.getElementById('submit-exam-btn').onclick = () => {
+            console.log('🔴 제출 버튼 클릭됨!');
             this.confirmSubmit();
         };
     }
@@ -446,6 +471,7 @@ class ExamManager {
 
     // 제출 확인
     confirmSubmit() {
+        console.log('🟡 제출 확인 다이얼로그 표시');
         const unansweredCount = this.questions.length - Object.keys(this.answers).length;
         
         let message = '시험을 제출하시겠습니까?';
@@ -453,20 +479,28 @@ class ExamManager {
             message += `\n\n답하지 않은 문제가 ${unansweredCount}개 있습니다.`;
         }
         
+        console.log('🟡 확인 메시지:', message);
         if (confirm(message)) {
+            console.log('🟢 사용자가 제출 확인함');
             this.submitExam(false);
+        } else {
+            console.log('🔴 사용자가 제출 취소함');
         }
     }
 
     // 시험 제출
     async submitExam(isAutoSubmit = false) {
         try {
+            console.log('🚨 submitExam 함수 시작!', {isAutoSubmit, sessionId: this.currentSession?.id});
             Utils.showLoading();
             
             // 마지막 자동저장
+            console.log('💾 마지막 자동저장 시작...');
             await this.saveAnswersToServer();
+            console.log('✅ 마지막 자동저장 완료');
             
             // 세션 상태 업데이트
+            console.log('📝 세션 상태 업데이트 시작...');
             const submitTime = new Date().toISOString();
             const durationMinutes = Math.ceil((new Date(submitTime) - new Date(this.currentSession.start_time)) / (1000 * 60));
             
@@ -480,11 +514,15 @@ class ExamManager {
                 .eq('id', this.currentSession.id);
 
             if (sessionError) {
+                console.error('❌ 세션 상태 업데이트 실패:', sessionError);
                 throw sessionError;
             }
+            console.log('✅ 세션 상태 업데이트 완료');
 
             // 객관식 자동 채점
+            console.log('🎯 시험 제출 - 자동채점 시작...');
             await this.autoGradeMultipleChoice();
+            console.log('✅ 자동채점 완료');
 
             this.isSubmitted = true;
             this.stopTimer();
@@ -504,9 +542,12 @@ class ExamManager {
             }, 2000);
 
         } catch (error) {
-            console.error('Submit exam error:', error);
+            console.error('❌ submitExam 에러 발생:', error);
+            console.error('❌ 에러 상세:', error.message);
+            console.error('❌ 에러 스택:', error.stack);
             Utils.showAlert('시험 제출 중 오류가 발생했습니다.', 'error');
         } finally {
+            console.log('🏁 submitExam 함수 종료');
             Utils.hideLoading();
         }
     }
@@ -514,15 +555,78 @@ class ExamManager {
     // 객관식 자동 채점
     async autoGradeMultipleChoice() {
         try {
+            console.log('🔄 자동채점 시작...');
+            console.log('📋 총 문제 수:', this.questions.length);
+            console.log('📝 사용자 답안:', this.answers);
+            
+            // 세션의 랜덤화 정보 로드
+            const { data: sessionData, error: sessionError } = await window.supabase
+                .from('exam_sessions')
+                .select('question_randomization')
+                .eq('id', this.currentSession.id)
+                .single();
+            
+            if (sessionError) {
+                console.warn('⚠️ 세션 랜덤화 정보 로드 실패:', sessionError);
+            }
+            
+            const randomizationData = sessionData?.question_randomization || {};
+            console.log('🔀 자동채점용 랜덤화 정보:', randomizationData);
+            
             const multipleChoiceAnswers = [];
             
             for (const examQuestion of this.questions) {
                 const question = examQuestion.questions;
-                const userAnswer = this.answers[question.id];
+                const userAnswerIndex = this.answers[question.id];
                 
-                if (question.type === 'multiple_choice' && userAnswer) {
-                    const correctOption = question.question_options?.find(opt => opt.is_correct);
-                    const isCorrect = correctOption && correctOption.id === userAnswer;
+                console.log(`🔍 문제 ${question.id} 처리 중:`, {
+                    type: question.type,
+                    userAnswer: userAnswerIndex,
+                    hasQuestionOptions: question.question_options?.length || 0,
+                    hasChoices: question.choices?.length || 0
+                });
+                
+                if (question.type === 'multiple_choice' && userAnswerIndex !== undefined) {
+                    let isCorrect = false;
+                    let correctIndex = -1;
+                    let originalCorrectIndex = -1;
+                    
+                    // 선택지 데이터 구조에 따라 정답 확인
+                    if (question.question_options && question.question_options.length > 0) {
+                        // question_options 테이블 사용
+                        originalCorrectIndex = question.question_options.findIndex(opt => opt.is_correct);
+                    } else if (question.choices && Array.isArray(question.choices)) {
+                        // choices 필드 사용 (관리자 패널 방식)
+                        originalCorrectIndex = question.choices.findIndex(choice => choice.isCorrect || choice.is_correct);
+                    }
+                    
+                    // 랜덤화 정보가 있는지 확인
+                    const questionRandomization = randomizationData[question.id];
+                    if (questionRandomization && questionRandomization.isRandomized) {
+                        // 랜덤화된 경우: 원본 인덱스를 랜덤화된 인덱스로 변환
+                        const mapping = questionRandomization.originalToNewMapping || [];
+                        correctIndex = mapping.indexOf(originalCorrectIndex);
+                        
+                        console.log(`🔀 랜덤화 채점: 문제 ${question.id}`, {
+                            originalCorrectIndex,
+                            randomizedCorrectIndex: correctIndex,
+                            userAnswer: userAnswerIndex,
+                            mapping
+                        });
+                    } else {
+                        // 랜덤화되지 않은 경우: 원본 인덱스 사용
+                        correctIndex = originalCorrectIndex;
+                        
+                        console.log(`📝 일반 채점: 문제 ${question.id}`, {
+                            correctIndex,
+                            userAnswer: userAnswerIndex
+                        });
+                    }
+                    
+                    isCorrect = correctIndex !== -1 && correctIndex === parseInt(userAnswerIndex);
+                    
+                    console.log(`✅ 채점 결과: 문제 ${question.id}, 사용자선택 ${userAnswerIndex}, 정답인덱스 ${correctIndex}, 결과 ${isCorrect}`);
+                    
                     const points = isCorrect ? examQuestion.points : 0;
                     
                     multipleChoiceAnswers.push({
@@ -535,6 +639,8 @@ class ExamManager {
             }
 
             if (multipleChoiceAnswers.length > 0) {
+                console.log('💾 자동채점 결과 저장 중...', multipleChoiceAnswers);
+                
                 const { error } = await window.supabase
                     .from('exam_answers')
                     .upsert(multipleChoiceAnswers, {
@@ -544,13 +650,47 @@ class ExamManager {
                 if (error) {
                     throw error;
                 }
+                
+                console.log('✅ 자동채점 결과 저장 완료');
+            } else {
+                console.warn('⚠️ 자동채점할 객관식 문제가 없습니다.');
             }
 
             // 총점 계산 및 업데이트
             await this.calculateTotalScore();
 
         } catch (error) {
-            console.error('Auto grading error:', error);
+            console.error('❌ 자동채점 오류:', error);
+            console.error('❌ 오류 상세:', error.message, error.stack);
+            
+            // 자동채점 실패 시에도 기본 답안 저장
+            try {
+                const basicAnswers = [];
+                for (const examQuestion of this.questions) {
+                    const question = examQuestion.questions;
+                    const userAnswer = this.answers[question.id];
+                    
+                    if (question.type === 'multiple_choice' && userAnswer !== undefined) {
+                        basicAnswers.push({
+                            session_id: this.currentSession.id,
+                            question_id: question.id,
+                            is_correct: false, // 일단 오답으로 저장
+                            points: 0
+                        });
+                    }
+                }
+                
+                if (basicAnswers.length > 0) {
+                    await window.supabase
+                        .from('exam_answers')
+                        .upsert(basicAnswers, {
+                            onConflict: 'session_id,question_id'
+                        });
+                    console.log('⚠️ 기본 답안 저장 완료 (자동채점 실패)');
+                }
+            } catch (fallbackError) {
+                console.error('❌ 기본 답안 저장도 실패:', fallbackError);
+            }
         }
     }
 

@@ -1002,6 +1002,74 @@
             display: none !important;
         }
 
+        /* 시험 기록 관리 테이블 스타일 */
+        .table-responsive {
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .table {
+            margin-bottom: 0;
+        }
+
+        .table th {
+            background-color: #f8f9fa;
+            border: none;
+            font-weight: 600;
+            color: #495057;
+            padding: 1rem 0.75rem;
+        }
+
+        .table td {
+            padding: 0.75rem;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .table tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        /* 기록 관리 모달 스타일 */
+        .record-details .card {
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+        }
+
+        .record-details .card-body {
+            padding: 1rem;
+        }
+
+        .record-details .card-title {
+            color: #495057;
+            font-size: 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .record-details ul li {
+            padding: 0.25rem 0;
+        }
+
+        /* 모달 크기 조정 */
+        #exam-record-management-modal .modal-content {
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        /* 반응형 테이블 */
+        @media (max-width: 768px) {
+            .table th,
+            .table td {
+                padding: 0.5rem 0.25rem;
+                font-size: 0.875rem;
+            }
+            
+            .btn-sm {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.75rem;
+            }
+        }
+
         /* 문제 등록 폼 스타일 */
         .question-form-container {
             margin-top: 20px;
@@ -5944,22 +6012,48 @@
 
         function hideExamForm() {
             // 폼 영역 숨기고 목록 영역 표시
-            document.getElementById('exam-form-area').style.display = 'none';
-            document.getElementById('exams-list-area').style.display = 'block';
+            const examFormArea = document.getElementById('exam-form-area');
+            const examsListArea = document.getElementById('exams-list-area');
+            const showExamBtn = document.querySelector('button[onclick="showExamForm()"]');
+            const hideExamBtn = document.getElementById('hideExamFormBtn');
+            
+            if (examFormArea) {
+                examFormArea.style.display = 'none';
+            }
+            if (examsListArea) {
+                examsListArea.style.display = 'block';
+            }
             
             // 버튼 상태 변경
-            document.querySelector('button[onclick="showExamForm()"]').style.display = 'inline-block';
-            document.getElementById('hideExamFormBtn').style.display = 'none';
+            if (showExamBtn) {
+                showExamBtn.style.display = 'inline-block';
+            }
+            if (hideExamBtn) {
+                hideExamBtn.style.display = 'none';
+            }
         }
 
         async function showExamForm() {
             // 목록 영역 숨기고 폼 영역 표시
-            document.getElementById('exams-list-area').style.display = 'none';
-            document.getElementById('exam-form-area').style.display = 'block';
+            const examsListArea = document.getElementById('exams-list-area');
+            const examFormArea = document.getElementById('exam-form-area');
+            const showExamBtn = document.querySelector('button[onclick="showExamForm()"]');
+            const hideExamBtn = document.getElementById('hideExamFormBtn');
+            
+            if (examsListArea) {
+                examsListArea.style.display = 'none';
+            }
+            if (examFormArea) {
+                examFormArea.style.display = 'block';
+            }
             
             // 버튼 상태 변경
-            document.querySelector('button[onclick="showExamForm()"]').style.display = 'none';
-            document.getElementById('hideExamFormBtn').style.display = 'inline-block';
+            if (showExamBtn) {
+                showExamBtn.style.display = 'none';
+            }
+            if (hideExamBtn) {
+                hideExamBtn.style.display = 'inline-block';
+            }
             
             const formContainer = document.getElementById('exam-form-content');
             formContainer.innerHTML = `
@@ -9307,6 +9401,9 @@
                     <button class="btn btn-secondary" onclick="refreshUserList()">
                         <i class="fas fa-sync-alt"></i> 새로고침
                     </button>
+                    <button class="btn btn-warning" onclick="showExamRecordManagement()">
+                        <i class="fas fa-history"></i> 시험 기록 관리
+                    </button>
                 </div>
                 
                 <!-- 필터 컨트롤 -->
@@ -9396,6 +9493,7 @@
                                     <select id="user-role">
                                         <option value="employee">일반 사용자</option>
                                         <option value="admin">관리자</option>
+                                        <option value="super_admin">슈퍼관리자</option>
                                     </select>
                                 </div>
                                 <div class="form-group">
@@ -9889,7 +9987,8 @@
                                 <td>${user.email}</td>
                                 <td>
                                     <span class="role-badge role-${user.role || 'employee'}">
-                                        ${user.role === 'admin' ? '관리자' : '일반 사용자'}
+                                        ${user.role === 'super_admin' ? '슈퍼관리자' : 
+                                          user.role === 'admin' ? '관리자' : '일반 사용자'}
                                     </span>
                                 </td>
                                 <td>${departmentName}</td>
@@ -10271,6 +10370,7 @@
                                     <select id="edit-user-role">
                                         <option value="employee" ${user.role === 'employee' ? 'selected' : ''}>일반 사용자</option>
                                         <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>관리자</option>
+                                        <option value="super_admin" ${user.role === 'super_admin' ? 'selected' : ''}>슈퍼관리자</option>
                                     </select>
                                 </div>
                                 <div class="form-group">
@@ -13583,7 +13683,406 @@
                 return false;
             }
         }
+
+        // 전역 변수 - 삭제할 시험 기록 정보
+        let recordToDelete = null;
+
+        // 시험 기록 관리 모달 표시
+        async function showExamRecordManagement() {
+            try {
+                console.log('🔍 시험 기록 관리 모달 열기...');
+                
+                // 모달 표시
+                document.getElementById('exam-record-management-modal').style.display = 'block';
+                
+                // 로딩 상태 표시
+                document.getElementById('exam-records-loading').style.display = 'block';
+                document.getElementById('exam-records-container').style.display = 'none';
+                document.getElementById('exam-records-empty').style.display = 'none';
+                
+                // 시험 목록 로드
+                await loadExamListForFilter();
+                
+                // 초기 데이터 로드
+                await loadExamRecords();
+                
+            } catch (error) {
+                console.error('❌ 시험 기록 관리 모달 로드 오류:', error);
+                alert('시험 기록을 불러오는 중 오류가 발생했습니다.');
+            }
+        }
+
+        // 시험 목록을 필터용으로 로드
+        async function loadExamListForFilter() {
+            try {
+                const { data: exams, error } = await window.supabaseClient
+                    .from('exams')
+                    .select('id, title')
+                    .eq('status', 'published')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                const examFilter = document.getElementById('exam-record-exam-filter');
+                examFilter.innerHTML = '<option value="">모든 시험</option>';
+                
+                exams.forEach(exam => {
+                    examFilter.innerHTML += `<option value="${exam.id}">${exam.title}</option>`;
+                });
+
+            } catch (error) {
+                console.error('시험 목록 로드 오류:', error);
+            }
+        }
+
+        // 시험 기록 로드
+        async function loadExamRecords(userSearch = '', examFilter = '', statusFilter = '') {
+            try {
+                console.log('📊 시험 기록 조회 중...');
+                
+                // 로딩 상태 표시
+                document.getElementById('exam-records-loading').style.display = 'block';
+                document.getElementById('exam-records-container').style.display = 'none';
+                document.getElementById('exam-records-empty').style.display = 'none';
+
+                // 기본 쿼리 구성
+                let query = window.supabaseClient
+                    .from('exam_sessions')
+                    .select(`
+                        id,
+                        exam_id,
+                        employee_id,
+                        status,
+                        score,
+                        start_time,
+                        submit_time,
+                        created_at,
+                        exams (
+                            id,
+                            title
+                        ),
+                        profiles (
+                            id,
+                            name,
+                            email
+                        )
+                    `)
+                    .order('created_at', { ascending: false });
+
+                // 시험 필터 적용
+                if (examFilter) {
+                    query = query.eq('exam_id', examFilter);
+                }
+
+                // 상태 필터 적용
+                if (statusFilter) {
+                    if (statusFilter === 'completed') {
+                        query = query.eq('status', 'completed');
+                    } else if (statusFilter === 'in_progress') {
+                        query = query.eq('status', 'in_progress');
+                    }
+                }
+
+                const { data: sessions, error } = await query;
+
+                if (error) throw error;
+
+                // 사용자 검색 필터링 (클라이언트 사이드)
+                let filteredSessions = sessions;
+                if (userSearch.trim()) {
+                    const searchTerm = userSearch.toLowerCase();
+                    filteredSessions = sessions.filter(session => {
+                        const userName = session.profiles?.name?.toLowerCase() || '';
+                        const userEmail = session.profiles?.email?.toLowerCase() || '';
+                        return userName.includes(searchTerm) || userEmail.includes(searchTerm);
+                    });
+                }
+
+                // 결과 표시
+                displayExamRecords(filteredSessions);
+
+            } catch (error) {
+                console.error('❌ 시험 기록 로드 오류:', error);
+                document.getElementById('exam-records-loading').style.display = 'none';
+                document.getElementById('exam-records-empty').style.display = 'block';
+                document.getElementById('exam-records-empty').innerHTML = `
+                    <i class="fas fa-exclamation-triangle fa-3x mb-3 text-danger"></i>
+                    <p>시험 기록을 불러오는 중 오류가 발생했습니다.</p>
+                `;
+            }
+        }
+
+        // 시험 기록 표시
+        function displayExamRecords(sessions) {
+            const recordsList = document.getElementById('exam-records-list');
+            
+            // 로딩 상태 숨기기
+            document.getElementById('exam-records-loading').style.display = 'none';
+            
+            if (!sessions || sessions.length === 0) {
+                document.getElementById('exam-records-empty').style.display = 'block';
+                return;
+            }
+
+            // 테이블 표시
+            document.getElementById('exam-records-container').style.display = 'block';
+            
+            recordsList.innerHTML = sessions.map(session => {
+                const user = session.profiles || {};
+                const exam = session.exams || {};
+                
+                const statusBadge = session.status === 'completed' 
+                    ? '<span class="badge badge-success">완료</span>'
+                    : '<span class="badge badge-warning">진행중</span>';
+                
+                const score = session.score !== null 
+                    ? `${session.score}점` 
+                    : '-';
+                
+                const startTime = session.start_time 
+                    ? new Date(session.start_time).toLocaleString('ko-KR')
+                    : new Date(session.created_at).toLocaleString('ko-KR');
+                
+                const submitTime = session.submit_time 
+                    ? new Date(session.submit_time).toLocaleString('ko-KR')
+                    : '-';
+
+                return `
+                    <tr>
+                        <td>${user.name || '알 수 없음'}</td>
+                        <td>${user.email || '알 수 없음'}</td>
+                        <td>${exam.title || '알 수 없음'}</td>
+                        <td>${score}</td>
+                        <td>${statusBadge}</td>
+                        <td>${startTime}</td>
+                        <td>${submitTime}</td>
+                        <td>
+                            <button class="btn btn-sm btn-danger" 
+                                    onclick="showDeleteExamRecordModal('${session.id}', '${user.name}', '${exam.title}', '${session.status}')">
+                                <i class="fas fa-trash"></i> 삭제
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // 시험 기록 검색
+        function searchExamRecords() {
+            const userSearch = document.getElementById('exam-record-user-search').value;
+            const examFilter = document.getElementById('exam-record-exam-filter').value;
+            const statusFilter = document.getElementById('exam-record-status-filter').value;
+            
+            loadExamRecords(userSearch, examFilter, statusFilter);
+        }
+
+        // 시험 기록 삭제 확인 모달 표시
+        function showDeleteExamRecordModal(sessionId, userName, examTitle, status) {
+            recordToDelete = {
+                sessionId: sessionId,
+                userName: userName,
+                examTitle: examTitle,
+                status: status
+            };
+
+            const detailsContainer = document.getElementById('delete-record-details');
+            detailsContainer.innerHTML = `
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-title">삭제할 시험 기록</h6>
+                        <ul class="list-unstyled mb-0">
+                            <li><strong>사용자:</strong> ${userName}</li>
+                            <li><strong>시험:</strong> ${examTitle}</li>
+                            <li><strong>상태:</strong> ${status === 'completed' ? '완료' : '진행중'}</li>
+                            <li><strong>세션 ID:</strong> <code>${sessionId}</code></li>
+                        </ul>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('delete-exam-record-modal').style.display = 'block';
+        }
+
+        // 시험 기록 삭제 실행
+        async function confirmDeleteExamRecord() {
+            if (!recordToDelete) {
+                alert('삭제할 기록이 선택되지 않았습니다.');
+                return;
+            }
+
+            try {
+                console.log('🗑️ 시험 기록 삭제 시작:', recordToDelete.sessionId);
+                
+                // 삭제 버튼 비활성화
+                const deleteBtn = document.querySelector('#delete-exam-record-modal .btn-danger');
+                deleteBtn.disabled = true;
+                deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 삭제 중...';
+
+                // 1단계: 답안 삭제 (CASCADE 삭제가 설정되어 있을 수도 있지만 명시적으로 삭제)
+                const { error: answersError } = await window.supabaseClient
+                    .from('exam_answers')
+                    .delete()
+                    .eq('session_id', recordToDelete.sessionId);
+
+                if (answersError) {
+                    console.warn('답안 삭제 중 오류 (무시 가능):', answersError);
+                }
+
+                // 2단계: 세션 삭제
+                const { error: sessionError } = await window.supabaseClient
+                    .from('exam_sessions')
+                    .delete()
+                    .eq('id', recordToDelete.sessionId);
+
+                if (sessionError) throw sessionError;
+
+                console.log('✅ 시험 기록 삭제 완료');
+                
+                // 성공 메시지
+                alert(`${recordToDelete.userName}님의 "${recordToDelete.examTitle}" 시험 기록이 삭제되었습니다.`);
+                
+                // 모달 닫기
+                hideDeleteExamRecordModal();
+                
+                // 목록 새로고침
+                searchExamRecords();
+
+            } catch (error) {
+                console.error('❌ 시험 기록 삭제 오류:', error);
+                alert('시험 기록 삭제 중 오류가 발생했습니다.');
+                
+                // 버튼 복원
+                const deleteBtn = document.querySelector('#delete-exam-record-modal .btn-danger');
+                deleteBtn.disabled = false;
+                deleteBtn.innerHTML = '<i class="fas fa-trash"></i> 삭제';
+            }
+        }
+
+        // 시험 기록 관리 모달 닫기
+        function hideExamRecordManagement() {
+            document.getElementById('exam-record-management-modal').style.display = 'none';
+            
+            // 검색 필터 초기화
+            document.getElementById('exam-record-user-search').value = '';
+            document.getElementById('exam-record-exam-filter').value = '';
+            document.getElementById('exam-record-status-filter').value = '';
+        }
+
+        // 시험 기록 삭제 확인 모달 닫기
+        function hideDeleteExamRecordModal() {
+            document.getElementById('delete-exam-record-modal').style.display = 'none';
+            recordToDelete = null;
+            
+            // 버튼 복원
+            const deleteBtn = document.querySelector('#delete-exam-record-modal .btn-danger');
+            deleteBtn.disabled = false;
+            deleteBtn.innerHTML = '<i class="fas fa-trash"></i> 삭제';
+        }
     </script>
+
+    <!-- 시험 기록 관리 모달 -->
+    <div id="exam-record-management-modal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 1200px; width: 95%;">
+            <div class="modal-header">
+                <h5><i class="fas fa-history"></i> 시험 기록 관리</h5>
+                <button class="close-btn" onclick="hideExamRecordManagement()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- 검색 필터 -->
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <label for="exam-record-user-search">사용자 검색</label>
+                        <input type="text" id="exam-record-user-search" class="form-control" 
+                               placeholder="이름 또는 이메일 입력..." 
+                               onkeyup="searchExamRecords()">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="exam-record-exam-filter">시험 선택</label>
+                        <select id="exam-record-exam-filter" class="form-control" onchange="searchExamRecords()">
+                            <option value="">모든 시험</option>
+                            <!-- 시험 옵션들이 동적으로 로드됩니다 -->
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="exam-record-status-filter">상태</label>
+                        <select id="exam-record-status-filter" class="form-control" onchange="searchExamRecords()">
+                            <option value="">모든 상태</option>
+                            <option value="completed">완료</option>
+                            <option value="in_progress">진행중</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 결과 테이블 -->
+                <div id="exam-records-loading" class="loading-state">
+                    <div class="loading-pulse"></div>
+                    <span>시험 기록을 조회하는 중...</span>
+                </div>
+
+                <div id="exam-records-container" style="display: none;">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>사용자</th>
+                                    <th>이메일</th>
+                                    <th>시험명</th>
+                                    <th>점수</th>
+                                    <th>상태</th>
+                                    <th>응시일시</th>
+                                    <th>제출일시</th>
+                                    <th>액션</th>
+                                </tr>
+                            </thead>
+                            <tbody id="exam-records-list">
+                                <!-- 시험 기록 목록이 여기에 표시됩니다 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="exam-records-empty" style="display: none; text-align: center; padding: 2rem; color: #666;">
+                    <i class="fas fa-inbox fa-3x mb-3"></i>
+                    <p>조건에 맞는 시험 기록이 없습니다.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 시험 기록 삭제 확인 모달 -->
+    <div id="delete-exam-record-modal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h5><i class="fas fa-exclamation-triangle text-warning"></i> 시험 기록 삭제 확인</h5>
+                <button class="close-btn" onclick="hideDeleteExamRecordModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <strong>⚠️ 주의!</strong> 이 작업은 되돌릴 수 없습니다.
+                </div>
+                
+                <p>다음 시험 기록을 삭제하시겠습니까?</p>
+                
+                <div class="record-details" id="delete-record-details">
+                    <!-- 삭제할 기록 상세 정보가 여기에 표시됩니다 -->
+                </div>
+                
+                <p class="text-muted mt-3">
+                    <small>
+                        • 시험 세션과 모든 답안이 삭제됩니다<br>
+                        • 사용자는 해당 시험을 다시 응시할 수 있게 됩니다<br>
+                        • 삭제된 데이터는 복구할 수 없습니다
+                    </small>
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="hideDeleteExamRecordModal()">취소</button>
+                <button class="btn btn-danger" onclick="confirmDeleteExamRecord()">
+                    <i class="fas fa-trash"></i> 삭제
+                </button>
+            </div>
+        </div>
+    </div>
     
     <!-- Admin.js 스크립트 로드 -->
     <script src="./js/admin.js"></script>

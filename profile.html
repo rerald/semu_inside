@@ -13,302 +13,150 @@
             min-height: 600px;
         }
 
-        .main-content {
-            flex: 1;
-            padding: 30px;
-            background: #f8f9fa;
-        }
-
-        .profile-header {
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            margin-bottom: 30px;
-            box-shadow: var(--shadow);
-            text-align: center;
-        }
-
-        .profile-avatar {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        .profile-layout {
             display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 20px;
-            font-size: 3rem;
-            color: white;
-        }
-
-        .profile-name {
-            font-size: 1.8rem;
-            font-weight: 600;
-            color: var(--dark-gray);
-            margin-bottom: 10px;
-        }
-
-        .profile-email {
-            color: var(--medium-gray);
-            font-size: 1.1rem;
-            margin-bottom: 20px;
-        }
-
-        .profile-stats {
-            display: flex;
-            justify-content: center;
             gap: 30px;
+            min-height: 80vh;
             margin-top: 20px;
         }
 
-        .profile-stat {
+        .profile-sidebar {
+            flex: 0 0 20%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            padding: 30px 20px;
+            color: white;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
             text-align: center;
+        }
+
+        .profile-main {
+            flex: 1;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar-avatar {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 0 auto 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .sidebar-name {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .sidebar-email {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 30px;
+        }
+
+        .sidebar-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .stat-box {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 15px;
+            backdrop-filter: blur(10px);
         }
 
         .stat-number {
             font-size: 1.8rem;
-            font-weight: 700;
-            color: var(--primary-color);
+            font-weight: bold;
+            line-height: 1;
         }
 
         .stat-label {
-            font-size: 0.9rem;
-            color: var(--medium-gray);
+            font-size: 0.85rem;
+            opacity: 0.8;
+            margin-top: 5px;
         }
 
-        .content-grid {
+        .category-performance {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
         }
 
-        .section {
-            background: white;
+        .category-item {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
             border-radius: 15px;
             padding: 25px;
-            box-shadow: var(--shadow);
+            border-left: 5px solid #007bff;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
-        .section-title {
-            font-size: 1.3rem;
-            color: var(--dark-gray);
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+        .category-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
         }
 
-        .info-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid #f8f9fa;
-        }
-
-        .info-item:last-child {
-            border-bottom: none;
-        }
-
-        .info-label {
-            color: var(--medium-gray);
-            font-weight: 500;
-        }
-
-        .info-value {
-            color: var(--dark-gray);
+        .category-title {
+            font-size: 1.2rem;
             font-weight: 600;
-        }
-
-        .recent-activity {
-            list-style: none;
-            padding: 0;
-        }
-
-        .activity-item {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 15px 0;
-            border-bottom: 1px solid #f8f9fa;
-        }
-
-        .activity-item:last-child {
-            border-bottom: none;
-        }
-
-        .activity-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1rem;
-        }
-
-        .activity-icon.exam {
-            background: #e3f2fd;
-            color: #1976d2;
-        }
-
-        .activity-icon.achievement {
-            background: #fff3e0;
-            color: #f57c00;
-        }
-
-        .activity-icon.login {
-            background: #e8f5e8;
-            color: #388e3c;
-        }
-
-        .activity-content {
-            flex: 1;
-        }
-
-        .activity-text {
-            color: var(--dark-gray);
-            font-weight: 500;
-            margin-bottom: 2px;
-        }
-
-        .activity-time {
-            color: var(--medium-gray);
-            font-size: 0.8rem;
-        }
-
-        .edit-form {
-            display: none;
-        }
-
-        .edit-form.active {
-            display: block;
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
+            color: #2c3e50;
             margin-bottom: 15px;
         }
 
-        .achievements {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        .category-stats {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
             gap: 15px;
         }
 
-        .achievement-card {
-            background: #f8f9fa;
-            border: 2px solid #e9ecef;
-            border-radius: 10px;
-            padding: 20px;
-            text-align: center;
-            transition: all 0.3s;
+        .question-count {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #007bff;
         }
 
-        .achievement-card.earned {
-            background: linear-gradient(135deg, #fff9c4, #fff3a0);
-            border-color: #ffc107;
-        }
-
-        .achievement-icon {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-        }
-
-        .achievement-icon.earned {
-            color: #f57c00;
-        }
-
-        .achievement-icon.locked {
-            color: #adb5bd;
-        }
-
-        .achievement-name {
+        .accuracy-rate {
+            font-size: 1.1rem;
+            color: #28a745;
             font-weight: 600;
-            margin-bottom: 5px;
         }
 
-        .achievement-desc {
-            font-size: 0.8rem;
-            color: var(--medium-gray);
-        }
-
-        .progress-section {
-            margin-bottom: 25px;
-        }
-
-        .progress-item {
-            margin-bottom: 15px;
-        }
-
-        .progress-label {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 5px;
+        .rank-badge {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
             font-size: 0.9rem;
+            font-weight: 600;
+            white-space: nowrap;
         }
 
-        .progress-bar-container {
-            background: #e9ecef;
-            border-radius: 10px;
-            height: 8px;
-            overflow: hidden;
-        }
-
-        .progress-bar-fill {
-            height: 100%;
-            border-radius: 10px;
-            transition: width 0.3s ease;
-        }
-
-        .progress-bar-fill.excellent {
-            background: #28a745;
-        }
-
-        .progress-bar-fill.good {
-            background: #17a2b8;
-        }
-
-        .progress-bar-fill.average {
-            background: #ffc107;
-        }
-
-        .progress-bar-fill.poor {
-            background: #dc3545;
-        }
-
-        @media (max-width: 968px) {
-            .content-grid {
-                grid-template-columns: 1fr;
-                gap: 20px;
-            }
-            
-            .main-content {
-                padding: 20px;
-            }
-            
-            .profile-stats {
-                gap: 20px;
-            }
-            
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-            
-            .achievements {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-        @media (max-width: 480px) {
-            .profile-stats {
+        /* 반응형 디자인 */
+        @media (max-width: 768px) {
+            .profile-layout {
                 flex-direction: column;
-                gap: 15px;
+                gap: 20px;
             }
             
-            .achievements {
+            .profile-sidebar {
+                flex: none;
+            }
+            
+            .category-performance {
                 grid-template-columns: 1fr;
             }
         }
@@ -346,249 +194,35 @@
                     </div>
                 </div>
 
-                <!-- 메인 콘텐츠 -->
-                <div class="main-content">
-                    <!-- 프로필 헤더 -->
-                    <div class="profile-header">
-                        <div class="profile-avatar" id="profileAvatar">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <div class="profile-name" id="profileName">사용자명</div>
-                        <div class="profile-email" id="profileEmail">user@example.com</div>
+                <!-- 새로운 레이아웃 -->
+                <div class="profile-layout">
+                    <!-- 좌측 사이드바 (20%) -->
+                    <div class="profile-sidebar">
+                        <div class="sidebar-avatar" id="profileAvatar">이</div>
+                        <div class="sidebar-name" id="profileName">사용자명</div>
+                        <div class="sidebar-email" id="profileEmail">user@example.com</div>
                         
-                        <div class="profile-stats">
-                            <div class="profile-stat">
+                        <div class="sidebar-stats">
+                            <div class="stat-box">
                                 <div class="stat-number" id="totalExamsCompleted">-</div>
                                 <div class="stat-label">완료한 시험</div>
                             </div>
-                            <div class="profile-stat">
+                            <div class="stat-box">
                                 <div class="stat-number" id="averageScore">-</div>
                                 <div class="stat-label">평균 점수</div>
                             </div>
-                            <div class="profile-stat">
+                            <div class="stat-box">
                                 <div class="stat-number" id="ranking">-</div>
-                                <div class="stat-label">팀 내 순위</div>
+                                <div class="stat-label">전체 순위</div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 콘텐츠 그리드 -->
-                    <div class="content-grid">
-                        <!-- 개인 정보 -->
-                        <div class="section">
-                            <h3 class="section-title">
-                                <i class="fas fa-id-card"></i>
-                                개인 정보
-                                <button class="btn btn-outline btn-small" onclick="toggleEdit()" style="margin-left: auto;">
-                                    <i class="fas fa-edit"></i> 수정
-                                </button>
-                            </h3>
-                            
-                            <!-- 보기 모드 -->
-                            <div id="viewMode">
-                                <div class="info-item">
-                                    <span class="info-label">이름</span>
-                                    <span class="info-value" id="displayName">김세무</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">이메일</span>
-                                    <span class="info-value" id="displayEmail">kjtsori@gmail.com</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">부서</span>
-                                    <span class="info-value" id="displayDepartment">세무팀</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">직급</span>
-                                    <span class="info-value" id="displayPosition">-</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">입사일</span>
-                                    <span class="info-value" id="displayJoinDate">-</span>
-                                </div>
-                            </div>
-
-                            <!-- 편집 모드 -->
-                            <div id="editMode" class="edit-form">
-                                <form id="profileForm">
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label>이름</label>
-                                            <input type="text" id="editName" class="form-control" value="김세무">
-                                        </div>
-                                        <div class="form-group">
-                                            <label>직급</label>
-                                            <select id="editPosition" class="form-control">
-                                                <option value="사원">사원</option>
-                                                <option value="주임" selected>주임</option>
-                                                <option value="대리">대리</option>
-                                                <option value="과장">과장</option>
-                                                <option value="차장">차장</option>
-                                                <option value="부장">부장</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>이메일</label>
-                                        <input type="email" id="editEmail" class="form-control" value="kjtsori@gmail.com">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>부서</label>
-                                        <select id="editDepartment" class="form-control">
-                                            <option value="세무팀" selected>세무팀</option>
-                                            <option value="회계팀">회계팀</option>
-                                            <option value="경영지원팀">경영지원팀</option>
-                                            <option value="법무팀">법무팀</option>
-                                        </select>
-                                    </div>
-                                    <div style="text-align: right; margin-top: 20px; gap: 10px; display: flex; justify-content: flex-end;">
-                                        <button type="button" class="btn btn-secondary" onclick="cancelEdit()">취소</button>
-                                        <button type="submit" class="btn btn-primary">저장</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-
-                        <!-- 학습 진행률 -->
-                        <div class="section">
-                            <h3 class="section-title">
-                                <i class="fas fa-chart-line"></i>
-                                학습 진행률
-                            </h3>
-                            
-                            <div class="progress-section">
-                                <div class="progress-item">
-                                    <div class="progress-label">
-                                        <span>부가가치세법</span>
-                                        <span id="vatProgress">-</span>
-                                    </div>
-                                    <div class="progress-bar-container">
-                                        <div class="progress-bar-fill excellent" id="vatProgressBar" style="width: 0%"></div>
-                                    </div>
-                                </div>
-                                
-                                <div class="progress-item">
-                                    <div class="progress-label">
-                                        <span>소득세법</span>
-                                        <span id="incomeProgress">-</span>
-                                    </div>
-                                    <div class="progress-bar-container">
-                                        <div class="progress-bar-fill good" id="incomeProgressBar" style="width: 0%"></div>
-                                    </div>
-                                </div>
-                                
-                                <div class="progress-item">
-                                    <div class="progress-label">
-                                        <span>법인세법</span>
-                                        <span id="corporateProgress">-</span>
-                                    </div>
-                                    <div class="progress-bar-container">
-                                        <div class="progress-bar-fill average" id="corporateProgressBar" style="width: 0%"></div>
-                                    </div>
-                                </div>
-                                
-                                <div class="progress-item">
-                                    <div class="progress-label">
-                                        <span>상속증여세법</span>
-                                        <span id="inheritanceProgress">-</span>
-                                    </div>
-                                    <div class="progress-bar-container">
-                                        <div class="progress-bar-fill poor" id="inheritanceProgressBar" style="width: 0%"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 최근 활동 -->
-                        <div class="section">
-                            <h3 class="section-title">
-                                <i class="fas fa-clock"></i>
-                                최근 활동
-                            </h3>
-                            
-                            <ul class="recent-activity">
-                                <li class="activity-item">
-                                    <div class="activity-icon exam">
-                                        <i class="fas fa-clipboard-check"></i>
-                                    </div>
-                                    <div class="activity-content">
-                                        <div class="activity-text">부가가치세 평가 완료</div>
-                                        <div class="activity-time">85점 • 2시간 전</div>
-                                    </div>
-                                </li>
-                                
-                                <li class="activity-item">
-                                    <div class="activity-icon achievement">
-                                        <i class="fas fa-trophy"></i>
-                                    </div>
-                                    <div class="activity-content">
-                                        <div class="activity-text">연속 출석 7일 달성</div>
-                                        <div class="activity-time">1일 전</div>
-                                    </div>
-                                </li>
-                                
-                                <li class="activity-item">
-                                    <div class="activity-icon exam">
-                                        <i class="fas fa-file-alt"></i>
-                                    </div>
-                                    <div class="activity-content">
-                                        <div class="activity-text">소득세법 기본 응시</div>
-                                        <div class="activity-time">78점 • 3일 전</div>
-                                    </div>
-                                </li>
-                                
-                                <li class="activity-item">
-                                    <div class="activity-icon login">
-                                        <i class="fas fa-sign-in-alt"></i>
-                                    </div>
-                                    <div class="activity-content">
-                                        <div class="activity-text">플랫폼 첫 로그인</div>
-                                        <div class="activity-time">1주 전</div>
-                                    </div>
-                                </li>
-                            </ul>
-                        </div>
-
-                        <!-- 성취 배지 -->
-                        <div class="section">
-                            <h3 class="section-title">
-                                <i class="fas fa-medal"></i>
-                                성취 배지
-                            </h3>
-                            
-                            <div class="achievements">
-                                <div class="achievement-card earned">
-                                    <div class="achievement-icon earned">
-                                        <i class="fas fa-star"></i>
-                                    </div>
-                                    <div class="achievement-name">첫 시험 완주</div>
-                                    <div class="achievement-desc">첫 번째 시험 완료</div>
-                                </div>
-                                
-                                <div class="achievement-card earned">
-                                    <div class="achievement-icon earned">
-                                        <i class="fas fa-fire"></i>
-                                    </div>
-                                    <div class="achievement-name">연속 학습</div>
-                                    <div class="achievement-desc">7일 연속 접속</div>
-                                </div>
-                                
-                                <div class="achievement-card">
-                                    <div class="achievement-icon locked">
-                                        <i class="fas fa-trophy"></i>
-                                    </div>
-                                    <div class="achievement-name">고득점자</div>
-                                    <div class="achievement-desc">평균 90점 이상</div>
-                                </div>
-                                
-                                <div class="achievement-card">
-                                    <div class="achievement-icon locked">
-                                        <i class="fas fa-crown"></i>
-                                    </div>
-                                    <div class="achievement-name">마스터</div>
-                                    <div class="achievement-desc">모든 영역 80점 이상</div>
-                                </div>
-                            </div>
+                    <!-- 우측 메인 영역 (80%) -->
+                    <div class="profile-main">
+                        <h2 style="margin-bottom: 30px; color: #2c3e50;">📊 카테고리별 성과</h2>
+                        <div class="category-performance" id="categoryPerformance">
+                            <!-- 카테고리별 성과 데이터가 여기에 표시됩니다 -->
                         </div>
                     </div>
                 </div>
@@ -596,244 +230,431 @@
         </div>
     </div>
 
-    <!-- Supabase -->
+    <!-- Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
     
     <!-- 공통 스크립트 -->
     <script src="./assets/js/common.js"></script>
     
     <script>
-        // 프로필 페이지 전용 스크립트
         class ProfilePage {
             constructor() {
-                this.editMode = false;
                 this.init();
-            }
-
-            async waitForAuthAndSession() {
-                console.log('⏳ 인증 및 세션 복원 대기 중...');
-                
-                // SemuApp이 초기화될 때까지 대기
-                let attempts = 0;
-                while (!window.semuApp && attempts < 50) { // 최대 5초 대기
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                    attempts++;
-                }
-                
-                if (!window.semuApp) {
-                    console.error('❌ SemuApp 초기화 실패');
-                    window.location.href = './login.html';
-                    return false;
-                }
-                
-                // Supabase 클라이언트가 준비될 때까지 대기
-                attempts = 0;
-                while (!window.semuApp.supabaseClient && attempts < 50) { // 최대 5초 대기
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                    attempts++;
-                }
-                
-                if (!window.semuApp.supabaseClient) {
-                    console.error('❌ Supabase 클라이언트 초기화 실패');
-                    window.location.href = './login.html';
-                    return false;
-                }
-                
-                // 인증 상태 확인이 필요하면 checkAuthState 호출
-                if (!window.semuApp.currentUser) {
-                    console.log('🔄 인증 상태 확인 중...');
-                    await window.semuApp.checkAuthState();
-                    
-                    // 잠시 대기 후 다시 확인
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                }
-                
-                // 사용자 인증 상태 확인
-                if (!window.semuApp.currentUser) {
-                    console.log('❌ 사용자 인증되지 않음, 로그인 페이지로 이동');
-                    
-                    // 현재 URL이 이미 로그인 페이지인지 확인
-                    if (window.location.pathname.includes('login.html')) {
-                        console.log('⚠️ 이미 로그인 페이지에 있음, 리다이렉트 중단');
-                        return false;
-                    }
-                    
-                    window.location.href = './login.html';
-                    return false;
-                }
-                
-                console.log('✅ 사용자 인증 확인됨:', window.semuApp.currentUser.email);
-                console.log('✅ 사용자 정보:', window.semuApp.currentUser);
-                return true;
             }
 
             async init() {
                 console.log('👤 프로필 페이지 초기화');
                 
-                // 인증 및 세션 복원 대기
-                const isAuthenticated = await this.waitForAuthAndSession();
-                if (!isAuthenticated) {
+                // 사용자 인증 확인
+                if (!await this.checkAuth()) {
                     return;
                 }
 
                 // 사용자 정보 로드
                 this.loadUserProfile();
                 
-                // 통계 정보 로드
-                await this.loadUserStats();
-                
-                // 학습 진행률 로드
-                await this.loadLearningProgress();
+                // 통계 정보와 카테고리별 성과를 병렬로 로드
+                await Promise.all([
+                    this.loadUserStats(),
+                    this.loadCategoryPerformance()
+                ]);
                 
                 // 이벤트 리스너 설정
                 this.setupEventListeners();
+            }
+
+            async checkAuth() {
+                console.log('⏳ 인증 및 세션 복원 대기 중...');
+                
+                // common.js 초기화 대기
+                let retryCount = 0;
+                while (!window.semuApp && retryCount < 30) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    retryCount++;
+                }
+
+                if (!window.semuApp) {
+                    console.error('❌ common.js 초기화 실패');
+                    window.location.href = './login.html';
+                    return false;
+                }
+
+                console.log('🔄 인증 상태 확인 중...');
+                
+                // window.semuApp.currentUser가 있는지 확인
+                if (!window.semuApp.currentUser) {
+                    // 세션 복원을 위해 약간 더 대기
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    
+                    if (!window.semuApp.currentUser) {
+                        console.log('❌ 사용자 인증 실패, 로그인 페이지로 이동');
+                        window.location.href = './login.html';
+                        return false;
+                    }
+                }
+
+                console.log('✅ 사용자 인증 확인됨:', window.semuApp.currentUser.email);
+                console.log('✅ 사용자 정보:', window.semuApp.currentUser);
+                return true;
             }
 
             async loadUserStats() {
                 try {
                     console.log('📊 사용자 통계 정보 로드 시작');
                     
-                    if (!window.semuApp.supabaseClient) {
-                        console.error('❌ Supabase 클라이언트가 없습니다');
-                        return;
-                    }
-
                     const userId = window.semuApp.currentUser.id;
                     
                     // 완료된 시험 수 조회
-                    const { data: completedExams, error: examError } = await window.semuApp.supabaseClient
+                    const { data: completedExams, error: examsError } = await window.semuApp.supabaseClient
                         .from('exam_sessions')
-                        .select('id, score, total_points')
+                        .select('*')
                         .eq('employee_id', userId)
-                        .in('status', ['submitted', 'graded']);
+                        .eq('status', 'submitted');
 
-                    if (examError) {
-                        console.error('❌ 시험 세션 조회 실패:', examError);
-                    } else {
-                        const totalExams = completedExams?.length || 0;
-                        document.getElementById('totalExamsCompleted').textContent = totalExams;
-                        console.log('✅ 완료된 시험 수:', totalExams);
-                    }
-
-                    // 평균 점수 계산
-                    if (completedExams && completedExams.length > 0) {
-                        let totalScore = 0;
-                        let totalPoints = 0;
+                    if (!examsError && completedExams) {
+                        document.getElementById('totalExamsCompleted').textContent = completedExams.length;
+                        console.log('✅ 완료된 시험 수:', completedExams.length);
                         
-                        completedExams.forEach(exam => {
-                            if (exam.score && exam.total_points) {
-                                // score가 이미 백분율인지 확인
-                                if (exam.score <= 100) {
-                                    totalScore += exam.score;
-                                } else {
-                                    totalScore += (exam.score / exam.total_points) * 100;
+                        // 평균 점수 계산
+                        if (completedExams.length > 0) {
+                            let totalScore = 0;
+                            let validScores = 0;
+                            
+                            completedExams.forEach(exam => {
+                                if (exam.score && exam.total_points) {
+                                    const percentage = exam.score <= 100 ? 
+                                        exam.score : 
+                                        (exam.score / exam.total_points) * 100;
+                                    totalScore += percentage;
+                                    validScores++;
                                 }
-                                totalPoints++;
+                            });
+                            
+                            if (validScores > 0) {
+                                const averageScore = Math.round(totalScore / validScores);
+                                document.getElementById('averageScore').textContent = averageScore;
+                                console.log('✅ 평균 점수:', averageScore);
                             }
-                        });
-                        
-                        if (totalPoints > 0) {
-                            const averageScore = Math.round(totalScore / totalPoints);
-                            document.getElementById('averageScore').textContent = averageScore;
-                            console.log('✅ 평균 점수:', averageScore);
                         }
                     }
 
-                    // 팀 내 순위 (간단한 구현)
-                    const { data: allUsers, error: userError } = await window.semuApp.supabaseClient
-                        .from('profiles')
-                        .select('id, department_id')
-                        .eq('department_id', window.semuApp.currentUser.department_id);
-
-                    if (!userError && allUsers) {
-                        const ranking = allUsers.length;
-                        document.getElementById('ranking').textContent = ranking;
-                        console.log('✅ 팀 내 순위:', ranking);
-                    }
+                    // 전체 순위 계산
+                    await this.calculateOverallRanking();
 
                 } catch (error) {
                     console.error('❌ 통계 정보 로드 실패:', error);
                 }
             }
 
-            async loadLearningProgress() {
+            async calculateOverallRanking() {
                 try {
-                    console.log('📚 학습 진행률 로드 시작');
+                    console.log('🏆 전체 순위 계산 시작');
                     
-                    if (!window.semuApp.supabaseClient) {
-                        console.error('❌ Supabase 클라이언트가 없습니다');
+                    const currentUserId = window.semuApp.currentUser.id;
+                    
+                    // 모든 사용자의 평균 점수 계산
+                    const { data: allUsers, error: userError } = await window.semuApp.supabaseClient
+                        .from('profiles')
+                        .select('id, name');
+
+                    if (userError || !allUsers) {
+                        console.error('❌ 전체 사용자 조회 실패:', userError);
                         return;
                     }
 
-                    const userId = window.semuApp.currentUser.id;
+                    // 각 사용자의 평균 점수 계산
+                    const userScores = [];
                     
-                    // 각 과목별 진행률 계산
-                    const subjects = [
-                        { id: 'vat', name: '부가가치세법', table: 'vat_exams' },
-                        { id: 'income', name: '소득세법', table: 'income_exams' },
-                        { id: 'corporate', name: '법인세법', table: 'corporate_exams' },
-                        { id: 'inheritance', name: '상속증여세법', table: 'inheritance_exams' }
-                    ];
+                    for (const user of allUsers) {
+                        const { data: userExams, error: examError } = await window.semuApp.supabaseClient
+                            .from('exam_sessions')
+                            .select('score, total_points')
+                            .eq('employee_id', user.id)
+                            .eq('status', 'submitted');
 
-                    for (const subject of subjects) {
-                        try {
-                            // 실제 데이터베이스 구조에 맞게 조정 필요
-                            // 현재는 exam_sessions에서 과목별로 필터링하여 진행률 계산
-                            const { data: subjectExams, error } = await window.semuApp.supabaseClient
-                                .from('exam_sessions')
-                                .select('score, total_points')
-                                .eq('employee_id', userId)
-                                .in('status', ['submitted', 'graded']);
-
-                            if (!error && subjectExams && subjectExams.length > 0) {
-                                let totalScore = 0;
-                                let totalPoints = 0;
-                                
-                                subjectExams.forEach(exam => {
-                                    if (exam.score && exam.total_points) {
-                                        if (exam.score <= 100) {
-                                            totalScore += exam.score;
-                                        } else {
-                                            totalScore += (exam.score / exam.total_points) * 100;
-                                        }
-                                        totalPoints++;
+                        if (!examError && userExams && userExams.length > 0) {
+                            let totalScore = 0;
+                            let totalCount = 0;
+                            
+                            userExams.forEach(exam => {
+                                if (exam.score && exam.total_points) {
+                                    if (exam.score <= 100) {
+                                        totalScore += exam.score;
+                                    } else {
+                                        totalScore += (exam.score / exam.total_points) * 100;
                                     }
+                                    totalCount++;
+                                }
+                            });
+                            
+                            if (totalCount > 0) {
+                                const averageScore = totalScore / totalCount;
+                                userScores.push({
+                                    userId: user.id,
+                                    name: user.name,
+                                    averageScore: averageScore,
+                                    examCount: totalCount
                                 });
-                                
-                                if (totalPoints > 0) {
-                                    const progress = Math.round(totalScore / totalPoints);
-                                    
-                                    // 진행률 표시 업데이트
-                                    const progressElement = document.getElementById(`${subject.id}Progress`);
-                                    const progressBarElement = document.getElementById(`${subject.id}ProgressBar`);
-                                    
-                                    if (progressElement) {
-                                        progressElement.textContent = `${progress}%`;
-                                    }
-                                    
-                                    if (progressBarElement) {
-                                        progressBarElement.style.width = `${progress}%`;
-                                    }
-                                    
-                                    console.log(`✅ ${subject.name} 진행률: ${progress}%`);
-                                }
-                            } else {
-                                // 기본값 설정
-                                const progressElement = document.getElementById(`${subject.id}Progress`);
-                                if (progressElement) {
-                                    progressElement.textContent = '0%';
-                                }
                             }
-                        } catch (subjectError) {
-                            console.error(`❌ ${subject.name} 진행률 로드 실패:`, subjectError);
                         }
                     }
 
-                    console.log('✅ 학습 진행률 로드 완료');
+                    // 평균 점수 기준으로 내림차순 정렬
+                    userScores.sort((a, b) => {
+                        if (b.averageScore !== a.averageScore) {
+                            return b.averageScore - a.averageScore;
+                        }
+                        return b.examCount - a.examCount;
+                    });
+
+                    // 현재 사용자의 순위 찾기
+                    const currentUserRank = userScores.findIndex(score => score.userId === currentUserId) + 1;
+                    const totalUsers = userScores.length;
+
+                    if (currentUserRank > 0) {
+                        document.getElementById('ranking').textContent = `${currentUserRank}/${totalUsers}`;
+                        console.log('✅ 전체 순위:', `${currentUserRank}/${totalUsers}`);
+                    } else {
+                        document.getElementById('ranking').textContent = '-';
+                        console.log('⚠️ 순위 계산 불가 (시험 기록 없음)');
+                    }
 
                 } catch (error) {
-                    console.error('❌ 학습 진행률 로드 실패:', error);
+                    console.error('❌ 전체 순위 계산 실패:', error);
+                    document.getElementById('ranking').textContent = '-';
                 }
+            }
+
+            async loadCategoryPerformance() {
+                try {
+                    console.log('📊 카테고리별 성과 로드 시작');
+                    
+                    const userId = window.semuApp.currentUser.id;
+
+                    // 사용자의 모든 답안을 카테고리 정보와 함께 조회
+                    const { data: userAnswers, error: answersError } = await window.semuApp.supabaseClient
+                        .from('exam_answers')
+                        .select(`
+                            *,
+                            session_id,
+                            exam_sessions!inner (
+                                employee_id,
+                                status
+                            ),
+                            questions (
+                                id,
+                                content,
+                                category_id,
+                                categories (
+                                    id,
+                                    name,
+                                    code
+                                )
+                            )
+                        `)
+                        .eq('exam_sessions.employee_id', userId)
+                        .eq('exam_sessions.status', 'submitted');
+
+                    if (answersError || !userAnswers) {
+                        console.error('❌ 답안 데이터 조회 실패:', answersError);
+                        this.showNoCategoryData();
+                        return;
+                    }
+
+                    console.log('📊 조회된 답안 데이터:', userAnswers);
+                    console.log('📊 총 답안 수:', userAnswers.length);
+
+                    // 카테고리별 통계 계산
+                    const categoryStats = {};
+                    
+                    userAnswers.forEach((answer, index) => {
+                        const question = answer.questions;
+                        const category = question?.categories;
+
+                        console.log(`📊 답안 ${index + 1}:`, {
+                            questionId: question?.id,
+                            categoryId: question?.category_id,
+                            categoryName: category?.name || '카테고리 없음',
+                            isCorrect: answer.is_correct
+                        });
+
+                        // 카테고리가 있는 경우에만 통계에 포함
+                        if (category && category.name) {
+                            const categoryKey = category.id;
+                            
+                            if (!categoryStats[categoryKey]) {
+                                categoryStats[categoryKey] = {
+                                    name: category.name,
+                                    totalQuestions: 0,
+                                    correctAnswers: 0
+                                };
+                            }
+                            
+                            categoryStats[categoryKey].totalQuestions++;
+                            if (answer.is_correct) {
+                                categoryStats[categoryKey].correctAnswers++;
+                            }
+                        }
+                    });
+
+                    console.log('📊 최종 카테고리별 통계:', categoryStats);
+
+                    // 카테고리별 순위 계산 후 렌더링
+                    await this.calculateCategoryRankings(categoryStats);
+                    this.renderCategoryPerformance(categoryStats);
+
+                } catch (error) {
+                    console.error('❌ 카테고리별 성과 로드 실패:', error);
+                    this.showNoCategoryData();
+                }
+            }
+
+            async calculateCategoryRankings(userCategoryStats) {
+                try {
+                    console.log('🏆 카테고리별 순위 계산 시작');
+                    
+                    // 모든 사용자의 카테고리별 성과 조회
+                    const { data: allAnswers, error: answersError } = await window.semuApp.supabaseClient
+                        .from('exam_answers')
+                        .select(`
+                            *,
+                            session_id,
+                            exam_sessions!inner (
+                                employee_id,
+                                status
+                            ),
+                            questions (
+                                id,
+                                content,
+                                category_id,
+                                categories (
+                                    id,
+                                    name,
+                                    code
+                                )
+                            )
+                        `)
+                        .eq('exam_sessions.status', 'submitted');
+
+                    if (answersError || !allAnswers) {
+                        console.error('❌ 전체 사용자 답안 조회 실패:', answersError);
+                        return;
+                    }
+
+                    const currentUserId = window.semuApp.currentUser.id;
+                    
+                    // 각 카테고리별로 순위 계산
+                    for (const [categoryId, userStats] of Object.entries(userCategoryStats)) {
+                        console.log(`🏆 ${userStats.name} 카테고리 순위 계산 중...`);
+                        
+                        const userAccuracies = {};
+                        
+                        // 이 카테고리의 모든 답안 필터링
+                        const categoryAnswers = allAnswers.filter(answer => 
+                            answer.questions?.category_id === categoryId
+                        );
+                        
+                        console.log(`📊 ${userStats.name} 카테고리 총 답안 수:`, categoryAnswers.length);
+                        
+                        // 각 사용자별로 이 카테고리의 정답률 계산
+                        categoryAnswers.forEach(answer => {
+                            const userId = answer.exam_sessions.employee_id;
+                            if (!userAccuracies[userId]) {
+                                userAccuracies[userId] = { correct: 0, total: 0 };
+                            }
+                            userAccuracies[userId].total++;
+                            if (answer.is_correct) {
+                                userAccuracies[userId].correct++;
+                            }
+                        });
+
+                        // 정답률로 변환하고 정렬
+                        const userAccuracyArray = Object.entries(userAccuracies)
+                            .map(([userId, stats]) => ({
+                                userId,
+                                accuracy: (stats.correct / stats.total) * 100
+                            }))
+                            .sort((a, b) => b.accuracy - a.accuracy); // 내림차순 정렬
+
+                        console.log(`📊 ${userStats.name} 카테고리 사용자 정답률:`, userAccuracyArray);
+
+                        // 현재 사용자의 순위 찾기
+                        const userRank = userAccuracyArray.findIndex(user => user.userId === currentUserId) + 1;
+                        const totalUsers = userAccuracyArray.length;
+
+                        console.log(`🏆 ${userStats.name} 순위: ${userRank}/${totalUsers}`);
+
+                        if (userRank > 0 && totalUsers > 0) {
+                            const rankPercent = Math.round((userRank / totalUsers) * 100);
+                            userStats.rankPercent = rankPercent;
+                            console.log(`🏆 ${userStats.name} 상위: ${rankPercent}%`);
+                        } else {
+                            userStats.rankPercent = 100; // 데이터가 없거나 오류 시 100%
+                            console.log(`⚠️ ${userStats.name} 순위 계산 실패, 기본값 100% 설정`);
+                        }
+                    }
+                    
+                    console.log('🏆 카테고리별 순위 계산 완료');
+                } catch (error) {
+                    console.error('❌ 카테고리별 순위 계산 실패:', error);
+                    // 오류 시 모든 카테고리에 기본값 설정
+                    Object.values(userCategoryStats).forEach(stats => {
+                        stats.rankPercent = 100;
+                    });
+                }
+            }
+
+            renderCategoryPerformance(categoryStats) {
+                const container = document.getElementById('categoryPerformance');
+                if (!container) return;
+
+                const categoriesWithData = Object.entries(categoryStats).filter(([_, stats]) => stats.totalQuestions > 0);
+
+                if (categoriesWithData.length === 0) {
+                    this.showNoCategoryData();
+                    return;
+                }
+
+                let html = '';
+                categoriesWithData.forEach(([categoryId, stats]) => {
+                    const accuracy = Math.round((stats.correctAnswers / stats.totalQuestions) * 100);
+                    const rankPercent = stats.rankPercent || 100; // 계산된 순위 또는 기본값 100%
+                    
+                    html += `
+                        <div class="category-item">
+                            <div class="category-title">${stats.name}</div>
+                            <div class="category-stats">
+                                <div class="question-count">
+                                    ${stats.correctAnswers} / ${stats.totalQuestions}문제
+                                </div>
+                                <div class="accuracy-rate">
+                                    정답률 ${accuracy}%
+                                </div>
+                                <div class="rank-badge">
+                                    상위 ${rankPercent}%
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                container.innerHTML = html;
+                console.log(`✅ ${categoriesWithData.length}개 카테고리 성과 표시 완료`);
+            }
+
+
+
+            showNoCategoryData() {
+                const container = document.getElementById('categoryPerformance');
+                if (!container) return;
+
+                container.innerHTML = `
+                    <div class="category-item" style="text-align: center; grid-column: 1 / -1;">
+                        <i class="fas fa-info-circle" style="font-size: 2rem; color: #6c757d; margin-bottom: 15px;"></i>
+                        <div style="color: #6c757d; font-size: 1.1rem; margin-bottom: 5px;">아직 카테고리별 성과 데이터가 없습니다.</div>
+                        <div style="color: #adb5bd; font-size: 0.9rem;">시험을 응시하면 여기에 카테고리별 성과가 표시됩니다.</div>
+                    </div>
+                `;
             }
 
             loadUserProfile() {
@@ -854,7 +675,7 @@
                         console.log('✅ 헤더 사용자명 설정:', user.name + '님');
                     }
                     
-                    // 프로필 헤더
+                    // 프로필 사이드바
                     const profileNameElement = document.getElementById('profileName');
                     if (profileNameElement) {
                         profileNameElement.textContent = user.name;
@@ -874,50 +695,6 @@
                         console.log('✅ 아바타 설정:', user.name.charAt(0));
                     }
                     
-                    // 개인 정보 표시
-                    const displayNameElement = document.getElementById('displayName');
-                    if (displayNameElement) {
-                        displayNameElement.textContent = user.name;
-                    }
-                    
-                    const displayEmailElement = document.getElementById('displayEmail');
-                    if (displayEmailElement) {
-                        displayEmailElement.textContent = user.email;
-                    }
-                    
-                    const displayDepartmentElement = document.getElementById('displayDepartment');
-                    if (displayDepartmentElement) {
-                        displayDepartmentElement.textContent = user.department || '미지정';
-                    }
-                    
-                    const displayPositionElement = document.getElementById('displayPosition');
-                    if (displayPositionElement) {
-                        // 데이터베이스에서 가져온 직급 정보 사용
-                        displayPositionElement.textContent = user.position || '주임';
-                    }
-                    
-                    const displayJoinDateElement = document.getElementById('displayJoinDate');
-                    if (displayJoinDateElement) {
-                        // 데이터베이스에서 가져온 입사일 정보 사용
-                        if (user.hire_date) {
-                            const hireDate = new Date(user.hire_date);
-                            displayJoinDateElement.textContent = hireDate.toLocaleDateString('ko-KR');
-                        } else {
-                            displayJoinDateElement.textContent = '2023-03-15'; // 기본값
-                        }
-                    }
-                    
-                    // 편집 폼에도 값 설정
-                    const editNameElement = document.getElementById('editName');
-                    if (editNameElement) {
-                        editNameElement.value = user.name;
-                    }
-                    
-                    const editEmailElement = document.getElementById('editEmail');
-                    if (editEmailElement) {
-                        editEmailElement.value = user.email;
-                    }
-                    
                     console.log('✅ 사용자 프로필 로드 완료');
                 } catch (error) {
                     console.error('❌ 프로필 로드 중 오류:', error);
@@ -925,108 +702,37 @@
             }
 
             setupEventListeners() {
-                // 프로필 수정 폼
-                const profileForm = document.getElementById('profileForm');
-                profileForm.addEventListener('submit', (e) => this.handleProfileUpdate(e));
-            }
-
-            async handleProfileUpdate(e) {
-                e.preventDefault();
-                
-                const formData = {
-                    name: document.getElementById('editName').value.trim(),
-                    email: document.getElementById('editEmail').value.trim(),
-                    department: document.getElementById('editDepartment').value,
-                    position: document.getElementById('editPosition').value
-                };
-                
-                // 유효성 검사
-                if (!formData.name || !formData.email) {
-                    showAlert('이름과 이메일은 필수 입력 항목입니다.', 'error');
-                    return;
-                }
-                
-                if (!window.semuApp.isValidEmail(formData.email)) {
-                    showAlert('올바른 이메일 형식이 아닙니다.', 'error');
-                    return;
-                }
-                
-                try {
-                    showAlert('프로필을 업데이트하는 중...', 'info');
-                    
-                    // Supabase 업데이트 (실제 구현 시)
-                    if (window.semuApp.supabaseClient) {
-                        // const { error } = await window.semuApp.supabaseClient
-                        //     .from('profiles')
-                        //     .update(formData)
-                        //     .eq('id', window.semuApp.currentUser.id);
-                        
-                        // if (error) throw error;
-                    }
-                    
-                    // 로컬 사용자 정보 업데이트
-                    Object.assign(window.semuApp.currentUser, formData);
-                    localStorage.setItem('semu_user', JSON.stringify(window.semuApp.currentUser));
-                    
-                    // UI 업데이트
-                    this.loadUserProfile();
-                    this.toggleEdit();
-                    
-                    showAlert('프로필이 성공적으로 업데이트되었습니다!', 'success');
-                    
-                } catch (error) {
-                    console.error('프로필 업데이트 실패:', error);
-                    showAlert('프로필 업데이트 중 오류가 발생했습니다.', 'error');
+                // 로그아웃 버튼
+                const logoutBtn = document.querySelector('.logout-btn');
+                if (logoutBtn) {
+                    logoutBtn.addEventListener('click', () => {
+                        window.semuApp.logout();
+                    });
                 }
             }
         }
 
-        // 전역 함수들
-        let profilePage;
-
-        document.addEventListener('DOMContentLoaded', async () => {
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', () => {
             console.log('📱 프로필 페이지 DOM 로드 완료');
             
             // Supabase 초기화 대기
-            while (!window.supabase) {
-                await new Promise(resolve => setTimeout(resolve, 100));
+            if (typeof window.supabase !== 'undefined') {
+                console.log('✅ Supabase 초기화 완료');
             }
-            console.log('✅ Supabase 초기화 완료');
             
-            // common.js 초기화 대기
-            while (!window.semuApp || !window.semuApp.supabaseClient) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-            }
-            console.log('✅ common.js 초기화 완료, 프로필 페이지 생성');
-            
-            profilePage = new ProfilePage();
-        });
-
-        function toggleEdit() {
-            const viewMode = document.getElementById('viewMode');
-            const editMode = document.getElementById('editMode');
-            
-            if (viewMode.style.display === 'none') {
-                // 편집 모드 -> 보기 모드
-                viewMode.style.display = 'block';
-                editMode.style.display = 'none';
+            // common.js 로드 대기 후 프로필 페이지 초기화
+            if (window.semuApp) {
+                console.log('✅ common.js 초기화 완료, 프로필 페이지 생성');
+                new ProfilePage();
             } else {
-                // 보기 모드 -> 편집 모드
-                viewMode.style.display = 'none';
-                editMode.style.display = 'block';
+                console.log('⏳ common.js 초기화 대기 중...');
+                window.addEventListener('semuAppReady', () => {
+                    console.log('✅ common.js 초기화 완료, 프로필 페이지 생성');
+                    new ProfilePage();
+                });
             }
-        }
-
-        function cancelEdit() {
-            // 원래 값으로 되돌리기
-            if (window.semuApp && window.semuApp.currentUser) {
-                const user = window.semuApp.currentUser;
-                document.getElementById('editName').value = user.name;
-                document.getElementById('editEmail').value = user.email;
-            }
-            
-            toggleEdit();
-        }
+        });
     </script>
 </body>
 </html>

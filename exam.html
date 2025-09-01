@@ -814,28 +814,9 @@
             }
 
             async loadSessionRandomizationData(sessionId) {
-                try {
-                    console.log('🔀 세션 랜덤화 정보 로드 중:', sessionId);
-                    
-                    const { data: session, error } = await window.supabaseClient
-                        .from('exam_sessions')
-                        .select('question_randomization')
-                        .eq('id', sessionId)
-                        .single();
-                    
-                    if (error) {
-                        console.error('❌ 세션 랜덤화 정보 로드 실패:', error);
-                        this.sessionData = { question_randomization: {} };
-                        return;
-                    }
-                    
-                    this.sessionData = session;
-                    console.log('✅ 세션 랜덤화 정보 로드 완료:', this.sessionData);
-                    
-                } catch (error) {
-                    console.error('❌ 세션 랜덤화 정보 로드 실패:', error);
-                    this.sessionData = { question_randomization: {} };
-                }
+                // 🗑️ 더 이상 사용하지 않음 - 랜덤화 매핑 데이터 불필요
+                console.log('🔄 단순화된 시스템: 랜덤화 매핑 데이터 로드 생략');
+                this.sessionData = {};
             }
 
             async createOrGetExamSession(examId) {
@@ -998,26 +979,8 @@
                         // 랜덤화된 인덱스를 원본 인덱스로 변환
                         let originalAnswerIndex = answerIndex;
                         
-                        if (this.sessionData && this.sessionData.question_randomization) {
-                            const randomization = this.sessionData.question_randomization[question.id];
-                            
-                            if (randomization && randomization.isRandomized && randomization.originalToNewMapping) {
-                                // 랜덤화된 인덱스를 원본 인덱스로 변환
-                                originalAnswerIndex = randomization.originalToNewMapping.findIndex(value => value === answerIndex);
-                                
-                                // findIndex가 -1을 반환하면 매핑을 찾지 못한 것
-                                if (originalAnswerIndex === -1) {
-                                    originalAnswerIndex = answerIndex; // 매핑을 찾지 못하면 원래 값 사용
-                                }
-                                
-                                console.log('🔄 자동제출 답안 저장 시 인덱스 변환:', {
-                                    questionId: question.id,
-                                    randomizedIndex: answerIndex,
-                                    originalIndex: originalAnswerIndex,
-                                    mapping: randomization.originalToNewMapping
-                                });
-                            }
-                        }
+                        // 🎯 단순화: 이미 원본 인덱스로 저장됨
+                        originalAnswerIndex = answerIndex;
                         
                         // 문제 유형에 따른 채점 로직 (원본 인덱스로 비교)
                         if (question.type === 'multiple_choice' || question.type === '객관식') {
@@ -1114,40 +1077,38 @@
                 optionsContainer.innerHTML = '';
                 
                 if (questionType === 'multiple_choice' || questionType === '객관식') {
-                    // 객관식 문제: 선택지 생성 (랜덤화 적용)
-                    let displayOptions = question.options;
-                    let correctAnswerIndex = question.correct;
+                    // 🎯 새로운 단순 방식: 원본 선택지를 랜덤 순서로 표시
+                    const originalChoices = question.choices || question.options || [];
                     
-                    if (this.sessionData && this.sessionData.question_randomization && 
-                        this.sessionData.question_randomization[question.id]) {
-                        
-                        const randomization = this.sessionData.question_randomization[question.id];
-                        console.log('🔀 랜덤화 정보 적용:', question.id, randomization);
-                        
-                        if (randomization.isRandomized && randomization.randomizedChoices) {
-                            displayOptions = randomization.randomizedChoices;
-                            correctAnswerIndex = randomization.newCorrectIndices[0] || 0;
-                        }
-                    }
+                    // 원본 선택지를 섞어서 표시용 배열 생성
+                    const shuffledChoices = [...originalChoices].sort(() => Math.random() - 0.5);
+                    
+                    console.log('🔀 선택지 랜덤화:', {
+                        questionId: question.id,
+                        originalOrder: originalChoices.map(c => c.text),
+                        shuffledOrder: shuffledChoices.map(c => c.text)
+                    });
                     
                     // 선택지 생성
-                    displayOptions.forEach((option, optionIndex) => {
+                    shuffledChoices.forEach((choice, displayIndex) => {
                         const optionDiv = document.createElement('div');
-                        optionDiv.className = 'option';
-                        optionDiv.onclick = () => this.selectAnswer(optionIndex);
+                        optionDiv.className = 'choice-item option';
+                        optionDiv.onclick = () => this.selectAnswer(displayIndex);
                         
-                        if (this.answers[index] === optionIndex) {
-                            optionDiv.classList.add('selected');
+                        // 이미 선택된 답안이 있는지 확인 (원본 인덱스 기준)
+                        const savedOriginalIndex = this.answers[index];
+                        if (savedOriginalIndex !== undefined) {
+                            const savedChoice = originalChoices[savedOriginalIndex];
+                            if (savedChoice && savedChoice.text === choice.text) {
+                                optionDiv.classList.add('selected');
+                            }
                         }
                         
-                        let optionText = option;
-                        if (typeof option === 'object' && option !== null) {
-                            optionText = option.content || option.text || option.value || JSON.stringify(option);
-                        }
+                        const choiceText = choice.text || choice.content || choice.value || choice;
                         
                         optionDiv.innerHTML = `
                             <div class="option-radio"></div>
-                            <div class="option-text">${String.fromCharCode(65 + optionIndex)}. ${optionText}</div>
+                            <span class="option-text">${String.fromCharCode(65 + displayIndex)}. ${choiceText}</span>
                         `;
                         
                         optionsContainer.appendChild(optionDiv);
@@ -1203,38 +1164,75 @@
             }
 
             selectAnswer(optionIndex) {
-                // 랜덤화된 순서의 인덱스를 원본 순서의 인덱스로 변환
-                let originalIndex = optionIndex;
+                // 🎯 새로운 단순 방식: 선택된 텍스트로 원본 인덱스 찾기
+                const currentQuestion = this.examData.questions[this.currentQuestion];
+                let originalIndex = optionIndex; // 기본값
                 
-                if (this.sessionData && this.sessionData.question_randomization) {
-                    const currentQuestion = this.examData.questions[this.currentQuestion];
-                    const randomization = this.sessionData.question_randomization[currentQuestion.id];
+                try {
+                    // 화면에 표시된 선택지에서 선택된 텍스트 가져오기
+                    const optionElements = document.querySelectorAll('.choice-item');
+                    const selectedElement = optionElements[optionIndex];
                     
-                    if (randomization && randomization.isRandomized && randomization.originalToNewMapping) {
-                        // originalToNewMapping: [원본인덱스] = 새인덱스
-                        // 역매핑: 새인덱스 → 원본인덱스
-                        // 올바른 방법: 배열에서 값이 optionIndex인 인덱스를 찾기
-                        originalIndex = randomization.originalToNewMapping.findIndex(value => value === optionIndex);
+                    if (selectedElement) {
+                        const fullText = selectedElement.querySelector('span')?.textContent?.trim();
                         
-                        // findIndex가 -1을 반환하면 매핑을 찾지 못한 것
-                        if (originalIndex === -1) {
-                            originalIndex = optionIndex; // 매핑을 찾지 못하면 원래 값 사용
+                        if (fullText) {
+                            // A. B. C. D. 접두사 제거하여 순수 텍스트만 추출
+                            const cleanText = fullText.replace(/^[A-Z]\.\s*/, '').trim();
+                            
+                            // 원본 choices에서 해당 텍스트의 인덱스 찾기
+                            const originalChoices = currentQuestion.choices || currentQuestion.options || [];
+                            const foundIndex = originalChoices.findIndex(choice => {
+                                const choiceText = (choice.text || choice.content || choice || '').trim();
+                                return choiceText === cleanText;
+                            });
+                            
+                            if (foundIndex !== -1) {
+                                originalIndex = foundIndex;
+                                console.log('✅ 텍스트 매칭 성공:', {
+                                    fullText,
+                                    cleanText,
+                                    displayIndex: optionIndex,
+                                    originalIndex: foundIndex
+                                });
+                            } else {
+                                console.warn('⚠️ 원본에서 텍스트를 찾지 못함:', {
+                                    fullText,
+                                    cleanText,
+                                    originalChoices: originalChoices.map(c => c.text || c.content || c),
+                                    fallbackIndex: optionIndex
+                                });
+                            }
                         }
-                        
-                        console.log('🔄 답변 인덱스 변환:', {
-                            randomizedIndex: optionIndex,
-                            originalIndex: originalIndex,
-                            mapping: randomization.originalToNewMapping
-                        });
                     }
+                } catch (e) {
+                    console.warn('텍스트 매칭 실패, 기본 인덱스 사용:', e);
                 }
-                
+
                 this.answers[this.currentQuestion] = originalIndex;
                 
                 // 화면 새로고침 대신 선택 상태만 업데이트
                 this.updateAnswerDisplay(originalIndex);
                 this.updateNavigation();
                 this.updateStats();
+
+                // 단순화된 선택 로깅
+                try {
+                    const originalChoices = currentQuestion.choices || currentQuestion.options || [];
+                    const selectedOriginalText = originalChoices[originalIndex]?.text;
+                    const correctOriginalText = originalChoices[currentQuestion.correct]?.text;
+                    
+                    console.log('📝 답안 선택 완료:', {
+                        displayIndex: optionIndex,
+                        originalIndex,
+                        selectedText: selectedOriginalText,
+                        correctIndex: currentQuestion.correct,
+                        correctText: correctOriginalText,
+                        isCorrect: originalIndex === currentQuestion.correct
+                    });
+                } catch (e) {
+                    console.warn('선택 로깅 실패:', e);
+                }
             }
 
             toggleFlag() {
@@ -1276,7 +1274,10 @@
                     // 마지막 문제일 때 "제출" 버튼으로 변경
                     nextBtn.innerHTML = '<i class="fas fa-paper-plane"></i> 제출';
                     nextBtn.className = 'btn btn-success';
-                    nextBtn.onclick = () => this.submitExam();
+                    nextBtn.onclick = () => {
+                        console.log('🔴 exam.html 제출 버튼 클릭됨!');
+                        this.confirmSubmit();
+                    };
                 } else {
                     // 일반 문제일 때 "다음" 버튼으로 변경
                     nextBtn.innerHTML = '다음 <i class="fas fa-chevron-right"></i>';
@@ -1314,38 +1315,29 @@
                 document.getElementById('remainingCount').textContent = remainingCount;
             }
 
-            // 답변 선택 상태 업데이트 (화면 새로고침 없이)
+            // 🎯 단순화된 답변 선택 상태 업데이트 (텍스트 기반)
             updateAnswerDisplay(originalIndex) {
                 // 모든 옵션의 선택 상태 제거
                 document.querySelectorAll('.option').forEach(option => {
                     option.classList.remove('selected');
-                    const radio = option.querySelector('input[type="radio"]');
-                    if (radio) {
-                        radio.checked = false;
-                    }
                 });
 
-                // 랜덤화된 인덱스로 선택 상태 표시
-                let displayIndex = originalIndex;
+                // 원본 인덱스에 해당하는 텍스트 찾아서 선택 상태 표시
+                const currentQuestion = this.examData.questions[this.currentQuestion];
+                const originalChoices = currentQuestion.choices || currentQuestion.options || [];
+                const selectedOriginalText = (originalChoices[originalIndex]?.text || originalChoices[originalIndex]?.content || originalChoices[originalIndex] || '').trim();
                 
-                if (this.sessionData && this.sessionData.question_randomization) {
-                    const currentQuestion = this.examData.questions[this.currentQuestion];
-                    const randomization = this.sessionData.question_randomization[currentQuestion.id];
-                    
-                    if (randomization && randomization.isRandomized && randomization.originalToNewMapping) {
-                        // 원본 인덱스를 랜덤화된 인덱스로 변환
-                        displayIndex = randomization.originalToNewMapping[originalIndex];
-                    }
-                }
-
-                // 해당 옵션 선택 상태로 변경
-                const options = document.querySelectorAll('.option');
-                if (options[displayIndex]) {
-                    options[displayIndex].classList.add('selected');
-                    const radio = options[displayIndex].querySelector('input[type="radio"]');
-                    if (radio) {
-                        radio.checked = true;
-                    }
+                if (selectedOriginalText) {
+                    const options = document.querySelectorAll('.choice-item');
+                    options.forEach(option => {
+                        const fullText = option.querySelector('span')?.textContent?.trim();
+                        if (fullText) {
+                            const cleanText = fullText.replace(/^[A-Z]\.\s*/, '').trim();
+                            if (cleanText === selectedOriginalText) {
+                                option.classList.add('selected');
+                            }
+                        }
+                    });
                 }
             }
 
@@ -1471,6 +1463,12 @@
                 this.startTimer();
             }
 
+            // 제출 확인(호출 일관성을 위해 추가)
+            confirmSubmit() {
+                // submitExam 내부에도 미답변 경고가 있으므로 중복 방지를 위해 바로 호출
+                this.submitExam();
+            }
+
             async submitExam() {
                 const answeredCount = Object.keys(this.answers).length;
                 const totalQuestions = this.examData.questions.length;
@@ -1485,7 +1483,7 @@
                 
                 clearInterval(this.timer);
                 
-                // 배점 기반 점수 계산
+                // 배점 기반 점수 계산 (원본 인덱스 기준)
                 const totalPoints = this.totalMaxPoints && this.totalMaxPoints > 0 ? this.totalMaxPoints : totalQuestions;
                 let earnedPoints = 0;
                 Object.entries(this.answers).forEach(([qIndex, aIndex]) => {
@@ -1494,7 +1492,11 @@
                     if (!q) return;
                     const maxP = this.pointsMap?.[q.id] || (q.type === 'multiple_choice' || q.type === '객관식' ? 1 : 100);
                     if (q.type === 'multiple_choice' || q.type === '객관식') {
-                        earnedPoints += (aIndex === q.correct) ? maxP : 0;
+                        // 정답 판별은 항상 원본 인덱스 기준으로 수행
+                        const choices = q.choices || q.options || [];
+                        const correctOriginalIndex = choices.findIndex(c => c?.isCorrect || c?.is_correct);
+                        const isCorrectNow = parseInt(aIndex) === (correctOriginalIndex !== -1 ? correctOriginalIndex : q.correct);
+                        earnedPoints += isCorrectNow ? maxP : 0;
                     } else {
                         earnedPoints += 0;
                     }
@@ -1547,35 +1549,25 @@
                         let points = 0;
                         const maxPoints = this.pointsMap?.[question.id] || (question.type === 'multiple_choice' || question.type === '객관식' ? 1 : 100);
                         
-                        // 랜덤화된 인덱스를 원본 인덱스로 변환
-                        let originalAnswerIndex = answerIndex;
+                        // 주의: this.answers에는 이미 "원본 인덱스"가 저장되어 있음
+                        // 따라서 추가 변환(역매핑)을 하면 오답 처리됨 → 변환 제거
+                        const originalAnswerIndex = answerIndex;
                         
-                        if (this.sessionData && this.sessionData.question_randomization) {
-                            const randomization = this.sessionData.question_randomization[question.id];
-                            
-                            if (randomization && randomization.isRandomized && randomization.originalToNewMapping) {
-                                // 랜덤화된 인덱스를 원본 인덱스로 변환
-                                originalAnswerIndex = randomization.originalToNewMapping.findIndex(value => value === answerIndex);
-                                
-                                // findIndex가 -1을 반환하면 매핑을 찾지 못한 것
-                                if (originalAnswerIndex === -1) {
-                                    originalAnswerIndex = answerIndex; // 매핑을 찾지 못하면 원래 값 사용
-                                }
-                                
-                                console.log('🔄 답안 저장 시 인덱스 변환:', {
-                                    questionId: question.id,
-                                    randomizedIndex: answerIndex,
-                                    originalIndex: originalAnswerIndex,
-                                    mapping: randomization.originalToNewMapping
-                                });
-                            }
-                        }
-                        
-                        // 문제 유형에 따른 채점 로직 (원본 인덱스로 비교)
+                        // 🎯 단순화된 채점 로직 (항상 원본 인덱스 기준)
                         if (question.type === 'multiple_choice' || question.type === '객관식') {
-                            // 객관식: 원본 정답 인덱스와 비교
-                            isCorrect = originalAnswerIndex === question.correct;
+                            // 원본 정답 인덱스와 직접 비교
+                            const userOriginalIndex = parseInt(originalAnswerIndex);
+                            const correctOriginalIndex = question.correct;
+                            
+                            isCorrect = userOriginalIndex === correctOriginalIndex;
                             points = isCorrect ? maxPoints : 0;
+                            
+                            console.log('📊 객관식 채점:', {
+                                userAnswer: userOriginalIndex,
+                                correctAnswer: correctOriginalIndex,
+                                isCorrect,
+                                points
+                            });
                         } else {
                             // 주관식: 일단 정답으로 설정하고 나중에 수동/AI 채점으로 수정
                             isCorrect = true;
@@ -1662,27 +1654,8 @@
                         // 랜덤화된 인덱스를 원본 인덱스로 변환
                         let originalAnswerIndex = answerIndex;
                         
-                        if (this.sessionData && this.sessionData.question_randomization) {
-                            const randomization = this.sessionData.question_randomization[question.id];
-                            
-                            if (randomization && randomization.isRandomized && randomization.originalToNewMapping) {
-                                // 랜덤화된 인덱스를 원본 인덱스로 변환
-                                originalAnswerIndex = randomization.originalToNewMapping.findIndex(value => value === answerIndex);
-                                
-                                // findIndex가 -1을 반환하면 매핑을 찾지 못한 것
-                                if (originalAnswerIndex === -1) {
-                                    originalAnswerIndex = answerIndex; // 매핑을 찾지 못하면 원래 값 사용
-                                }
-                                
-                                console.log('🔄 자동제출 정답 판정 시 인덱스 변환:', {
-                                    questionId: question.id,
-                                    randomizedIndex: answerIndex,
-                                    originalIndex: originalAnswerIndex,
-                                    questionCorrect: question.correct,
-                                    mapping: randomization.originalToNewMapping
-                                });
-                            }
-                        }
+                        // 🎯 단순화: 이미 원본 인덱스로 저장됨
+                        originalAnswerIndex = answerIndex;
                         
                         // 문제 유형에 따른 채점 로직 (원본 인덱스로 비교)
                         if (question.type === 'multiple_choice' || question.type === '객관식') {
