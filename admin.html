@@ -12897,6 +12897,8 @@
             }
         }
         
+
+
         // 사용자 선택 토글
         function toggleUserSelection(userId) {
             const userItem = document.querySelector(`[data-user-id="${userId}"]`);
@@ -13168,14 +13170,14 @@
                 
                 showAlert(message, 'success');
                 
-                // 체크리스트 다시 로드
+                // 현재 권한 다시 로드
+                await loadCurrentPermissions(examId);
+                
+                // 사용자 체크리스트 다시 로드 (권한 상태 업데이트)
                 await loadUserChecklist(examId);
                 
                 // 선택 초기화
                 window.selectedUserIds.clear();
-                document.querySelectorAll('.user-checklist-item.selected').forEach(item => {
-                    item.classList.remove('selected');
-                });
                 updateSelectionCounts();
                 
             } catch (error) {
@@ -13326,6 +13328,9 @@
                 // 현재 권한 다시 로드
                 await loadCurrentPermissions(examId);
                 
+                // 사용자 체크리스트 다시 로드 (권한 상태 업데이트)
+                await loadUserChecklist(examId);
+                
             } catch (error) {
                 console.error('❌ 권한 제거 실패:', error);
                 showAlert(`권한 제거에 실패했습니다: ${error.message}`, 'error');
@@ -13350,6 +13355,14 @@
                 
                 // 현재 권한 다시 로드
                 await loadCurrentPermissions(examId);
+                
+                // 사용자 체크리스트 다시 로드 (권한 상태 업데이트)
+                await loadUserChecklist(examId);
+                
+                // 선택된 사용자 초기화
+                window.selectedUserIds.clear();
+                updateSelectedUsersDisplay();
+                updateSelectionCounts();
                 
             } catch (error) {
                 console.error('❌ 권한 삭제 실패:', error);

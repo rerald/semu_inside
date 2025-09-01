@@ -995,10 +995,34 @@
                         let points = 0;
                         const maxPoints = this.pointsMap?.[question.id] || (question.type === 'multiple_choice' || question.type === '객관식' ? 1 : 100);
                         
-                        // 문제 유형에 따른 채점 로직
+                        // 랜덤화된 인덱스를 원본 인덱스로 변환
+                        let originalAnswerIndex = answerIndex;
+                        
+                        if (this.sessionData && this.sessionData.question_randomization) {
+                            const randomization = this.sessionData.question_randomization[question.id];
+                            
+                            if (randomization && randomization.isRandomized && randomization.originalToNewMapping) {
+                                // 랜덤화된 인덱스를 원본 인덱스로 변환
+                                originalAnswerIndex = randomization.originalToNewMapping.findIndex(value => value === answerIndex);
+                                
+                                // findIndex가 -1을 반환하면 매핑을 찾지 못한 것
+                                if (originalAnswerIndex === -1) {
+                                    originalAnswerIndex = answerIndex; // 매핑을 찾지 못하면 원래 값 사용
+                                }
+                                
+                                console.log('🔄 자동제출 답안 저장 시 인덱스 변환:', {
+                                    questionId: question.id,
+                                    randomizedIndex: answerIndex,
+                                    originalIndex: originalAnswerIndex,
+                                    mapping: randomization.originalToNewMapping
+                                });
+                            }
+                        }
+                        
+                        // 문제 유형에 따른 채점 로직 (원본 인덱스로 비교)
                         if (question.type === 'multiple_choice' || question.type === '객관식') {
-                            // 객관식: 정답 인덱스와 비교
-                            isCorrect = answerIndex === question.correct;
+                            // 객관식: 원본 정답 인덱스와 비교
+                            isCorrect = originalAnswerIndex === question.correct;
                             points = isCorrect ? maxPoints : 0;
                         } else {
                             // 주관식: 일단 정답으로 설정하고 나중에 수동/AI 채점으로 수정
@@ -1011,7 +1035,7 @@
                             .insert({
                                 session_id: this.sessionId,
                                 question_id: question.id,
-                                answer: answerIndex.toString(),
+                                answer: originalAnswerIndex.toString(),
                                 is_correct: isCorrect,
                                 points: points
                             });
@@ -1189,7 +1213,14 @@
                     if (randomization && randomization.isRandomized && randomization.originalToNewMapping) {
                         // originalToNewMapping: [원본인덱스] = 새인덱스
                         // 역매핑: 새인덱스 → 원본인덱스
-                        originalIndex = randomization.originalToNewMapping.indexOf(optionIndex);
+                        // 올바른 방법: 배열에서 값이 optionIndex인 인덱스를 찾기
+                        originalIndex = randomization.originalToNewMapping.findIndex(value => value === optionIndex);
+                        
+                        // findIndex가 -1을 반환하면 매핑을 찾지 못한 것
+                        if (originalIndex === -1) {
+                            originalIndex = optionIndex; // 매핑을 찾지 못하면 원래 값 사용
+                        }
+                        
                         console.log('🔄 답변 인덱스 변환:', {
                             randomizedIndex: optionIndex,
                             originalIndex: originalIndex,
@@ -1199,7 +1230,10 @@
                 }
                 
                 this.answers[this.currentQuestion] = originalIndex;
-                this.showQuestion(this.currentQuestion); // 화면 새로고침
+                
+                // 화면 새로고침 대신 선택 상태만 업데이트
+                this.updateAnswerDisplay(originalIndex);
+                this.updateNavigation();
                 this.updateStats();
             }
 
@@ -1278,6 +1312,41 @@
                 document.getElementById('answeredCount').textContent = answeredCount;
                 document.getElementById('flaggedCount').textContent = flaggedCount;
                 document.getElementById('remainingCount').textContent = remainingCount;
+            }
+
+            // 답변 선택 상태 업데이트 (화면 새로고침 없이)
+            updateAnswerDisplay(originalIndex) {
+                // 모든 옵션의 선택 상태 제거
+                document.querySelectorAll('.option').forEach(option => {
+                    option.classList.remove('selected');
+                    const radio = option.querySelector('input[type="radio"]');
+                    if (radio) {
+                        radio.checked = false;
+                    }
+                });
+
+                // 랜덤화된 인덱스로 선택 상태 표시
+                let displayIndex = originalIndex;
+                
+                if (this.sessionData && this.sessionData.question_randomization) {
+                    const currentQuestion = this.examData.questions[this.currentQuestion];
+                    const randomization = this.sessionData.question_randomization[currentQuestion.id];
+                    
+                    if (randomization && randomization.isRandomized && randomization.originalToNewMapping) {
+                        // 원본 인덱스를 랜덤화된 인덱스로 변환
+                        displayIndex = randomization.originalToNewMapping[originalIndex];
+                    }
+                }
+
+                // 해당 옵션 선택 상태로 변경
+                const options = document.querySelectorAll('.option');
+                if (options[displayIndex]) {
+                    options[displayIndex].classList.add('selected');
+                    const radio = options[displayIndex].querySelector('input[type="radio"]');
+                    if (radio) {
+                        radio.checked = true;
+                    }
+                }
             }
 
             startTimer() {
@@ -1478,10 +1547,34 @@
                         let points = 0;
                         const maxPoints = this.pointsMap?.[question.id] || (question.type === 'multiple_choice' || question.type === '객관식' ? 1 : 100);
                         
-                        // 문제 유형에 따른 채점 로직
+                        // 랜덤화된 인덱스를 원본 인덱스로 변환
+                        let originalAnswerIndex = answerIndex;
+                        
+                        if (this.sessionData && this.sessionData.question_randomization) {
+                            const randomization = this.sessionData.question_randomization[question.id];
+                            
+                            if (randomization && randomization.isRandomized && randomization.originalToNewMapping) {
+                                // 랜덤화된 인덱스를 원본 인덱스로 변환
+                                originalAnswerIndex = randomization.originalToNewMapping.findIndex(value => value === answerIndex);
+                                
+                                // findIndex가 -1을 반환하면 매핑을 찾지 못한 것
+                                if (originalAnswerIndex === -1) {
+                                    originalAnswerIndex = answerIndex; // 매핑을 찾지 못하면 원래 값 사용
+                                }
+                                
+                                console.log('🔄 답안 저장 시 인덱스 변환:', {
+                                    questionId: question.id,
+                                    randomizedIndex: answerIndex,
+                                    originalIndex: originalAnswerIndex,
+                                    mapping: randomization.originalToNewMapping
+                                });
+                            }
+                        }
+                        
+                        // 문제 유형에 따른 채점 로직 (원본 인덱스로 비교)
                         if (question.type === 'multiple_choice' || question.type === '객관식') {
-                            // 객관식: 정답 인덱스와 비교
-                            isCorrect = answerIndex === question.correct;
+                            // 객관식: 원본 정답 인덱스와 비교
+                            isCorrect = originalAnswerIndex === question.correct;
                             points = isCorrect ? maxPoints : 0;
                         } else {
                             // 주관식: 일단 정답으로 설정하고 나중에 수동/AI 채점으로 수정
@@ -1492,6 +1585,7 @@
                         console.log('🔍 답안 저장 상세:', {
                             questionIndex: questionIndex,
                             answerIndex: answerIndex,
+                            originalAnswerIndex: originalAnswerIndex,
                             questionCorrect: question.correct,
                             questionType: question.type,
                             isCorrect: isCorrect,
@@ -1504,7 +1598,7 @@
                             .insert({
                                 session_id: this.sessionId,
                                 question_id: question.id,
-                                answer: answerIndex.toString(),
+                                answer: originalAnswerIndex.toString(),
                                 is_correct: isCorrect,
                                 points: points
                             });
@@ -1565,10 +1659,35 @@
                         let isCorrect = false;
                         let points = 0;
                         
-                        // 문제 유형에 따른 채점 로직
+                        // 랜덤화된 인덱스를 원본 인덱스로 변환
+                        let originalAnswerIndex = answerIndex;
+                        
+                        if (this.sessionData && this.sessionData.question_randomization) {
+                            const randomization = this.sessionData.question_randomization[question.id];
+                            
+                            if (randomization && randomization.isRandomized && randomization.originalToNewMapping) {
+                                // 랜덤화된 인덱스를 원본 인덱스로 변환
+                                originalAnswerIndex = randomization.originalToNewMapping.findIndex(value => value === answerIndex);
+                                
+                                // findIndex가 -1을 반환하면 매핑을 찾지 못한 것
+                                if (originalAnswerIndex === -1) {
+                                    originalAnswerIndex = answerIndex; // 매핑을 찾지 못하면 원래 값 사용
+                                }
+                                
+                                console.log('🔄 자동제출 정답 판정 시 인덱스 변환:', {
+                                    questionId: question.id,
+                                    randomizedIndex: answerIndex,
+                                    originalIndex: originalAnswerIndex,
+                                    questionCorrect: question.correct,
+                                    mapping: randomization.originalToNewMapping
+                                });
+                            }
+                        }
+                        
+                        // 문제 유형에 따른 채점 로직 (원본 인덱스로 비교)
                         if (question.type === 'multiple_choice' || question.type === '객관식') {
-                            // 객관식: 정답 인덱스와 비교
-                            isCorrect = answerIndex === question.correct;
+                            // 객관식: 원본 정답 인덱스와 비교
+                            isCorrect = originalAnswerIndex === question.correct;
                             points = isCorrect ? 1 : 0;
                         } else {
                             // 주관식: 일단 정답으로 설정하고 나중에 수동/AI 채점으로 수정
@@ -1671,8 +1790,24 @@
 
         function confirmExit() {
             if (confirm('정말로 시험을 종료하시겠습니까?\n진행 상황이 저장되지 않습니다.')) {
+                // 시험 진행 상황 저장 시도
+                if (examPage && typeof examPage.saveProgress === 'function') {
+                    try {
+                        examPage.saveProgress();
+                    } catch (error) {
+                        console.error('진행 상황 저장 실패:', error);
+                    }
+                }
+                
+                // 대시보드로 이동
                 window.location.href = './dashboard.html';
             }
+        }
+
+        // showAlert 함수 정의 (Utils.showAlert가 없는 경우를 위한 대체)
+        function showAlert(message, type = 'info') {
+            // 간단한 alert로 대체
+            alert(message);
         }
 
         // 브라우저 뒤로가기/새로고침 방지

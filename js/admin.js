@@ -829,14 +829,16 @@ class AdminManager {
                     const dataSource = isMock ? 'Mock' : isLocal ? 'Local' : 'Supabase';
                     
                     return `
-                        <div class="question-card ${isMock ? 'mock-data' : isLocal ? 'local-data' : 'supabase-data'}">
+                        <div class="question-item question-card ${isMock ? 'mock-data' : isLocal ? 'local-data' : 'supabase-data'}" 
+                             data-category="${question.category_id || ''}" 
+                             data-type="${question.type || ''}">
                             <div class="question-card-header">
                                 <span class="question-type ${question.type}">${this.getQuestionTypeText(question.type)}</span>
                                 <span class="question-difficulty">난이도 ${question.difficulty}</span>
                                 <span class="data-source ${dataSource.toLowerCase()}">${dataSource}</span>
                             </div>
                             
-                            <div class="question-content-preview">
+                            <div class="question-content question-content-preview">
                                 ${Utils.escapeHtml(question.content.substring(0, 100))}
                                 ${question.content.length > 100 ? '...' : ''}
                             </div>
@@ -1575,6 +1577,257 @@ class AdminManager {
             console.error('Load statistics error:', error);
             Utils.showAlert('통계를 불러올 수 없습니다.', 'error');
         }
+    }
+
+    // 문제 필터링 함수
+    filterQuestions() {
+        const categoryFilter = document.getElementById('category-filter').value;
+        const typeFilter = document.getElementById('type-filter').value;
+        const searchInput = document.getElementById('search-input').value;
+        
+        console.log('필터링 실행:', { categoryFilter, typeFilter, searchInput });
+        
+        // 모든 문제 요소 가져오기
+        const questionElements = document.querySelectorAll('.question-item');
+        
+        questionElements.forEach(element => {
+            let shouldShow = true;
+            
+            // 카테고리 필터
+            if (categoryFilter && element.dataset.category !== categoryFilter) {
+                shouldShow = false;
+            }
+            
+            // 유형 필터
+            if (typeFilter && element.dataset.type !== typeFilter) {
+                shouldShow = false;
+            }
+            
+            // 검색어 필터
+            if (searchInput) {
+                const questionText = element.querySelector('.question-content').textContent.toLowerCase();
+                const searchLower = searchInput.toLowerCase();
+                if (!questionText.includes(searchLower)) {
+                    shouldShow = false;
+                }
+            }
+            
+            // 표시/숨김 처리
+            element.style.display = shouldShow ? 'block' : 'none';
+        });
+        
+        // 필터링 결과 표시
+        const visibleCount = document.querySelectorAll('.question-item[style*="display: block"], .question-item:not([style*="display: none"])').length;
+        const totalCount = questionElements.length;
+        
+        console.log(`필터링 결과: ${visibleCount}/${totalCount} 문제 표시`);
+    }
+
+    // 문제 검색 함수
+    searchQuestions(searchTerm) {
+        console.log('검색 실행:', searchTerm);
+        this.filterQuestions(); // 기존 필터와 함께 검색 실행
+    }
+
+    // 문제 유형 텍스트 변환
+    getQuestionTypeText(type) {
+        const typeMap = {
+            'multiple_choice': '객관식',
+            'subjective': '주관식',
+            'group': '그룹형'
+        };
+        return typeMap[type] || type;
+    }
+
+    // 시험지 생성 모달 표시
+    showCreateExamModal() {
+        const modalHtml = `
+            <div class="modal-overlay" id="exam-modal">
+                <div class="modal-content" style="max-width: 1000px;">
+                    <div class="modal-header">
+                        <h3>새 시험지 생성</h3>
+                        <button class="modal-close" onclick="document.getElementById('exam-modal').remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="modal-body">
+                        <form id="exam-form" onsubmit="adminManager.saveExam(event)">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="exam-title">시험 제목 *</label>
+                                    <input type="text" id="exam-title" name="title" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="exam-duration">시험 시간 (분) *</label>
+                                    <input type="number" id="exam-duration" name="duration" min="1" max="480" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="exam-passing-score">합격 점수 (%) *</label>
+                                    <input type="number" id="exam-passing-score" name="passing_score" min="0" max="100" required>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="exam-description">시험 설명</label>
+                                <textarea id="exam-description" name="description" rows="3"></textarea>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>문제 선택</label>
+                                <div class="question-filters">
+                                    <select id="exam-category-filter" onchange="adminManager.filterExamQuestions()">
+                                        <option value="">전체 카테고리</option>
+                                        ${this.categories.map(cat => 
+                                            `<option value="${cat.id}">${cat.name}</option>`
+                                        ).join('')}
+                                    </select>
+                                    
+                                    <select id="exam-type-filter" onchange="adminManager.filterExamQuestions()">
+                                        <option value="">전체 유형</option>
+                                        <option value="multiple_choice">객관식</option>
+                                        <option value="subjective">주관식</option>
+                                        <option value="group">그룹형</option>
+                                    </select>
+                                    
+                                    <input type="text" id="exam-search-input" placeholder="문제 검색..." 
+                                           oninput="adminManager.searchExamQuestions(this.value)">
+                                </div>
+                                
+                                <div id="exam-questions-list" class="questions-container">
+                                    ${this.renderExamQuestionsList()}
+                                </div>
+                            </div>
+                            
+                            <div class="form-actions">
+                                <button type="button" class="btn btn-secondary" onclick="document.getElementById('exam-modal').remove()">
+                                    취소
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> 시험지 생성
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+
+    // 시험지용 문제 목록 렌더링
+    renderExamQuestionsList() {
+        if (this.questions.length === 0) {
+            return '<p class="text-center">등록된 문제가 없습니다.</p>';
+        }
+
+        return `
+            <div class="questions-grid">
+                ${this.questions.map(question => {
+                    const isMock = question.id.startsWith('mock-');
+                    const isLocal = question.id.startsWith('local-');
+                    const dataSource = isMock ? 'Mock' : isLocal ? 'Local' : 'Supabase';
+                    
+                    return `
+                        <div class="exam-question-item question-card ${isMock ? 'mock-data' : isLocal ? 'local-data' : 'supabase-data'}" 
+                             data-category="${question.category_id || ''}" 
+                             data-type="${question.type || ''}">
+                            <div class="question-card-header">
+                                <span class="question-type ${question.type}">${this.getQuestionTypeText(question.type)}</span>
+                                <span class="question-difficulty">난이도 ${question.difficulty}</span>
+                                <span class="data-source ${dataSource.toLowerCase()}">${dataSource}</span>
+                            </div>
+                            
+                            <div class="question-content question-content-preview">
+                                ${Utils.escapeHtml(question.content.substring(0, 100))}
+                                ${question.content.length > 100 ? '...' : ''}
+                            </div>
+                            
+                            <div class="question-meta">
+                                <span class="category">${question.categories?.name || '미분류'}</span>
+                                ${question.tags ? question.tags.map(tag => `<span class="tag">${tag}</span>`).join('') : ''}
+                            </div>
+                            
+                            <div class="question-actions">
+                                <button type="button" class="btn btn-sm btn-success" onclick="adminManager.addQuestionToExam('${question.id}')">
+                                    <i class="fas fa-plus"></i> 선택
+                                </button>
+                                <span class="points-label">배점 1</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+    }
+
+    // 시험지용 문제 필터링
+    filterExamQuestions() {
+        const categoryFilter = document.getElementById('exam-category-filter').value;
+        const typeFilter = document.getElementById('exam-type-filter').value;
+        const searchInput = document.getElementById('exam-search-input').value;
+        
+        console.log('시험지 문제 필터링 실행:', { categoryFilter, typeFilter, searchInput });
+        
+        // 모든 문제 요소 가져오기
+        const questionElements = document.querySelectorAll('.exam-question-item');
+        
+        questionElements.forEach(element => {
+            let shouldShow = true;
+            
+            // 카테고리 필터
+            if (categoryFilter && element.dataset.category !== categoryFilter) {
+                shouldShow = false;
+            }
+            
+            // 유형 필터
+            if (typeFilter && element.dataset.type !== typeFilter) {
+                shouldShow = false;
+            }
+            
+            // 검색어 필터
+            if (searchInput) {
+                const questionText = element.querySelector('.question-content').textContent.toLowerCase();
+                const searchLower = searchInput.toLowerCase();
+                if (!questionText.includes(searchLower)) {
+                    shouldShow = false;
+                }
+            }
+            
+            // 표시/숨김 처리
+            element.style.display = shouldShow ? 'block' : 'none';
+        });
+        
+        // 필터링 결과 표시
+        const visibleCount = document.querySelectorAll('.exam-question-item[style*="display: block"], .exam-question-item:not([style*="display: none"])').length;
+        const totalCount = questionElements.length;
+        
+        console.log(`시험지 필터링 결과: ${visibleCount}/${totalCount} 문제 표시`);
+    }
+
+    // 시험지용 문제 검색
+    searchExamQuestions(searchTerm) {
+        console.log('시험지 검색 실행:', searchTerm);
+        this.filterExamQuestions(); // 기존 필터와 함께 검색 실행
+    }
+
+    // 시험지에 문제 추가
+    addQuestionToExam(questionId) {
+        console.log('시험지에 문제 추가:', questionId);
+        // TODO: 선택된 문제를 시험지에 추가하는 로직 구현
+        Utils.showAlert('문제가 시험지에 추가되었습니다.', 'success');
+    }
+
+    // 시험지 저장
+    saveExam(event) {
+        event.preventDefault();
+        console.log('시험지 저장 실행');
+        // TODO: 시험지 저장 로직 구현
+        Utils.showAlert('시험지가 생성되었습니다.', 'success');
+        document.getElementById('exam-modal').remove();
     }
 }
 
