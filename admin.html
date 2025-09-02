@@ -2491,6 +2491,42 @@
             white-space: nowrap;
         }
 
+        /* 정렬 가능한 컬럼 헤더 스타일 */
+        .sortable-header {
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            transition: background-color 0.2s ease;
+        }
+
+        .sortable-header:hover {
+            background-color: #e9ecef !important;
+        }
+
+        .sort-icon {
+            margin-left: 8px;
+            font-size: 12px;
+            opacity: 0.6;
+            transition: opacity 0.2s ease;
+        }
+
+        .sortable-header.active .sort-icon {
+            opacity: 1;
+            color: var(--primary-color);
+        }
+
+        .sort-icon.asc::before {
+            content: '▲';
+        }
+
+        .sort-icon.desc::before {
+            content: '▼';
+        }
+
+        .sort-icon.neutral::before {
+            content: '⇅';
+        }
+
         .admin-table tr:hover {
             background: #f8f9fa;
         }
@@ -6088,6 +6124,16 @@
                         </div>
                         
                         <div class="form-group">
+                            <label for="exam-status">시험 상태 *</label>
+                            <select id="exam-status" name="exam-status" class="form-control" required>
+                                <option value="draft">초안</option>
+                                <option value="published">공개</option>
+                                <option value="active">진행중</option>
+                                <option value="closed">종료</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
                             <label>문제 선택</label>
                             <div class="question-selection-container">
                                 <div class="question-filters">
@@ -6363,7 +6409,8 @@
                 title: formData.get('exam-title'),
                 description: formData.get('exam-description'),
                 duration: parseInt(formData.get('exam-duration')),
-                passing_score: parseInt(formData.get('passing-score'))
+                passing_score: parseInt(formData.get('passing-score')),
+                status: formData.get('exam-status')
             };
             
             try {
@@ -6389,7 +6436,7 @@
                         description: examData.description,
                         duration: examData.duration,
                         passing_score: examData.passing_score,
-                        status: 'draft',
+                        status: examData.status || 'draft',
                         created_by: null // profiles 테이블 접근 문제로 인해 null로 설정
                     }])
                     .select()
@@ -6637,9 +6684,12 @@
             switch (status) {
                 case 'draft': return 'secondary';
                 case 'published': return 'success';
+                case 'active': return 'success';      // 추가
                 case 'closed': return 'danger';
                 case 'inactive': return 'warning';
                 case 'deleted': return 'dark';
+                case 'in_progress': return 'warning'; // 추가
+                case 'completed': return 'success';   // 추가
                 default: return 'secondary';
             }
         }
@@ -6648,9 +6698,12 @@
             switch (status) {
                 case 'draft': return '초안';
                 case 'published': return '공개';
+                case 'active': return '진행중';       // 추가
                 case 'closed': return '종료';
                 case 'inactive': return '비활성화';
                 case 'deleted': return '삭제됨';
+                case 'in_progress': return '진행중';  // 추가
+                case 'completed': return '완료';     // 추가
                 default: return status;
             }
         }
@@ -6741,6 +6794,7 @@
                                 <select id="exam-status" name="exam-status" class="form-control">
                                     <option value="draft" ${exam.status === 'draft' ? 'selected' : ''}>초안</option>
                                     <option value="published" ${exam.status === 'published' ? 'selected' : ''}>공개</option>
+                                    <option value="active" ${exam.status === 'active' ? 'selected' : ''}>진행중</option>
                                     <option value="closed" ${exam.status === 'closed' ? 'selected' : ''}>종료</option>
                                 </select>
                             </div>
@@ -9406,11 +9460,12 @@
                     <h4>사용자 관리</h4>
                     <div class="header-actions">
                         <select class="form-control" id="user-sort-order" onchange="sortUserList()" style="width: auto; margin-right: 0.5rem;">
-                            <option value="created_at">가입일 순</option>
-                            <option value="last_login_at">최신 접속일 순</option>
-                            <option value="name">이름 순</option>
-                            <option value="email">이메일 순</option>
+                            <option value="created_at">가입일 순 (최신순)</option>
+                            <option value="last_login_at">최신 접속일 순 (최신순)</option>
+                            <option value="name">이름 순 (가나다순)</option>
+                            <option value="email">이메일 순 (알파벳순)</option>
                         </select>
+                        <small style="color: #6c757d; margin-left: 0.5rem;">💡 컬럼 헤더를 클릭하여 오름차순/내림차순 정렬 가능</small>
                         <button class="btn btn-primary" onclick="showAddUserModal()">
                             <i class="fas fa-user-plus"></i> 사용자 추가
                         </button>
@@ -9916,6 +9971,12 @@
         // 전역 변수로 사용자 데이터 저장
         let allUsers = [];
         
+        // 사용자 테이블 정렬 상태
+        let userSortState = {
+            column: null,
+            direction: 'asc' // 'asc' 또는 'desc'
+        };
+        
         // 안전한 필터링을 위한 초기화 함수
         function initializeUserFilters() {
             // allUsers가 빈 배열이면 필터링 시도하지 않음
@@ -9983,13 +10044,27 @@
                         <table class="admin-table">
                             <thead>
                                 <tr>
-                                    <th>이름</th>
-                                    <th>이메일</th>
-                                    <th>권한</th>
-                                    <th>부서</th>
-                                    <th>입사일</th>
-                                    <th>가입일</th>
-                                    <th>최신 접속일</th>
+                                    <th class="sortable-header" onclick="sortUserTable('name')">
+                                        이름 <span class="sort-icon neutral"></span>
+                                    </th>
+                                    <th class="sortable-header" onclick="sortUserTable('email')">
+                                        이메일 <span class="sort-icon neutral"></span>
+                                    </th>
+                                    <th class="sortable-header" onclick="sortUserTable('role')">
+                                        권한 <span class="sort-icon neutral"></span>
+                                    </th>
+                                    <th class="sortable-header" onclick="sortUserTable('department')">
+                                        부서 <span class="sort-icon neutral"></span>
+                                    </th>
+                                    <th class="sortable-header" onclick="sortUserTable('hire_date')">
+                                        입사일 <span class="sort-icon neutral"></span>
+                                    </th>
+                                    <th class="sortable-header" onclick="sortUserTable('created_at')">
+                                        가입일 <span class="sort-icon neutral"></span>
+                                    </th>
+                                    <th class="sortable-header" onclick="sortUserTable('last_login_at')">
+                                        최신 접속일 <span class="sort-icon neutral"></span>
+                                    </th>
                                     <th>상태</th>
                                     <th>관리</th>
                                 </tr>
@@ -10104,7 +10179,103 @@
             }
         }
         
-        // 사용자 목록 정렬 함수
+        // 사용자 테이블 정렬 함수 (컬럼 헤더 클릭용)
+        function sortUserTable(column) {
+            if (!allUsers || allUsers.length === 0) {
+                console.warn('정렬할 사용자 데이터가 없습니다.');
+                return;
+            }
+            
+            // 같은 컬럼 클릭 시 방향 전환, 다른 컬럼 클릭 시 오름차순 시작
+            if (userSortState.column === column) {
+                userSortState.direction = userSortState.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                userSortState.column = column;
+                userSortState.direction = 'asc';
+            }
+            
+            // 정렬 수행
+            const sortedUsers = [...allUsers].sort((a, b) => {
+                let aValue, bValue;
+                
+                switch (column) {
+                    case 'name':
+                        aValue = (a.name || '').toLowerCase();
+                        bValue = (b.name || '').toLowerCase();
+                        return userSortState.direction === 'asc' 
+                            ? aValue.localeCompare(bValue, 'ko')
+                            : bValue.localeCompare(aValue, 'ko');
+                            
+                    case 'email':
+                        aValue = (a.email || '').toLowerCase();
+                        bValue = (b.email || '').toLowerCase();
+                        return userSortState.direction === 'asc'
+                            ? aValue.localeCompare(bValue)
+                            : bValue.localeCompare(aValue);
+                            
+                    case 'role':
+                        aValue = a.role || '';
+                        bValue = b.role || '';
+                        return userSortState.direction === 'asc'
+                            ? aValue.localeCompare(bValue)
+                            : bValue.localeCompare(aValue);
+                            
+                    case 'department':
+                        aValue = (a.departments?.name || '미지정').toLowerCase();
+                        bValue = (b.departments?.name || '미지정').toLowerCase();
+                        return userSortState.direction === 'asc'
+                            ? aValue.localeCompare(bValue, 'ko')
+                            : bValue.localeCompare(aValue, 'ko');
+                            
+                    case 'hire_date':
+                        aValue = a.hire_date ? new Date(a.hire_date) : new Date(0);
+                        bValue = b.hire_date ? new Date(b.hire_date) : new Date(0);
+                        return userSortState.direction === 'asc' ? aValue - bValue : bValue - aValue;
+                        
+                    case 'created_at':
+                        aValue = a.created_at ? new Date(a.created_at) : new Date(0);
+                        bValue = b.created_at ? new Date(b.created_at) : new Date(0);
+                        return userSortState.direction === 'asc' ? aValue - bValue : bValue - aValue;
+                        
+                    case 'last_login_at':
+                        aValue = a.last_login_at ? new Date(a.last_login_at) : new Date(0);
+                        bValue = b.last_login_at ? new Date(b.last_login_at) : new Date(0);
+                        return userSortState.direction === 'asc' ? aValue - bValue : bValue - aValue;
+                        
+                    default:
+                        return 0;
+                }
+            });
+            
+            // 정렬 아이콘 업데이트
+            updateSortIcons(column, userSortState.direction);
+            
+            // 정렬된 결과로 테이블 업데이트
+            renderUserList(sortedUsers);
+            
+            console.log(`✅ 사용자 테이블 정렬 완료 (${column} ${userSortState.direction}):`, sortedUsers.length, '명');
+        }
+        
+        // 정렬 아이콘 업데이트 함수
+        function updateSortIcons(activeColumn, direction) {
+            // 모든 정렬 아이콘을 neutral로 초기화
+            document.querySelectorAll('.sort-icon').forEach(icon => {
+                icon.className = 'sort-icon neutral';
+                icon.parentElement.classList.remove('active');
+            });
+            
+            // 활성 컬럼의 아이콘 업데이트
+            const activeHeader = document.querySelector(`[onclick="sortUserTable('${activeColumn}')"]`);
+            if (activeHeader) {
+                const icon = activeHeader.querySelector('.sort-icon');
+                if (icon) {
+                    icon.className = `sort-icon ${direction}`;
+                    activeHeader.classList.add('active');
+                }
+            }
+        }
+        
+        // 기존 드롭다운 정렬 함수 (하위 호환성 유지)
         function sortUserList() {
             const sortBy = document.getElementById('user-sort-order')?.value || 'created_at';
             
@@ -10113,39 +10284,11 @@
                 return;
             }
             
-            const sortedUsers = [...allUsers].sort((a, b) => {
-                let aValue, bValue;
-                
-                switch (sortBy) {
-                    case 'last_login_at':
-                        // 최신 접속일 순 (최근이 위로)
-                        aValue = a.last_login_at ? new Date(a.last_login_at) : new Date(0);
-                        bValue = b.last_login_at ? new Date(b.last_login_at) : new Date(0);
-                        return bValue - aValue;
-                        
-                    case 'name':
-                        // 이름 순 (가나다 순)
-                        aValue = (a.name || '').toLowerCase();
-                        bValue = (b.name || '').toLowerCase();
-                        return aValue.localeCompare(bValue, 'ko');
-                        
-                    case 'email':
-                        // 이메일 순 (알파벳 순)
-                        aValue = (a.email || '').toLowerCase();
-                        bValue = (b.email || '').toLowerCase();
-                        return aValue.localeCompare(bValue);
-                        
-                    case 'created_at':
-                    default:
-                        // 가입일 순 (최근이 위로)
-                        aValue = a.created_at ? new Date(a.created_at) : new Date(0);
-                        bValue = b.created_at ? new Date(b.created_at) : new Date(0);
-                        return bValue - aValue;
-                }
-            });
+            // 드롭다운 선택에 따라 테이블 정렬 실행
+            userSortState.column = sortBy;
+            userSortState.direction = 'desc'; // 기본값을 내림차순으로
             
-            console.log(`✅ 사용자 목록 정렬 완료 (${sortBy} 기준):`, sortedUsers.length, '명');
-            renderUserList(sortedUsers);
+            sortUserTable(sortBy);
         }
         
         // 필터용 부서 목록 로드
@@ -13813,38 +13956,12 @@
                 document.getElementById('exam-records-container').style.display = 'none';
                 document.getElementById('exam-records-empty').style.display = 'none';
                 
-                // 시험 목록 로드
-                await loadExamListForFilter();
-                
                 // 초기 데이터 로드
                 await loadExamRecords();
                 
             } catch (error) {
                 console.error('❌ 시험 기록 관리 모달 로드 오류:', error);
                 alert('시험 기록을 불러오는 중 오류가 발생했습니다.');
-            }
-        }
-
-        // 시험 목록을 필터용으로 로드
-        async function loadExamListForFilter() {
-            try {
-                const { data: exams, error } = await window.supabaseClient
-                    .from('exams')
-                    .select('id, title')
-                    .eq('status', 'published')
-                    .order('created_at', { ascending: false });
-
-                if (error) throw error;
-
-                const examFilter = document.getElementById('exam-record-exam-filter');
-                examFilter.innerHTML = '<option value="">모든 시험</option>';
-                
-                exams.forEach(exam => {
-                    examFilter.innerHTML += `<option value="${exam.id}">${exam.title}</option>`;
-                });
-
-            } catch (error) {
-                console.error('시험 목록 로드 오류:', error);
             }
         }
 
@@ -13882,12 +13999,7 @@
                     `)
                     .order('created_at', { ascending: false });
 
-                // 시험 필터 적용
-                if (examFilter) {
-                    query = query.eq('exam_id', examFilter);
-                }
-
-                // 상태 필터 적용
+                // 상태 필터 적용 (서버 사이드)
                 if (statusFilter) {
                     if (statusFilter === 'completed') {
                         query = query.eq('status', 'completed');
@@ -13900,14 +14012,25 @@
 
                 if (error) throw error;
 
-                // 사용자 검색 필터링 (클라이언트 사이드)
+                // 클라이언트 사이드 필터링
                 let filteredSessions = sessions;
+                
+                // 사용자 검색 필터링
                 if (userSearch.trim()) {
                     const searchTerm = userSearch.toLowerCase();
-                    filteredSessions = sessions.filter(session => {
+                    filteredSessions = filteredSessions.filter(session => {
                         const userName = session.profiles?.name?.toLowerCase() || '';
                         const userEmail = session.profiles?.email?.toLowerCase() || '';
                         return userName.includes(searchTerm) || userEmail.includes(searchTerm);
+                    });
+                }
+
+                // 시험 검색 필터링 (새로 추가)
+                if (examFilter.trim()) {
+                    const examSearchTerm = examFilter.toLowerCase();
+                    filteredSessions = filteredSessions.filter(session => {
+                        const examTitle = session.exams?.title?.toLowerCase() || '';
+                        return examTitle.includes(examSearchTerm);
                     });
                 }
 
@@ -14110,11 +14233,11 @@
                                onkeyup="searchExamRecords()">
                     </div>
                     <div class="col-md-4">
-                        <label for="exam-record-exam-filter">시험 선택</label>
-                        <select id="exam-record-exam-filter" class="form-control" onchange="searchExamRecords()">
-                            <option value="">모든 시험</option>
-                            <!-- 시험 옵션들이 동적으로 로드됩니다 -->
-                        </select>
+                        <label for="exam-record-exam-filter">시험 검색</label>
+                        <input type="text" id="exam-record-exam-filter" class="form-control" 
+                               placeholder="시험명 키워드 입력 (예: 세무인사이드, 미라클)" 
+                               onkeyup="searchExamRecords()"
+                               title="시험명에 포함된 키워드로 검색할 수 있습니다">
                     </div>
                     <div class="col-md-4">
                         <label for="exam-record-status-filter">상태</label>

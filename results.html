@@ -1276,7 +1276,20 @@
                         };
                         this.examScores = examStats;
                         
+                        // 점수 분포 상세 분석
+                        const scoreDistribution = validScores.map(s => Math.round((s.score / s.total_points) * 100));
+                        const sortedScores = [...scoreDistribution].sort((a, b) => b - a);
+                        
                         console.log('📊 시험 통계:', this.examStats);
+                        console.log('📊 시험 점수 분포 (정렬):', sortedScores);
+                        console.log('📊 점수별 인원 분석:', {
+                            '100점': sortedScores.filter(s => s === 100).length + '명',
+                            '90점대': sortedScores.filter(s => s >= 90 && s < 100).length + '명',
+                            '80점대': sortedScores.filter(s => s >= 80 && s < 90).length + '명',
+                            '70점대': sortedScores.filter(s => s >= 70 && s < 80).length + '명',
+                            '60점대': sortedScores.filter(s => s >= 60 && s < 70).length + '명',
+                            '60점미만': sortedScores.filter(s => s < 60).length + '명'
+                        });
                     }
                     
                     if (sessionError) throw sessionError;
@@ -1563,22 +1576,92 @@
                 const difference = this.score - averageScore;
                 const comparisonElement = document.getElementById('comparison');
                 
-                // 백분위 계산 (간단한 방식)
+                // 백분위 계산 (정확한 방식)
                 let percentile = '평가 불가';
-                if (totalParticipants > 1) {
-                    // 현재 점수가 전체 참가자 중 어느 위치에 있는지 계산
+                let percentileInfo = '';
+                
+                if (totalParticipants > 0) {
                     const currentScore = this.examData.earnedPoints || 0;
                     const totalPossibleScore = this.examData.totalPoints || 1;
                     const currentPercentage = Math.round((currentScore / totalPossibleScore) * 100);
                     
-                    // 전체 참가자 중 현재 백분율보다 낮은 점수를 받은 사람 수 계산
-                    const lowerScores = (this.examScores || []).filter(s => {
-                        if (s.score === null || s.total_points === null) return false;
-                        const participantPercentage = Math.round((s.score / s.total_points) * 100);
-                        return participantPercentage < currentPercentage;
-                    }).length;
+                    // 유효한 점수 데이터만 필터링
+                    const validScores = (this.examScores || []).filter(s => 
+                        s.score !== null && s.total_points !== null
+                    );
                     
-                    percentile = Math.round(((lowerScores + 1) / totalParticipants) * 100);
+                    if (validScores.length > 0) {
+                        // 모든 참가자의 백분율 점수 계산
+                        const allPercentages = validScores.map(s => 
+                            Math.round((s.score / s.total_points) * 100)
+                        );
+                        
+                        // 점수별 사람 수 계산
+                        const lowerScores = allPercentages.filter(score => score < currentPercentage).length;
+                        const equalScores = allPercentages.filter(score => score === currentPercentage).length;
+                        const higherScores = allPercentages.filter(score => score > currentPercentage).length;
+                        
+                        // 올바른 상위 백분위 계산법
+                        // 상위 몇 % = (나의 순위 / 전체 인원) * 100
+                        
+                        // 1. 자신의 순위 계산 (동점자 처리: 동점자 그룹의 최고 순위 사용)
+                        const myRank = higherScores + 1;  // 나보다 높은 점수 받은 사람 수 + 1
+                        
+                        // 2. 상위 백분위 계산 
+                        const topPercentile = Math.round((myRank / validScores.length) * 100);
+                        
+                        // 3. 상위 몇 %에 해당하는지 설명
+                        const topGroupSize = Math.ceil(validScores.length * (topPercentile / 100));
+                        const description = `${validScores.length}명 중 ${myRank}등 (상위 ${topGroupSize}명)`;
+                        
+                        // 실제 순위 정보 계산
+                        const actualRankRange = equalScores > 1 
+                            ? `${myRank}등~${higherScores + equalScores}등 (${equalScores}명 동점)`
+                            : `${myRank}등`;
+                            
+                        console.log('📊 백분위 계산 상세:', {
+                            currentPercentage,
+                            lowerScores,
+                            equalScores, 
+                            higherScores,
+                            totalParticipants: validScores.length,
+                            myRank,
+                            actualRankRange,
+                            topPercentile,
+                            topGroupSize,
+                            description,
+                            calculation: `(${myRank} / ${validScores.length}) * 100 = ${topPercentile}%`,
+                            verification: `32명 중 상위 ${topPercentile}%는 상위 ${Math.ceil(32 * topPercentile / 100)}명에 해당`
+                        });
+                        
+                        // 결과 해석 및 시각적 표현
+                        let icon = '';
+                        let colorClass = '';
+                        
+                        if (topPercentile <= 10) {
+                            percentileInfo = `상위 ${topPercentile}% (${myRank}등, 최상위권)`;
+                            icon = '🏆';
+                            colorClass = 'percentile-excellent';
+                        } else if (topPercentile <= 25) {
+                            percentileInfo = `상위 ${topPercentile}% (${myRank}등, 상위권)`;
+                            icon = '🥇';
+                            colorClass = 'percentile-very-good';
+                        } else if (topPercentile <= 50) {
+                            percentileInfo = `상위 ${topPercentile}% (${myRank}등, 중상위권)`;
+                            icon = '🥈';
+                            colorClass = 'percentile-good';
+                        } else if (topPercentile <= 75) {
+                            percentileInfo = `상위 ${topPercentile}% (${myRank}등, 중위권)`;
+                            icon = '🥉';
+                            colorClass = 'percentile-average';
+                        } else {
+                            percentileInfo = `상위 ${topPercentile}% (${myRank}등, 하위권)`;
+                            icon = '📚';
+                            colorClass = 'percentile-below-average';
+                        }
+                        
+                        percentile = `${icon} ${percentileInfo}`;
+                    }
                 }
                 
                 if (difference > 0) {
@@ -1594,8 +1677,8 @@
                 
                 // 백분위 정보 추가
                 const percentileElement = document.createElement('p');
-                percentileElement.style.cssText = 'color: var(--medium-gray); margin-top: 10px; font-size: 0.9em;';
-                percentileElement.innerHTML = `백분위: <strong>${percentile}%</strong>`;
+                percentileElement.style.cssText = 'color: var(--medium-gray); margin-top: 10px; font-size: 0.95em; font-weight: 500;';
+                percentileElement.innerHTML = `백분위: <strong style="color: #2c3e50;">${percentile}</strong>`;
                 
                 const chartContainer = document.querySelector('.chart-container');
                 if (chartContainer && !chartContainer.querySelector('.percentile-info')) {
@@ -1786,7 +1869,7 @@
                 try {
                     console.log('📋 사용자 완료 시험 목록 로딩 중...');
                     
-                    // 사용자의 완료된 시험 세션 조회
+                    // 사용자의 완료된 시험 세션 조회 (submitted, completed 상태 모두 포함)
                     const { data: sessions, error: sessionsError } = await window.supabaseClient
                         .from('exam_sessions')
                         .select(`
@@ -1796,6 +1879,7 @@
                             score,
                             total_points,
                             submit_time,
+                            created_at,
                             exams (
                                 id,
                                 title,
@@ -1803,8 +1887,10 @@
                             )
                         `)
                         .eq('employee_id', window.semuApp.currentUser.id)
-                        .eq('status', 'submitted')
-                        .order('submit_time', { ascending: false });
+                        .in('status', ['submitted', 'completed', 'in_progress'])
+                        // 점수 조건 제거 - 진행중인 시험도 볼 수 있도록
+                        .order('submit_time', { ascending: false, nullsLast: true })
+                        .order('created_at', { ascending: false });
 
                     if (sessionsError) {
                         console.error('❌ 시험 세션 조회 실패:', sessionsError);
@@ -1812,6 +1898,19 @@
                     }
 
                     console.log('📊 완료된 시험 세션:', sessions);
+                    
+                    // 디버깅을 위한 세션 상태별 개수 로그
+                    if (sessions && sessions.length > 0) {
+                        const statusCounts = sessions.reduce((acc, session) => {
+                            acc[session.status] = (acc[session.status] || 0) + 1;
+                            return acc;
+                        }, {});
+                        console.log('📈 시험 세션 상태별 개수:', statusCounts);
+                        
+                        sessions.forEach(session => {
+                            console.log(`🎯 시험: ${session.exams?.title}, 상태: ${session.status}, 점수: ${session.score}`);
+                        });
+                    }
 
                     if (!sessions || sessions.length === 0) {
                         this.showNoExamsMessage();
@@ -1833,8 +1932,8 @@
                 container.innerHTML = `
                     <div class="exam-selection-container">
                         <div class="exam-selection-header">
-                            <h2>🎯 완료된 시험 결과 선택</h2>
-                            <p>확인하고 싶은 시험 결과를 선택해주세요.</p>
+                            <h2>🎯 시험 선택</h2>
+                            <p>확인하고 싶은 시험 결과를 선택하거나 진행중인 시험을 계속 응시하세요.</p>
                         </div>
                         
                         <div class="exam-list">
@@ -1842,14 +1941,17 @@
                                 const exam = session.exams;
                                 const score = session.score || 0;
                                 const totalPoints = session.total_points || 100;
-                                const percentage = Math.round((score / totalPoints) * 100);
-                                const submitDate = new Date(session.submit_time).toLocaleDateString('ko-KR', {
+                                const percentage = session.score !== null ? Math.round((score / totalPoints) * 100) : 0;
+                                // submit_time이 없으면 created_at 사용
+                                const dateToShow = session.submit_time || session.created_at;
+                                const submitDate = new Date(dateToShow).toLocaleDateString('ko-KR', {
                                     year: 'numeric',
                                     month: 'long', 
                                     day: 'numeric',
                                     hour: '2-digit',
                                     minute: '2-digit'
                                 });
+                                const dateLabel = session.submit_time ? '제출일' : '응시일';
 
                                 return `
                                 <div class="exam-item" onclick="window.resultsPage.selectExam('${session.exam_id}', ${score}, ${totalPoints})">
@@ -1857,13 +1959,13 @@
                                         <div class="exam-item-main">
                                             <div class="exam-item-header">
                                                 <h3>${exam?.title || '시험 제목 없음'}</h3>
-                                                <div class="exam-score ${percentage >= 80 ? 'high-score' : percentage >= 60 ? 'medium-score' : 'low-score'}">
-                                                    ${percentage}점
+                                                <div class="exam-score ${session.score !== null ? (percentage >= 80 ? 'high-score' : percentage >= 60 ? 'medium-score' : 'low-score') : 'in-progress'}">
+                                                    ${session.score !== null ? `${percentage}점` : '진행중'}
                                                 </div>
                                             </div>
                                             <div class="exam-item-details">
                                                 <div class="exam-description">${exam?.description || '설명 없음'}</div>
-                                                <div class="exam-date">제출일: ${submitDate}</div>
+                                                <div class="exam-date">${dateLabel}: ${submitDate}</div>
                                             </div>
                                         </div>
                                         <div class="exam-item-arrow">→</div>
@@ -1908,8 +2010,36 @@
             // 시험 선택
             selectExam(examId, score, totalPoints) {
                 console.log('🎯 시험 선택됨:', { examId, score, totalPoints });
-                const total = Math.round(totalPoints / (score > 0 ? (score / Math.round((score / totalPoints) * 100)) : 1));
-                window.location.href = `results.html?exam=${examId}&score=${Math.round((score / totalPoints) * 100)}&total=${total}`;
+                
+                try {
+                    // 진행중인 시험(score가 0이고 totalPoints가 100인 경우) 처리
+                    if (score === 0 && totalPoints === 100) {
+                        // 진행중인 시험인지 확인 후 시험 응시 페이지로 이동
+                        const confirmContinue = confirm('이 시험은 아직 진행중입니다. 시험을 계속 응시하시겠습니까?');
+                        if (confirmContinue) {
+                            window.location.href = `exam.html?id=${examId}`;
+                            return;
+                        } else {
+                            return; // 취소 시 아무것도 하지 않음
+                        }
+                    }
+                    
+                    // URL 파라미터 안전하게 생성
+                    const scorePercentage = totalPoints > 0 ? Math.round((score / totalPoints) * 100) : 0;
+                    const urlParams = new URLSearchParams({
+                        exam: examId,
+                        score: scorePercentage,
+                        total: totalPoints
+                    });
+                    
+                    const newUrl = `results.html?${urlParams.toString()}`;
+                    console.log('🔗 리다이렉트 URL:', newUrl);
+                    
+                    window.location.href = newUrl;
+                } catch (error) {
+                    console.error('❌ 시험 선택 중 오류:', error);
+                    alert('시험 결과 페이지로 이동하는 중 오류가 발생했습니다.');
+                }
             }
 
             // 시험 선택 화면용 스타일 추가
@@ -2050,6 +2180,12 @@
                         background: linear-gradient(135deg, #fd79a8, #e84393);
                         color: white;
                         box-shadow: 0 4px 15px rgba(253, 121, 168, 0.3);
+                    }
+
+                    .exam-score.in-progress {
+                        background: linear-gradient(135deg, #f39c12, #e67e22);
+                        color: white;
+                        box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3);
                     }
 
                     .exam-item-details {
