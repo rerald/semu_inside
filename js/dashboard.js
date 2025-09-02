@@ -225,6 +225,7 @@ class DashboardManager {
                     <span><i class="fas fa-clock"></i> ${exam.duration}분</span>
                     <span><i class="fas fa-question-circle"></i> ${exam.questionCount}문항</span>
                     <span><i class="fas fa-calendar"></i> ${this.formatExamDate(exam)}</span>
+                    ${this.getDeadlineBadge(exam)}
                 </div>
                 
                 <div class="exam-actions">
@@ -266,6 +267,50 @@ class DashboardManager {
             return `${Utils.formatDate(exam.end_time)} 까지`;
         }
         return '언제든지';
+    }
+
+    // 마감 뱃지 표시
+    getDeadlineBadge(exam) {
+        if (!exam.end_time) return '';
+        const now = new Date();
+        const end = new Date(exam.end_time);
+        if (isNaN(end.getTime())) return '';
+        const diffMs = end - now;
+        const icon = diffMs >= 0 ? '<i class="fas fa-hourglass-half"></i>' : '<i class="fas fa-hourglass-end"></i>';
+        const { text, cls } = this.formatRemaining(diffMs);
+        const endText = Utils.formatDate(exam.end_time);
+        return `<span class="deadline-badge ${cls}" title="마감: ${endText}">${icon} ${diffMs >= 0 ? `${text} 남음` : `${text} 지남`}</span>`;
+    }
+
+    // 남은 시간 포맷팅
+    formatRemaining(diffMs) {
+        const abs = Math.abs(diffMs);
+        const minute = 60 * 1000;
+        const hour = 60 * minute;
+        const day = 24 * hour;
+        let text = '';
+        let cls = '';
+        if (abs >= day) {
+            const d = Math.floor(abs / day);
+            text = `${d}일`;
+        } else if (abs >= hour) {
+            const h = Math.floor(abs / hour);
+            text = `${h}시간`;
+        } else {
+            const m = Math.max(1, Math.floor(abs / minute));
+            text = `${m}분`;
+        }
+        // 시각적 경고 단계: 24시간 이내 warning, 1시간 이내 danger, 지났으면 dark
+        if (diffMs < 0) {
+            cls = 'expired';
+        } else if (abs <= hour) {
+            cls = 'urgent';
+        } else if (abs <= 24 * hour) {
+            cls = 'warning';
+        } else {
+            cls = 'normal';
+        }
+        return { text, cls };
     }
 
     // 시험 시작

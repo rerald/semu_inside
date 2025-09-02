@@ -264,7 +264,21 @@
             padding: 40px 20px;
             color: var(--medium-gray);
         }
-
+        
+        /* 마감 뱃지 스타일 */
+        .deadline-badge { 
+            display: inline-block; 
+            margin-left: 8px; 
+            padding: 2px 8px; 
+            border-radius: 12px; 
+            font-size: 12px; 
+            vertical-align: middle; 
+        }
+        .deadline-badge.normal { background: #eef2ff; color: #3730a3; }
+        .deadline-badge.warning { background: #fff7ed; color: #9a3412; }
+        .deadline-badge.urgent { background: #fef2f2; color: #991b1b; }
+        .deadline-badge.expired { background: #f3f4f6; color: #6b7280; text-decoration: line-through; }
+        
         .loading-exams i {
             font-size: 2rem;
             margin-bottom: 15px;
@@ -1089,6 +1103,7 @@
                             <span><i class="fas fa-calendar"></i> ${getExamTimeText(startTime, endTime)}</span>
                             <span><i class="fas fa-star"></i> 난이도: ${getDifficultyText(exam.difficulty)}</span>
                             ${userSession ? `<span class="session-time"><i class="fas fa-calendar-alt"></i> 응시: ${getSessionTimeText(userSession)}</span>` : ''}
+                            ${endTime ? getDeadlineBadge(endTime) : ''}
                         </div>
                         <div class="exam-actions">
                             <button class="btn ${buttonClass}" onclick="${buttonAction}">
@@ -1124,7 +1139,52 @@
                 return '언제든지';
             }
         }
-
+        
+        // 마감 뱃지 생성
+        function getDeadlineBadge(endTime) {
+            if (!endTime) return '';
+            const now = new Date();
+            const end = new Date(endTime);
+            if (isNaN(end.getTime())) return '';
+            const diffMs = end - now;
+            const info = formatRemaining(diffMs);
+            const icon = diffMs >= 0 ? '<i class="fas fa-hourglass-half"></i>' : '<i class="fas fa-hourglass-end"></i>';
+            const endText = formatDate(end);
+            const label = diffMs >= 0 ? `${info.text} 남음` : `${info.text} 지남`;
+            // 마감 시각을 뱃지 안에 함께 노출 (툴팁에도 유지)
+            return `<span class="deadline-badge ${info.cls}" title="마감: ${endText}">${icon} 마감: ${endText} · ${label}</span>`;
+        }
+        
+        // 남은 시간 포맷팅
+        function formatRemaining(diffMs) {
+            const abs = Math.abs(diffMs);
+            const minute = 60 * 1000;
+            const hour = 60 * minute;
+            const day = 24 * hour;
+            let text = '';
+            let cls = '';
+            if (abs >= day) {
+                const d = Math.floor(abs / day);
+                text = `${d}일`;
+            } else if (abs >= hour) {
+                const h = Math.floor(abs / hour);
+                text = `${h}시간`;
+            } else {
+                const m = Math.max(1, Math.floor(abs / minute));
+                text = `${m}분`;
+            }
+            if (diffMs < 0) {
+                cls = 'expired';
+            } else if (abs <= hour) {
+                cls = 'urgent';
+            } else if (abs <= 24 * hour) {
+                cls = 'warning';
+            } else {
+                cls = 'normal';
+            }
+            return { text, cls };
+        }
+        
         // 날짜 포맷팅
         function formatDate(date) {
             if (!date) return '';

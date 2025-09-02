@@ -707,6 +707,20 @@ body {
     border: 1px solid #fde68a;
 }
 
+/* Deadline badges for exam cards */
+.deadline-badge { 
+  display: inline-block; 
+  margin-left: 8px; 
+  padding: 2px 8px; 
+  border-radius: 12px; 
+  font-size: 12px; 
+  vertical-align: middle; 
+}
+.deadline-badge.normal { background: #eef2ff; color: #3730a3; }
+.deadline-badge.warning { background: #fff7ed; color: #9a3412; }
+.deadline-badge.urgent { background: #fef2f2; color: #991b1b; }
+.deadline-badge.expired { background: #f3f4f6; color: #6b7280; text-decoration: line-through; }
+
 /* 반응형 디자인 */
 @media (max-width: 768px) {
     .navbar {

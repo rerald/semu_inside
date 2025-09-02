@@ -6805,6 +6805,8 @@
                         duration,
                         passing_score,
                         status,
+                        start_time,
+                        end_time,
                         created_at,
                         exam_questions(count)
                     `)
@@ -6823,6 +6825,8 @@
                         duration,
                         passing_score,
                         status,
+                        start_time,
+                        end_time,
                         created_at,
                         exam_questions(count)
                     `)
@@ -6856,6 +6860,7 @@
                             <div class="exam-stats">
                                 <small>문제 수: ${exam.exam_questions[0]?.count || 0}개</small>
                                 <small>생성일: ${new Date(exam.created_at).toLocaleDateString('ko-KR')}</small>
+                                ${getExamScheduleText(exam) ? `<small>${getExamScheduleText(exam)}</small>` : ''}
                             </div>
                         </div>
                         <div class="exam-actions">
@@ -6915,6 +6920,7 @@
                             <div class="exam-stats">
                                 <small>문제 수: ${exam.exam_questions[0]?.count || 0}개</small>
                                 <small>생성일: ${new Date(exam.created_at).toLocaleDateString('ko-KR')}</small>
+                                ${getExamScheduleText(exam) ? `<small>${getExamScheduleText(exam)}</small>` : ''}
                                 <small class="text-warning">⚠️ 응시 기록 보존됨</small>
                             </div>
                         </div>
@@ -6979,6 +6985,30 @@
                 case 'in_progress': return '진행중';  // 추가
                 case 'completed': return '완료';     // 추가
                 default: return status;
+            }
+        }
+
+        function getExamScheduleText(exam) {
+            const start = exam.start_time ? new Date(exam.start_time) : null;
+            const end = exam.end_time ? new Date(exam.end_time) : null;
+            
+            if (!start && !end) return null;
+            
+            const formatDate = (date) => date.toLocaleString('ko-KR', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            });
+            
+            if (start && end) {
+                return `시작: ${formatDate(start)} ~ 종료: ${formatDate(end)}`;
+            } else if (start) {
+                return `시작: ${formatDate(start)}`;
+            } else {
+                return `종료: ${formatDate(end)}`;
             }
         }
 
@@ -7213,7 +7243,6 @@
                 throw error;
             }
         }
-
         async function deleteExam(examId) {
             // 1단계: 참조 관계 확인
             try {
@@ -7943,7 +7972,6 @@
                 showAlert('배점 저장 중 오류가 발생했습니다.', 'error');
             }
         }
-
         async function loadGradingSection() {
             const contentContainer = document.getElementById('admin-content');
             contentContainer.innerHTML = `
@@ -8688,9 +8716,6 @@
                 showAlert('평가 의견 업데이트에 실패했습니다.', 'error');
             }
         }
-
-
-
         // AI 채점 시작 (개별 답안)
         async function startAIGradingForAnswer(answerId) {
             let answerElement = null;
@@ -9491,12 +9516,6 @@
                 return [];
             }
         }
-
-        // 채점 데이터 새로고침
-        async function refreshGradingData() {
-            await loadGradingQuestions();
-        }
-
         // 채점 문제 필터링
         function filterGradingQuestions() {
             // TODO: 필터링 로직 구현
