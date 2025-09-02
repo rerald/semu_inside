@@ -448,8 +448,10 @@
         }
 
         .text-success { color: #28a745; }
+        .text-info { color: #17a2b8; }
         .text-warning { color: #ffc107; }
         .text-danger { color: #dc3545; }
+        .text-muted { color: #6c757d; }
 
         .question-info {
             text-align: left;
@@ -2480,6 +2482,13 @@
             background: #f8f9fa;
             font-weight: 600;
             color: var(--dark-gray);
+        }
+
+        /* 최신 접속일 컬럼 너비 조정 */
+        .admin-table th:nth-child(7),
+        .admin-table td:nth-child(7) {
+            min-width: 140px;
+            white-space: nowrap;
         }
 
         .admin-table tr:hover {
@@ -9395,15 +9404,23 @@
             contentContainer.innerHTML = `
                 <div class="admin-section-header">
                     <h4>사용자 관리</h4>
-                    <button class="btn btn-primary" onclick="showAddUserModal()">
-                        <i class="fas fa-user-plus"></i> 사용자 추가
-                    </button>
-                    <button class="btn btn-secondary" onclick="refreshUserList()">
-                        <i class="fas fa-sync-alt"></i> 새로고침
-                    </button>
-                    <button class="btn btn-warning" onclick="showExamRecordManagement()">
-                        <i class="fas fa-history"></i> 시험 기록 관리
-                    </button>
+                    <div class="header-actions">
+                        <select class="form-control" id="user-sort-order" onchange="sortUserList()" style="width: auto; margin-right: 0.5rem;">
+                            <option value="created_at">가입일 순</option>
+                            <option value="last_login_at">최신 접속일 순</option>
+                            <option value="name">이름 순</option>
+                            <option value="email">이메일 순</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="showAddUserModal()">
+                            <i class="fas fa-user-plus"></i> 사용자 추가
+                        </button>
+                        <button class="btn btn-secondary" onclick="refreshUserList()">
+                            <i class="fas fa-sync-alt"></i> 새로고침
+                        </button>
+                        <button class="btn btn-warning" onclick="showExamRecordManagement()">
+                            <i class="fas fa-history"></i> 시험 기록 관리
+                        </button>
+                    </div>
                 </div>
                 
                 <!-- 필터 컨트롤 -->
@@ -9925,6 +9942,7 @@
             try {
                 console.log('👥 사용자 목록 로드 중...');
                 
+                // 프로필 정보 가져오기 (last_login_at 포함)
                 const { data: profiles, error } = await window.supabaseClient
                     .from('profiles')
                     .select(`
@@ -9937,6 +9955,8 @@
                     .order('created_at', { ascending: false });
 
                 if (error) throw error;
+                
+                console.log('✅ 사용자 프로필 정보 로드 완료:', profiles?.length || 0, '명');
                 
                 // 전역 변수에 사용자 데이터 저장
                 allUsers = profiles || [];
@@ -9969,6 +9989,7 @@
                                     <th>부서</th>
                                     <th>입사일</th>
                                     <th>가입일</th>
+                                    <th>최신 접속일</th>
                                     <th>상태</th>
                                     <th>관리</th>
                                 </tr>
@@ -9980,6 +10001,38 @@
                     const hireDate = user.hire_date ? new Date(user.hire_date).toLocaleDateString('ko-KR') : '-';
                     const createdDate = user.created_at ? new Date(user.created_at).toLocaleDateString('ko-KR') : '-';
                     const departmentName = user.departments?.name || '미지정';
+                    
+                    // 최신 접속일 포맷팅 (정확한 날짜/시간 표시)
+                    let lastLoginDisplay = '-';
+                    let lastLoginClass = 'text-muted';
+                    
+                    if (user.last_login_at) {
+                        const lastLogin = new Date(user.last_login_at);
+                        const now = new Date();
+                        const diffInHours = Math.floor((now - lastLogin) / (1000 * 60 * 60));
+                        const diffInDays = Math.floor(diffInHours / 24);
+                        
+                        // 날짜와 시간을 모두 표시
+                        const dateStr = lastLogin.toLocaleDateString('ko-KR');
+                        const timeStr = lastLogin.toLocaleTimeString('ko-KR', { 
+                            hour: '2-digit', 
+                            minute: '2-digit',
+                            hour12: false 
+                        });
+                        
+                        lastLoginDisplay = `${dateStr} ${timeStr}`;
+                        
+                        // 최근성에 따라 색상 구분
+                        if (diffInHours < 1) {
+                            lastLoginClass = 'text-success'; // 1시간 이내 - 초록색
+                        } else if (diffInHours < 24) {
+                            lastLoginClass = 'text-info'; // 하루 이내 - 파란색
+                        } else if (diffInDays <= 7) {
+                            lastLoginClass = 'text-warning'; // 일주일 이내 - 주황색
+                        } else {
+                            lastLoginClass = 'text-muted'; // 그 이상 - 회색
+                        }
+                    }
                         
                         usersHTML += `
                             <tr>
@@ -9994,6 +10047,22 @@
                                 <td>${departmentName}</td>
                                 <td>${hireDate}</td>
                                 <td>${createdDate}</td>
+                                <td>
+                                    <span class="${lastLoginClass}" title="${user.last_login_at ? 
+                                        `상세 정보: ${new Date(user.last_login_at).toLocaleString('ko-KR')}
+경과 시간: ${(() => {
+    const now = new Date();
+    const lastLogin = new Date(user.last_login_at);
+    const diffInMinutes = Math.floor((now - lastLogin) / (1000 * 60));
+    if (diffInMinutes < 60) return `${diffInMinutes}분 전`;
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours}시간 전`;
+    const diffInDays = Math.floor(diffInHours / 24);
+    return `${diffInDays}일 전`;
+})()}` : '접속 기록 없음'}">
+                                        ${lastLoginDisplay}
+                                    </span>
+                                </td>
                                 <td>
                                     <span class="status-badge status-active">활성</span>
                                 </td>
@@ -10033,6 +10102,50 @@
             if (usersListContainer) {
                 usersListContainer.style.display = 'block';
             }
+        }
+        
+        // 사용자 목록 정렬 함수
+        function sortUserList() {
+            const sortBy = document.getElementById('user-sort-order')?.value || 'created_at';
+            
+            if (!allUsers || allUsers.length === 0) {
+                console.warn('정렬할 사용자 데이터가 없습니다.');
+                return;
+            }
+            
+            const sortedUsers = [...allUsers].sort((a, b) => {
+                let aValue, bValue;
+                
+                switch (sortBy) {
+                    case 'last_login_at':
+                        // 최신 접속일 순 (최근이 위로)
+                        aValue = a.last_login_at ? new Date(a.last_login_at) : new Date(0);
+                        bValue = b.last_login_at ? new Date(b.last_login_at) : new Date(0);
+                        return bValue - aValue;
+                        
+                    case 'name':
+                        // 이름 순 (가나다 순)
+                        aValue = (a.name || '').toLowerCase();
+                        bValue = (b.name || '').toLowerCase();
+                        return aValue.localeCompare(bValue, 'ko');
+                        
+                    case 'email':
+                        // 이메일 순 (알파벳 순)
+                        aValue = (a.email || '').toLowerCase();
+                        bValue = (b.email || '').toLowerCase();
+                        return aValue.localeCompare(bValue);
+                        
+                    case 'created_at':
+                    default:
+                        // 가입일 순 (최근이 위로)
+                        aValue = a.created_at ? new Date(a.created_at) : new Date(0);
+                        bValue = b.created_at ? new Date(b.created_at) : new Date(0);
+                        return bValue - aValue;
+                }
+            });
+            
+            console.log(`✅ 사용자 목록 정렬 완료 (${sortBy} 기준):`, sortedUsers.length, '명');
+            renderUserList(sortedUsers);
         }
         
         // 필터용 부서 목록 로드

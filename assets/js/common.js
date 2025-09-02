@@ -134,6 +134,19 @@ class SemuApp {
                             };
                             
                             console.log('✅ 세션에서 사용자 정보 복원:', this.currentUser.email);
+                            
+                            // 로그인 시간 업데이트 (실제 로그인 시에만, 세션 복원은 제외)
+                            // 세션 복원과 실제 로그인을 구분하기 위해 sessionStorage 확인
+                            const isRealLogin = !sessionStorage.getItem('session_restored');
+                            if (isRealLogin) {
+                                sessionStorage.setItem('session_restored', 'true');
+                                this.updateLastLoginTime(session.user.id).catch(error => {
+                                    console.warn('⚠️ 로그인 시간 업데이트 실패:', error);
+                                });
+                                console.log('✅ 실제 로그인으로 인한 시간 업데이트');
+                            } else {
+                                console.log('ℹ️ 세션 복원으로 인한 접속 - 로그인 시간 업데이트 생략');
+                            }
                         }
                     } catch (profileError) {
                         console.error('❌ 프로필 조회 중 예외 발생:', profileError);
@@ -158,6 +171,29 @@ class SemuApp {
         } catch (error) {
             console.error('❌ 인증 상태 확인 실패:', error);
             this.currentUser = null;
+        }
+    }
+
+    // 로그인 시간 업데이트 메소드
+    async updateLastLoginTime(userId) {
+        try {
+            if (!this.supabaseClient) {
+                console.warn('⚠️ Supabase 클라이언트가 없어 로그인 시간을 업데이트할 수 없습니다.');
+                return;
+            }
+
+            const { error } = await this.supabaseClient
+                .from('profiles')
+                .update({ last_login_at: new Date().toISOString() })
+                .eq('id', userId);
+
+            if (error) {
+                console.error('❌ 로그인 시간 업데이트 실패:', error);
+            } else {
+                console.log('✅ 로그인 시간 업데이트 성공:', userId);
+            }
+        } catch (error) {
+            console.error('❌ 로그인 시간 업데이트 중 예외 발생:', error);
         }
     }
 
@@ -248,16 +284,37 @@ class SemuApp {
 
     async logout() {
         try {
+            console.log('🔄 로그아웃 시작...');
+            
+            // 1단계: Supabase 로그아웃 시도 (오류가 있어도 계속 진행)
             if (this.supabaseClient) {
-                const { error } = await this.supabaseClient.auth.signOut();
-                if (error) throw error;
+                try {
+                    const { error } = await this.supabaseClient.auth.signOut();
+                    if (error) {
+                        console.warn('⚠️ Supabase 로그아웃 중 오류 (무시하고 계속):', error.message);
+                    } else {
+                        console.log('✅ Supabase 로그아웃 성공');
+                    }
+                } catch (supabaseError) {
+                    console.warn('⚠️ Supabase 로그아웃 예외 (무시하고 계속):', supabaseError.message);
+                }
             }
             
+            // 2단계: 클라이언트 측 정리 (항상 실행)
             this.currentUser = null;
+            window.currentUser = null;
             
-            console.log('✅ 로그아웃 완료');
+            // 3단계: 로컬 스토리지 정리
+            try {
+                localStorage.removeItem('supabase.auth.token');
+                sessionStorage.clear(); // session_restored 플래그도 함께 정리됨
+            } catch (storageError) {
+                console.warn('⚠️ 스토리지 정리 중 오류:', storageError.message);
+            }
             
-            // 로그인 페이지로 리다이렉트
+            console.log('✅ 로그아웃 완료 (클라이언트 측)');
+            
+            // 4단계: 성공 메시지 및 리다이렉트
             this.showAlert('로그아웃 되었습니다.', 'success');
             
             setTimeout(() => {
@@ -265,9 +322,43 @@ class SemuApp {
             }, 1000);
             
         } catch (error) {
-            console.error('❌ 로그아웃 실패:', error);
-            this.showAlert('로그아웃 중 오류가 발생했습니다.', 'error');
+            console.error('❌ 로그아웃 중 예상치 못한 오류:', error);
+            
+            // 오류가 있어도 강제로 로그인 페이지로 이동
+            this.currentUser = null;
+            window.currentUser = null;
+            
+            this.showAlert('로그아웃 처리 중 일부 오류가 있었지만 로그아웃됩니다.', 'warning');
+            
+            setTimeout(() => {
+                window.location.href = './login.html';
+            }, 1500);
         }
+    }
+
+    // 강제 로그아웃 (모든 세션 정리)
+    forceLogout() {
+        console.log('🚨 강제 로그아웃 실행...');
+        
+        // 클라이언트 측 정리
+        this.currentUser = null;
+        window.currentUser = null;
+        
+        // 모든 스토리지 정리
+        try {
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // 쿠키도 정리 (가능한 것들)
+            document.cookie.split(";").forEach(function(c) { 
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+            });
+        } catch (error) {
+            console.warn('⚠️ 스토리지/쿠키 정리 중 오류:', error);
+        }
+        
+        console.log('✅ 강제 로그아웃 완료');
+        window.location.href = './login.html';
     }
 
     // 회원가입 메서드 (Supabase 전용)

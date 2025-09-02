@@ -702,11 +702,21 @@
             }
 
             setupEventListeners() {
-                // 로그아웃 버튼
+                // 로그아웃 버튼 (개선된 오류 처리)
                 const logoutBtn = document.querySelector('.logout-btn');
                 if (logoutBtn) {
-                    logoutBtn.addEventListener('click', () => {
-                        window.semuApp.logout();
+                    logoutBtn.addEventListener('click', async () => {
+                        try {
+                            console.log('🔄 프로필 페이지에서 로그아웃 시도...');
+                            await window.semuApp.logout();
+                        } catch (error) {
+                            console.error('❌ 일반 로그아웃 실패, 강제 로그아웃 시도:', error);
+                            
+                            // 사용자에게 알림 후 강제 로그아웃
+                            if (confirm('로그아웃 중 오류가 발생했습니다. 강제로 로그아웃하시겠습니까?')) {
+                                window.semuApp.forceLogout();
+                            }
+                        }
                     });
                 }
             }
