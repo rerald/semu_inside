@@ -3957,6 +3957,35 @@
         async function loadQuestionsSection() {
             const contentContainer = document.getElementById('admin-content');
             contentContainer.innerHTML = `
+                <!-- 검색 필터 섹션 (제목 상단에 배치) -->
+                <div class="filter-section mb-4">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-search"></i>
+                                </span>
+                                <input type="text" id="question-search" class="form-control" 
+                                       placeholder="제목, 내용, 태그로 검색... (A B = OR조건, A&B = AND조건)" 
+                                       onkeyup="filterQuestionManagement()">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <select class="form-control" id="question-tag-filter" multiple title="태그 선택 필터 (AND 조건)" style="min-width:200px;" onchange="filterQuestionManagement()"></select>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-outline-secondary" onclick="clearQuestionFilters()" title="필터 초기화">
+                                    <i class="fas fa-eraser"></i> 초기화
+                                </button>
+                                <button class="btn btn-outline-primary" onclick="openQuestionTagManager()" title="태그 관리">
+                                    <i class="fas fa-tags"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="admin-section-header">
                     <h4>문제 관리</h4>
                     <div class="header-actions">
@@ -3996,6 +4025,9 @@
             
             // Supabase에서 문제 목록 가져오기
             await loadQuestionsFromSupabase();
+            
+            // 문제 태그 옵션 로드
+            await loadQuestionTagOptions();
             
             // 저장된 문제 목록 불러오기
             await loadQuestionsList();
@@ -4096,9 +4128,46 @@
                         };
                     });
                     
-                    // Supabase 데이터만 사용 (로컬 데이터 병합 제거)
-                    localStorage.setItem('questions', JSON.stringify(convertedQuestions));
-                    console.log('Supabase 데이터만 사용. 총 문제 수:', convertedQuestions.length);
+                    // 문제별 태그 정보 별도 조회
+                    try {
+                        const { data: questionTags, error: tagsError } = await window.supabaseClient
+                            .from('question_tags')
+                            .select(`
+                                question_id,
+                                tags: tags(name)
+                            `);
+                        
+                        if (tagsError) {
+                            console.warn('⚠️ 문제 태그 정보 로드 실패:', tagsError);
+                        } else {
+                            console.log('✅ 문제 태그 정보 로드 완료:', questionTags?.length || 0, '개');
+                        }
+                        
+                        // 문제별 태그 매핑
+                        const questionTagsMap = {};
+                        if (questionTags) {
+                            questionTags.forEach(qt => {
+                                if (!questionTagsMap[qt.question_id]) questionTagsMap[qt.question_id] = [];
+                                if (qt.tags?.name) questionTagsMap[qt.question_id].push({ tags: { name: qt.tags.name } });
+                            });
+                        }
+                        
+                        // 문제에 태그 정보 병합
+                        const enrichedQuestions = convertedQuestions.map(q => ({
+                            ...q,
+                            question_tags: questionTagsMap[q.id] || []
+                        }));
+                        
+                        // Supabase 데이터만 사용 (로컬 데이터 병합 제거)
+                        localStorage.setItem('questions', JSON.stringify(enrichedQuestions));
+                        console.log('Supabase 데이터만 사용. 총 문제 수:', enrichedQuestions.length);
+                        
+                    } catch (tagError) {
+                        console.warn('태그 정보 로드 중 오류:', tagError);
+                        // 태그 정보 로드 실패 시 기본 문제 데이터만 저장
+                        localStorage.setItem('questions', JSON.stringify(convertedQuestions));
+                        console.log('Supabase 데이터만 사용. 총 문제 수:', convertedQuestions.length);
+                    }
                 } else {
                     console.log('Supabase에 문제가 없습니다.');
                     // Supabase에 문제가 없으면 빈 배열로 초기화
@@ -4149,6 +4218,7 @@
                                 <th onclick="sortQuestionTable('category')" class="sortable-header">
                                     카테고리 <span class="sort-icon neutral"></span>
                                 </th>
+                                <th>태그</th>
                                 <th onclick="sortQuestionTable('correctRate')" class="sortable-header">
                                     정답률 <span class="sort-icon neutral"></span>
                                 </th>
@@ -4216,6 +4286,14 @@
                             <span class="difficulty-badge ${question.difficulty}">${difficultyText}</span>
                         </td>
                         <td class="question-category">${question.category || '미설정'}</td>
+                        <td class="question-tags">
+                            ${(() => {
+                                const questionTags = (question.question_tags || []).map(qt => qt.tags?.name).filter(Boolean);
+                                return questionTags.length > 0 
+                                    ? questionTags.map(tag => `<span class="badge badge-secondary" style="margin-right:4px; font-size:10px; padding:2px 4px;">${tag}</span>`).join('')
+                                    : '-';
+                            })()}
+                        </td>
                         <td class="question-correct-rate">
                             <span class="badge ${correctRate >= 70 ? 'bg-success' : correctRate >= 50 ? 'bg-warning' : 'bg-danger'}">
                                 ${correctRate}%
@@ -6617,6 +6695,115 @@
             if (difficulty <= 2) return 'success';
             if (difficulty <= 3) return 'warning';
             return 'danger';
+        }
+        
+        function getDifficultyBadge(difficulty) {
+            const difficultyText = getDifficultyText(difficulty);
+            const badgeClass = getDifficultyBadgeClass(difficulty);
+            return `<span class="badge badge-${badgeClass}">난이도 ${difficulty} (${difficultyText})</span>`;
+        }
+        
+        // 문제 상세 정보 표시 함수
+        function showQuestionDetails(questionId) {
+            try {
+                // localStorage에서 문제 찾기
+                const questions = JSON.parse(localStorage.getItem('questions') || '[]');
+                const question = questions.find(q => q.id === questionId || q.supabase_id === questionId);
+                
+                if (!question) {
+                    alert('문제를 찾을 수 없습니다.');
+                    return;
+                }
+                
+                // 모달 창으로 상세 정보 표시
+                let detailsHtml = `
+                    <div class="modal-backdrop" onclick="closeQuestionDetails()" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+                        <div class="modal-content" onclick="event.stopPropagation()" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 8px; max-width: 800px; max-height: 80vh; overflow-y: auto; box-shadow: 0 4px 20px rgba(0,0,0,0.2);">
+                            <div class="modal-header" style="border-bottom: 1px solid #dee2e6; padding-bottom: 15px; margin-bottom: 20px;">
+                                <h4 style="margin: 0; color: #333;">📝 문제 상세 정보</h4>
+                                <button onclick="closeQuestionDetails()" style="float: right; background: none; border: none; font-size: 24px; cursor: pointer; color: #999;">&times;</button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="question-info">
+                                    <h5 style="color: #0066cc; margin-bottom: 15px;">${question.title || '제목 없음'}</h5>
+                                    
+                                    <div class="question-meta" style="margin-bottom: 20px;">
+                                        ${getQuestionTypeBadge(question.type)}
+                                        ${getDifficultyBadge(question.difficulty)}
+                                        <span class="badge badge-secondary">${question.category || '미설정'}</span>
+                                    </div>
+                                    
+                                    <div class="question-content" style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
+                                        <strong>문제 내용:</strong><br>
+                                        ${question.content || '내용이 없습니다.'}
+                                    </div>
+                                    
+                                    ${question.choices && question.choices.length > 0 ? `
+                                        <div class="question-choices" style="margin-bottom: 15px;">
+                                            <strong>선택지:</strong><br>
+                                            ${question.choices.map((choice, idx) => {
+                                                const isCorrect = choice && (choice.isCorrect || choice.is_correct);
+                                                const text = choice && (choice.text || choice.content || '');
+                                                return `<div style="margin: 5px 0; padding: 8px; background: ${isCorrect ? '#d4edda' : '#f8f9fa'}; border-radius: 3px;">
+                                                    ${idx + 1}. ${text} ${isCorrect ? '<strong style="color: #155724;">(정답)</strong>' : ''}
+                                                </div>`;
+                                            }).join('')}
+                                        </div>
+                                    ` : ''}
+                                    
+                                    ${question.model_answer ? `
+                                        <div class="model-answer" style="margin-bottom: 15px;">
+                                            <strong>모범답안:</strong><br>
+                                            <div style="background: #e7f3ff; padding: 10px; border-radius: 5px;">
+                                                ${question.model_answer}
+                                            </div>
+                                        </div>
+                                    ` : ''}
+                                    
+                                    ${question.explanation ? `
+                                        <div class="explanation" style="margin-bottom: 15px;">
+                                            <strong>해설:</strong><br>
+                                            <div style="background: #fff3cd; padding: 10px; border-radius: 5px;">
+                                                ${question.explanation}
+                                            </div>
+                                        </div>
+                                    ` : ''}
+                                    
+                                    <div class="question-meta-info" style="font-size: 12px; color: #666; border-top: 1px solid #dee2e6; padding-top: 15px;">
+                                        <p><strong>등록일:</strong> ${question.created_at ? new Date(question.created_at).toLocaleString('ko-KR') : '-'}</p>
+                                        <p><strong>수정일:</strong> ${question.updated_at ? new Date(question.updated_at).toLocaleString('ko-KR') : '-'}</p>
+                                        <p><strong>문제 ID:</strong> ${question.id || question.supabase_id}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer" style="border-top: 1px solid #dee2e6; padding-top: 15px; text-align: right;">
+                                <button onclick="editQuestion('${questionId}')" class="btn btn-primary" style="margin-right: 10px;">
+                                    <i class="fas fa-edit"></i> 수정
+                                </button>
+                                <button onclick="closeQuestionDetails()" class="btn btn-secondary">닫기</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // 모달을 body에 추가
+                const modalElement = document.createElement('div');
+                modalElement.id = 'question-details-modal';
+                modalElement.innerHTML = detailsHtml;
+                document.body.appendChild(modalElement);
+                
+            } catch (error) {
+                console.error('❌ 문제 상세 정보 표시 중 오류:', error);
+                alert('문제 상세 정보를 불러오는 중 오류가 발생했습니다.');
+            }
+        }
+        
+        // 문제 상세 모달 닫기
+        function closeQuestionDetails() {
+            const modal = document.getElementById('question-details-modal');
+            if (modal) {
+                modal.remove();
+            }
         }
 
         let selectedQuestions = new Set();
@@ -9768,6 +9955,8 @@
                             <option value="name">이름 순 (가나다순)</option>
                             <option value="email">이메일 순 (알파벳순)</option>
                         </select>
+                        <select class="form-control" id="tag-filter" multiple title="태그 선택 필터 (AND 조건)" style="min-width:220px;" onchange="filterUserManagement()"></select>
+                        <button class="btn btn-outline" onclick="openTagManager()"><i class="fas fa-tags"></i> 태그 관리</button>
                         <small style="color: #6c757d; margin-left: 0.5rem;">💡 컬럼 헤더를 클릭하여 오름차순/내림차순 정렬 가능</small>
                         <button class="btn btn-primary" onclick="showAddUserModal()">
                             <i class="fas fa-user-plus"></i> 사용자 추가
@@ -9790,7 +9979,7 @@
                                     <i class="fas fa-search"></i>
                                 </span>
                                 <input type="text" id="user-search" class="form-control" 
-                                       placeholder="이름, 이메일로 검색..." 
+                                       placeholder="이름, 이메일, 태그로 검색... (A B = OR조건, A&B = AND조건)" 
                                        onkeyup="filterUserManagement()">
                             </div>
                         </div>
@@ -10324,11 +10513,43 @@
                 
                 console.log('✅ 사용자 프로필 정보 로드 완료:', profiles?.length || 0, '명');
                 
+                // 태그 정보 별도 조회
+                const { data: userTags, error: tagsError } = await window.supabaseClient
+                    .from('user_tags')
+                    .select(`
+                        user_id,
+                        tags: tags(name)
+                    `);
+                
+                if (tagsError) {
+                    console.warn('⚠️ 태그 정보 로드 실패:', tagsError);
+                } else {
+                    console.log('✅ 태그 정보 로드 완료:', userTags?.length || 0, '개');
+                }
+                
+                // 사용자별 태그 매핑
+                const userTagsMap = {};
+                if (userTags) {
+                    userTags.forEach(ut => {
+                        if (!userTagsMap[ut.user_id]) userTagsMap[ut.user_id] = [];
+                        if (ut.tags?.name) userTagsMap[ut.user_id].push({ tags: { name: ut.tags.name } });
+                    });
+                }
+                
+                // 프로필에 태그 정보 병합
+                const enrichedProfiles = (profiles || []).map(p => ({
+                    ...p,
+                    user_tags: userTagsMap[p.id] || []
+                }));
+                
                 // 전역 변수에 사용자 데이터 저장
-                allUsers = profiles || [];
+                allUsers = enrichedProfiles;
 
                 // 사용자 목록 렌더링
                 renderUserList(allUsers);
+                
+                // 태그 옵션 로드
+                loadTagOptions();
                 
                 // 통계 업데이트
                 updateUserCounts(allUsers.length, allUsers.length);
@@ -10361,6 +10582,9 @@
                                     <th class="sortable-header" onclick="sortUserTable('department')">
                                         부서 <span class="sort-icon neutral"></span>
                                     </th>
+                                    <th class="sortable-header" onclick="sortUserTable('tags')">
+                                        태그 <span class="sort-icon neutral"></span>
+                                    </th>
                                     <th class="sortable-header" onclick="sortUserTable('hire_date')">
                                         입사일 <span class="sort-icon neutral"></span>
                                     </th>
@@ -10381,6 +10605,7 @@
                     const hireDate = user.hire_date ? new Date(user.hire_date).toLocaleDateString('ko-KR') : '-';
                     const createdDate = user.created_at ? new Date(user.created_at).toLocaleDateString('ko-KR') : '-';
                     const departmentName = user.departments?.name || '미지정';
+                    const tags = (user.user_tags || []).map(ut => ut.tags?.name).filter(Boolean);
                     
                     // 최신 접속일 포맷팅 (정확한 날짜/시간 표시)
                     let lastLoginDisplay = '-';
@@ -10425,6 +10650,7 @@
                                     </span>
                                 </td>
                                 <td>${departmentName}</td>
+                                <td>${renderTagBadges(tags)}</td>
                                 <td>${hireDate}</td>
                                 <td>${createdDate}</td>
                                 <td>
@@ -10532,6 +10758,13 @@
                             ? aValue.localeCompare(bValue, 'ko')
                             : bValue.localeCompare(aValue, 'ko');
                             
+                    case 'tags':
+                        aValue = (a.user_tags || []).map(ut => ut.tags?.name).filter(Boolean).join(',');
+                        bValue = (b.user_tags || []).map(ut => ut.tags?.name).filter(Boolean).join(',');
+                        return userSortState.direction === 'asc'
+                            ? aValue.localeCompare(bValue, 'ko')
+                            : bValue.localeCompare(aValue, 'ko');
+                            
                     case 'hire_date':
                         aValue = a.hire_date ? new Date(a.hire_date) : new Date(0);
                         bValue = b.hire_date ? new Date(b.hire_date) : new Date(0);
@@ -10633,8 +10866,9 @@
                 const departmentSelect = document.getElementById('department-filter');
                 const roleSelect = document.getElementById('role-filter');
                 const statusSelect = document.getElementById('status-filter');
+                const tagSelect = document.getElementById('tag-filter');
                 
-                if (!searchInput || !departmentSelect || !roleSelect || !statusSelect) {
+                if (!searchInput || !departmentSelect || !roleSelect || !statusSelect || !tagSelect) {
                     console.warn('⚠️ 필터 요소를 찾을 수 없습니다.');
                     return;
                 }
@@ -10649,12 +10883,16 @@
                 const departmentFilter = departmentSelect.value || '';
                 const roleFilter = roleSelect.value || '';
                 const statusFilter = statusSelect.value || '';
+                const tagFilter = Array.from(tagSelect.selectedOptions).map(option => option.value);
                 
                 const filteredUsers = allUsers.filter(user => {
-                    // 검색어 필터 (이름, 이메일)
+                    // 검색어 필터 (이름, 이메일, 태그 with OR/AND 조건)
+                    const userTagNames = (user.user_tags || []).map(ut => ut.tags?.name).filter(Boolean);
+                    
                     const matchesSearch = !searchTerm || 
                         (user.name && user.name.toLowerCase().includes(searchTerm)) ||
-                        (user.email && user.email.toLowerCase().includes(searchTerm));
+                        (user.email && user.email.toLowerCase().includes(searchTerm)) ||
+                        matchesTagSearch(userTagNames, searchTerm);
                     
                     // 부서 필터
                     const matchesDepartment = !departmentFilter || 
@@ -10667,7 +10905,11 @@
                     // 상태 필터 (현재는 모든 사용자가 활성상태로 가정)
                     const matchesStatus = !statusFilter || statusFilter === '활성';
                     
-                    return matchesSearch && matchesDepartment && matchesRole && matchesStatus;
+                    // 태그 필터
+                    const matchesTag = tagFilter.length === 0 || 
+                        (user.user_tags || []).some(ut => tagFilter.includes(ut.tags?.name));
+                    
+                    return matchesSearch && matchesDepartment && matchesRole && matchesStatus && matchesTag;
                 });
                 
                 // 필터링된 결과 렌더링
@@ -10697,11 +10939,17 @@
                 const departmentSelect = document.getElementById('department-filter');
                 const roleSelect = document.getElementById('role-filter');
                 const statusSelect = document.getElementById('status-filter');
+                const tagSelect = document.getElementById('tag-filter');
                 
                 if (searchInput) searchInput.value = '';
                 if (departmentSelect) departmentSelect.value = '';
                 if (roleSelect) roleSelect.value = '';
                 if (statusSelect) statusSelect.value = '';
+                if (tagSelect) {
+                    for (let i = 0; i < tagSelect.options.length; i++) {
+                        tagSelect.options[i].selected = false;
+                    }
+                }
                 
                 // 필터 적용
                 filterUserManagement();
@@ -11809,7 +12057,6 @@
                 showAdminAlert('데이터 내보내기에 실패했습니다.', 'error');
             }
         }
-
         // 차트 생성 함수들
         function createQuestionsCategoryChart(labels, data) {
             const ctx = document.getElementById('questions-category-chart');
@@ -12571,7 +12818,6 @@
             document.getElementById('category-modal').style.display = 'none';
             currentCategoryId = null;
         }
-
         async function saveCategory() {
             try {
                 const form = document.getElementById('category-form');
@@ -13354,7 +13600,6 @@
                 console.error('❌ 권한 모달 데이터 로드 실패:', error);
             }
         }
-        
         // 사용자 체크리스트 로드 (구글 시트 스타일)
         async function loadUserChecklist(examId) {
             try {
@@ -14133,7 +14378,6 @@
                 showAlert(`시험 비공개에 실패했습니다: ${error.message}`, 'error');
             }
         }
-
         // 데이터베이스 스키마 상태 확인
         async function checkDatabaseSchema() {
             try {
@@ -14685,5 +14929,318 @@
     
     <!-- Admin.js 스크립트 로드 -->
     <script src="./js/admin.js"></script>
+    
+    <script>
+        // 태그 뱃지 렌더링 함수
+        function renderTagBadges(tags) {
+            if (!tags || tags.length === 0) return '-';
+            return tags.map(t => `<span class="badge badge-secondary" style="margin-right:6px; font-size:11px; padding:3px 6px; background-color:#6c757d; color:white; border-radius:3px;">${t}</span>`).join('');
+        }
+        
+        // 태그 관리 모달 (임시)
+        function openTagManager() {
+            alert('태그 관리는 이후 상세 편집/모달로 확장 예정입니다. 우선 태그 테이블 생성 후 사용자-태그 연결을 저장합니다.');
+        }
+        
+        // 태그 검색 매치 함수 (OR/AND 조건 지원)
+        function matchesTagSearch(userTagNames, searchTerm) {
+            const lowerSearchTerm = searchTerm.toLowerCase();
+            const userTagsLower = userTagNames.map(tag => tag.toLowerCase());
+            
+            // AND 조건 검색: 태그A&태그B
+            if (lowerSearchTerm.includes('&')) {
+                const andTags = lowerSearchTerm.split('&').map(t => t.trim()).filter(Boolean);
+                return andTags.every(searchTag => 
+                    userTagsLower.some(userTag => userTag.includes(searchTag))
+                );
+            }
+            
+            // OR 조건 검색 1: 태그A or 태그B (명시적 or)
+            if (lowerSearchTerm.includes(' or ')) {
+                const orTags = lowerSearchTerm.split(' or ').map(t => t.trim()).filter(Boolean);
+                return orTags.some(searchTag => 
+                    userTagsLower.some(userTag => userTag.includes(searchTag))
+                );
+            }
+            
+            // OR 조건 검색 2: 태그A 태그B (공백으로 구분된 여러 키워드)
+            if (lowerSearchTerm.includes(' ') && !lowerSearchTerm.includes('&')) {
+                const spaceOrTags = lowerSearchTerm.split(/\s+/).map(t => t.trim()).filter(Boolean);
+                return spaceOrTags.some(searchTag => 
+                    userTagsLower.some(userTag => userTag.includes(searchTag))
+                );
+            }
+            
+            // 일반 검색: 단일 태그 또는 부분 문자열
+            const allTagsText = userTagsLower.join(' ');
+            return allTagsText.includes(lowerSearchTerm);
+        }
+        
+        // 태그 옵션 로드 (사용자용)
+        async function loadTagOptions() {
+            try {
+                const { data: tags } = await window.supabaseClient
+                    .from('tags')
+                    .select('name')
+                    .order('name');
+                const select = document.getElementById('tag-filter');
+                if (select && tags) {
+                    select.innerHTML = tags.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
+                }
+            } catch (e) { 
+                console.warn('태그 목록 로드 실패', e); 
+            }
+        }
+        
+        // 문제 태그 옵션 로드 (문제 관련 태그만)
+        async function loadQuestionTagOptions() {
+            try {
+                const { data: tags } = await window.supabaseClient
+                    .from('tags')
+                    .select('name, description')
+                    .order('name');
+                const select = document.getElementById('question-tag-filter');
+                if (select && tags) {
+                    // 문제 관련 태그만 필터링 (설명에 "문제" 포함하거나 세무 관련 태그)
+                    const questionTags = tags.filter(tag => {
+                        const desc = tag.description || '';
+                        const name = tag.name || '';
+                        return desc.includes('문제') || desc.includes('법령') || desc.includes('세무') || 
+                               ['소득세', '법인세', '부가가치세', '상속세', '증여세', '지방세', '국세기본법', '세무회계',
+                                '기초', '중급', '고급', '심화', '이론', '계산', '서술', '실무', '사례',
+                                '신고', '환급', '과세표준', '세율', '공제', '감면', '가산세',
+                                '최신법령', '판례', '시행령', '시행규칙', '개정사항', '주의사항', '자주틀림', '중요', '기출'].includes(name);
+                    });
+                    
+                    select.innerHTML = questionTags.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
+                    console.log('✅ 문제 관련 태그 로드 완료:', questionTags.length, '개');
+                }
+            } catch (e) { 
+                console.warn('문제 태그 목록 로드 실패', e); 
+            }
+        }
+        
+        // 문제 태그 관리 모달 (임시)
+        function openQuestionTagManager() {
+            alert('문제 태그 관리는 이후 상세 편집/모달로 확장 예정입니다. 우선 태그 테이블 생성 후 문제-태그 연결을 저장합니다.');
+        }
+        
+        // 문제 필터 초기화 함수
+        function clearQuestionFilters() {
+            try {
+                // 검색 입력창 초기화
+                const searchInput = document.getElementById('question-search');
+                if (searchInput) {
+                    searchInput.value = '';
+                }
+                
+                // 태그 필터 초기화
+                const tagSelect = document.getElementById('question-tag-filter');
+                if (tagSelect) {
+                    // 모든 옵션 선택 해제
+                    for (let i = 0; i < tagSelect.options.length; i++) {
+                        tagSelect.options[i].selected = false;
+                    }
+                }
+                
+                // 원래 문제 목록 다시 로드
+                loadQuestionsList();
+                
+                console.log('✅ 문제 필터가 초기화되었습니다.');
+                
+            } catch (error) {
+                console.error('❌ 문제 필터 초기화 중 오류 발생:', error);
+            }
+        }
+        
+        // 문제 관리 필터링 함수
+        function filterQuestionManagement() {
+            try {
+                const searchInput = document.getElementById('question-search');
+                const tagSelect = document.getElementById('question-tag-filter');
+                
+                if (!searchInput || !tagSelect) {
+                    console.warn('⚠️ 문제 필터 요소를 찾을 수 없습니다.');
+                    return;
+                }
+                
+                const searchTerm = (searchInput.value || '').toLowerCase();
+                const selectedTags = Array.from(tagSelect.selectedOptions).map(option => option.value);
+                
+                // localStorage에서 문제 목록 가져오기
+                const allQuestions = JSON.parse(localStorage.getItem('questions') || '[]');
+                
+                let filteredQuestions = [...allQuestions];
+                
+                if (searchTerm) {
+                    filteredQuestions = filteredQuestions.filter(q => {
+                        // 제목, 내용 검색
+                        const basicMatch = (q.title && q.title.toLowerCase().includes(searchTerm)) ||
+                                          (q.content && q.content.toLowerCase().includes(searchTerm));
+                        
+                        // 태그 검색 (OR/AND 조건 지원)
+                        const questionTagNames = (q.question_tags || []).map(qt => qt.tags?.name).filter(Boolean);
+                        const tagMatch = matchesQuestionTagSearch(questionTagNames, searchTerm);
+                        
+                        return basicMatch || tagMatch;
+                    });
+                }
+                
+                if (selectedTags.length > 0) {
+                    filteredQuestions = filteredQuestions.filter(q => {
+                        const questionTagNames = (q.question_tags || []).map(qt => qt.tags?.name).filter(Boolean);
+                        return selectedTags.every(tag => questionTagNames.includes(tag));
+                    });
+                }
+                
+                // 필터링된 문제 목록 렌더링
+                if (searchTerm || selectedTags.length > 0) {
+                    // 필터가 적용된 경우 필터링된 결과 표시
+                    renderFilteredQuestions(filteredQuestions);
+                } else {
+                    // 필터가 없는 경우 기본 목록 표시
+                    const savedQuestions = JSON.parse(localStorage.getItem('questions') || '[]');
+                    renderFilteredQuestions(savedQuestions);
+                }
+                
+            } catch (error) {
+                console.error('❌ 문제 필터링 중 오류 발생:', error);
+            }
+        }
+        
+        // 문제 태그 검색 매치 함수
+        function matchesQuestionTagSearch(questionTagNames, searchTerm) {
+            const lowerSearchTerm = searchTerm.toLowerCase();
+            const questionTagsLower = questionTagNames.map(tag => tag.toLowerCase());
+            
+            // AND 조건 검색: 태그A&태그B
+            if (lowerSearchTerm.includes('&')) {
+                const andTags = lowerSearchTerm.split('&').map(t => t.trim()).filter(Boolean);
+                return andTags.every(searchTag => 
+                    questionTagsLower.some(questionTag => questionTag.includes(searchTag))
+                );
+            }
+            
+            // OR 조건 검색 1: 태그A or 태그B (명시적 or)
+            if (lowerSearchTerm.includes(' or ')) {
+                const orTags = lowerSearchTerm.split(' or ').map(t => t.trim()).filter(Boolean);
+                return orTags.some(searchTag => 
+                    questionTagsLower.some(questionTag => questionTag.includes(searchTag))
+                );
+            }
+            
+            // OR 조건 검색 2: 태그A 태그B (공백으로 구분된 여러 키워드)
+            if (lowerSearchTerm.includes(' ') && !lowerSearchTerm.includes('&')) {
+                const spaceOrTags = lowerSearchTerm.split(/\s+/).map(t => t.trim()).filter(Boolean);
+                return spaceOrTags.some(searchTag => 
+                    questionTagsLower.some(questionTag => questionTag.includes(searchTag))
+                );
+            }
+            
+            // 일반 검색: 단일 태그 또는 부분 문자열
+            const allTagsText = questionTagsLower.join(' ');
+            return allTagsText.includes(lowerSearchTerm);
+        }
+        
+        // 필터링된 문제 목록 렌더링
+        function renderFilteredQuestions(questions) {
+            // 기존 loadQuestionsList 로직을 재사용하되 필터링된 문제만 표시
+            const questionsList = document.getElementById('questions-list');
+            if (!questionsList) return;
+            
+            if (questions && questions.length > 0) {
+                let questionsHTML = `
+                    <div class="table-container">
+                        <table class="questions-table">
+                            <thead>
+                                <tr>
+                                    <th class="sortable-header" onclick="sortQuestionTable('id')">번호 <span class="sort-icon neutral"></span></th>
+                                    <th class="sortable-header" onclick="sortQuestionTable('type')">유형 <span class="sort-icon neutral"></span></th>
+                                    <th class="sortable-header" onclick="sortQuestionTable('title')">제목 <span class="sort-icon neutral"></span></th>
+                                    <th>보기/정답</th>
+                                    <th class="sortable-header" onclick="sortQuestionTable('difficulty')">난이도 <span class="sort-icon neutral"></span></th>
+                                    <th class="sortable-header" onclick="sortQuestionTable('category')">카테고리 <span class="sort-icon neutral"></span></th>
+                                    <th>태그</th>
+                                    <th>정답률</th>
+                                    <th class="sortable-header" onclick="sortQuestionTable('created_at')">등록일 <span class="sort-icon neutral"></span></th>
+                                    <th>정보</th>
+                                    <th>작업</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                questions.forEach((question, index) => {
+                    const questionTags = (question.question_tags || []).map(qt => qt.tags?.name).filter(Boolean);
+                    const tagsHtml = questionTags.length > 0 
+                        ? questionTags.map(tag => `<span class="badge badge-secondary" style="margin-right:4px; font-size:10px; padding:2px 4px;">${tag}</span>`).join('')
+                        : '-';
+                    
+                    questionsHTML += `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td>${getQuestionTypeBadge(question.type)}</td>
+                            <td class="question-title">${question.title || '제목 없음'}</td>
+                            <td class="question-options">
+                                ${(() => {
+                                    if (question.type === '객관식' && question.choices) {
+                                        return `<div class="choices-preview">
+                                            ${question.choices.map((choice, idx) => {
+                                                const text = (choice && (choice.text || choice.content || ''));
+                                                const safe = String(text);
+                                                return `${idx + 1}. ${safe.substring(0, 30)}${safe.length > 30 ? '...' : ''}`;
+                                            }).join('<br>')}
+                                        </div>`;
+                                    } else if (question.type === '단답형') {
+                                        return '단답형';
+                                    } else if (question.type === '서술형') {
+                                        return `<div style="max-height: 60px; overflow-y: auto; font-size: 11px;">
+                                            ${question.model_answer ? question.model_answer.substring(0, 100) + '...' : '모범답안 없음'}
+                                        </div>`;
+                                    } else {
+                                        return '기타';
+                                    }
+                                })()}
+                            </td>
+                            <td class="question-difficulty">${getDifficultyBadge(question.difficulty)}</td>
+                            <td>${question.category || '미설정'}</td>
+                            <td>${tagsHtml}</td>
+                            <td>-</td>
+                            <td class="question-date">${question.created_at ? new Date(question.created_at).toLocaleDateString('ko-KR') : '-'}</td>
+                            <td>
+                                <button class="btn-small btn-outline" onclick="showQuestionDetails('${question.id}')">
+                                    <i class="fas fa-info-circle"></i> 상세
+                                </button>
+                            </td>
+                            <td>
+                                <button class="btn-small btn-outline" onclick="editQuestion('${question.id}')">
+                                    <i class="fas fa-edit"></i> 수정
+                                </button>
+                                <button class="btn-small btn-danger" onclick="showQuestionDeleteConfirmation('${question.id}')">
+                                    <i class="fas fa-trash"></i> 삭제
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                questionsHTML += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+
+                questionsList.innerHTML = questionsHTML;
+            } else {
+                questionsList.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-search fa-3x"></i>
+                        <h3>검색 결과가 없습니다</h3>
+                        <p>다른 검색어나 필터를 시도해보세요.</p>
+                    </div>
+                `;
+            }
+        }
+    </script>
 </body>
 </html>
