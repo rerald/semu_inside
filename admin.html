@@ -3247,6 +3247,145 @@
         .answer-status i {
             font-size: 0.8rem;
         }
+        
+        /* 태그 컨테이너 스타일 */
+        .tags-container {
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 12px;
+            background-color: #f8f9fa;
+        }
+        
+        .selected-tags {
+            margin-bottom: 8px;
+            min-height: 24px;
+        }
+        
+        .tag-search-container {
+            margin-bottom: 8px;
+        }
+        
+        .tag-search-container input {
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            padding: 6px 10px;
+            font-size: 14px;
+        }
+        
+        .tag-search-container input:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+            outline: 0;
+        }
+        
+        .tag-selection select {
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            padding: 6px;
+        }
+        
+        .tag-selection select:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+            outline: 0;
+        }
+        
+        /* 태그 배지 스타일 개선 */
+        .badge.badge-secondary {
+            background-color: #6c757d !important;
+            color: white !important;
+            font-size: 11px !important;
+            padding: 3px 8px !important;
+            margin-right: 6px !important;
+            border-radius: 12px !important;
+            display: inline-block;
+        }
+        
+        /* 체크박스 관련 스타일 */
+        .bulk-select-header {
+            width: 40px;
+            text-align: center;
+        }
+        
+        .bulk-select-cell {
+            width: 40px;
+            text-align: center;
+        }
+        
+        .bulk-select-cell input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+        
+        .bulk-select-header input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+        
+        /* 체크박스 호버 효과 */
+        .bulk-select-cell:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .bulk-select-cell input[type="checkbox"]:hover {
+            transform: scale(1.1);
+            transition: transform 0.1s ease;
+        }
+        
+        /* 선택된 행 하이라이트 */
+        .admin-table tbody tr:has(.user-select-checkbox:checked) {
+            background-color: #e3f2fd !important;
+        }
+        
+        /* 체크박스 선택 상태 강화 */
+        .user-select-checkbox:checked {
+            background-color: #007bff !important;
+            border-color: #007bff !important;
+        }
+        
+        .user-select-checkbox:checked::after {
+            content: '✓';
+            color: white;
+            font-weight: bold;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        /* 행 하이라이트 강화 */
+        .admin-table tbody tr.selected-row {
+            background-color: #e3f2fd !important;
+            border-left: 3px solid #007bff !important;
+        }
+        
+        /* 라디오 버튼 그룹 스타일 */
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 8px;
+        }
+        
+        .radio-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            padding: 8px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+        
+        .radio-label:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .radio-label input[type="radio"] {
+            margin-right: 8px;
+        }
     </style>
 </head>
 <body>
@@ -10035,15 +10174,6 @@
                 <div class="admin-section-header">
                     <h4>사용자 관리</h4>
                     <div class="header-actions">
-                        <select class="form-control" id="user-sort-order" onchange="sortUserList()" style="width: auto; margin-right: 0.5rem;">
-                            <option value="created_at">가입일 순 (최신순)</option>
-                            <option value="last_login_at">최신 접속일 순 (최신순)</option>
-                            <option value="name">이름 순 (가나다순)</option>
-                            <option value="email">이메일 순 (알파벳순)</option>
-                        </select>
-                        <select class="form-control" id="tag-filter" multiple title="태그 선택 필터 (AND 조건)" style="min-width:220px;" onchange="filterUserManagement()"></select>
-                        <button class="btn btn-outline" onclick="openTagManager()"><i class="fas fa-tags"></i> 태그 관리</button>
-                        <small style="color: #6c757d; margin-left: 0.5rem;">💡 컬럼 헤더를 클릭하여 오름차순/내림차순 정렬 가능</small>
                         <button class="btn btn-primary" onclick="showAddUserModal()">
                             <i class="fas fa-user-plus"></i> 사용자 추가
                         </button>
@@ -10053,52 +10183,44 @@
                         <button class="btn btn-warning" onclick="showExamRecordManagement()">
                             <i class="fas fa-history"></i> 시험 기록 관리
                         </button>
+                        <button class="btn btn-info" onclick="showTagManagement()">
+                            <i class="fas fa-tags"></i> 태그 관리
+                        </button>
+                        <button class="btn btn-success" onclick="showBulkTagModal()" id="bulk-tag-btn" style="display: none;">
+                            <i class="fas fa-tags"></i> 일괄 태그 설정
+                        </button>
                     </div>
                 </div>
                 
-                <!-- 필터 컨트롤 -->
-                <div class="filter-controls mb-3">
-                    <div class="row align-items-center g-2">
-                        <div class="col-md-4">
+                <!-- 검색 컨트롤 -->
+                <div class="search-controls mb-3">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
                             <div class="input-group">
                                 <span class="input-group-text">
                                     <i class="fas fa-search"></i>
                                 </span>
-                                <input type="text" id="user-search" class="form-control" 
-                                       placeholder="이름, 이메일, 태그로 검색... (A B = OR조건, A&B = AND조건)" 
-                                       onkeyup="filterUserManagement()">
+                                                            <input type="text" id="user-search" class="form-control"
+                                   placeholder="이름, 이메일, 태그로 검색..."
+                                   onkeyup="filterUserManagement()">
                             </div>
                         </div>
-                        <div class="col-md-5">
-                            <div class="d-flex gap-2">
-                                <select id="department-filter" class="form-select" onchange="filterUserManagement()">
-                                    <option value="">모든 부서</option>
-                                    <!-- 부서 옵션들이 동적으로 로드됩니다 -->
-                                </select>
-                                <select id="role-filter" class="form-select" onchange="filterUserManagement()">
-                                    <option value="">모든 권한</option>
-                                    <option value="employee">일반 사용자</option>
-                                    <option value="admin">관리자</option>
-                                    <option value="super_admin">슈퍼관리자</option>
-                                </select>
-                                <select id="status-filter" class="form-select" onchange="filterUserManagement()">
-                                    <option value="">모든 상태</option>
-                                    <option value="활성">활성</option>
-                                    <option value="비활성">비활성</option>
-                                </select>
+                                                    <div class="col-md-6">
+                                <div class="d-flex align-items-center justify-content-end">
+                                    <span class="text-muted small">
+                                        <span id="filtered-count">0</span>명 표시 중 /
+                                        <span id="total-count">0</span>명 전체
+                                    </span>
+                                </div>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="d-flex align-items-center justify-content-end">
-                                <span class="text-muted small me-2">
-                                    <span id="filtered-count">0</span>명 표시 중 / 
-                                    <span id="total-count">0</span>명 전체
-                                </span>
-                                <button class="btn btn-outline-secondary btn-sm" onclick="clearAllFilters()">
-                                    <i class="fas fa-times"></i> 필터 초기화
-                                </button>
+                        <div class="row mt-2">
+                            <div class="col-12">
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle"></i>
+                                    체크박스 선택 팁: <strong>Ctrl+클릭</strong>으로 추가 선택, <strong>Shift+클릭</strong>으로 범위 선택
+                                </small>
                             </div>
-                        </div>
                     </div>
                 </div>
                 
@@ -10161,6 +10283,24 @@
                                     <label for="user-phone">전화번호</label>
                                     <input type="tel" id="user-phone">
                                 </div>
+                                <div class="form-group">
+                                    <label for="user-tags">태그</label>
+                                    <div id="user-tags-container" class="tags-container">
+                                        <div class="selected-tags" id="selected-user-tags"></div>
+                                        <div class="tag-selection">
+                                            <div class="tag-search-container">
+                                                <input type="text" id="user-tags-search" class="form-control" 
+                                                       placeholder="태그 검색..." 
+                                                       onkeyup="filterUserTagOptions('user-tags-select', this.value)">
+                                                <small class="text-muted">검색어를 입력하면 태그 목록이 필터링됩니다.</small>
+                                            </div>
+                                            <select id="user-tags-select" class="form-control" multiple style="height: 120px;">
+                                                <!-- 태그 옵션들이 동적으로 로드됩니다 -->
+                                            </select>
+                                            <small class="text-muted">Ctrl+클릭으로 여러 태그를 선택할 수 있습니다.</small>
+                                        </div>
+                                    </div>
+                                </div>
                             </form>
                         </div>
                         <div class="modal-footer">
@@ -10176,16 +10316,8 @@
             // 사용자 목록 로드
             await loadUserList();
             
-            // 부서 목록 로드
+            // 부서 목록 로드 (사용자 추가 모달용)
             await loadDepartmentOptions();
-            
-            // 필터용 부서 목록 로드
-            await loadDepartmentFilterOptions();
-            
-            // 필터 초기화 (DOM이 완전히 로드된 후)
-            setTimeout(() => {
-                initializeUserFilters();
-            }, 200);
         }
 
         // 문제별 상세 통계 모달
@@ -10631,11 +10763,14 @@
                 // 전역 변수에 사용자 데이터 저장
                 allUsers = enrichedProfiles;
 
-                // 사용자 목록 렌더링
-                renderUserList(allUsers);
-                
-                // 태그 옵션 로드
-                loadTagOptions();
+                            // 사용자 목록 렌더링
+            renderUserList(allUsers);
+            
+            // 태그 옵션 로드
+            loadTagOptions();
+            
+            // 일괄 태그 관리 기능 초기화
+            initializeBulkTagManagement();
                 
                 // 통계 업데이트
                 updateUserCounts(allUsers.length, allUsers.length);
@@ -10656,6 +10791,9 @@
                         <table class="admin-table">
                             <thead>
                                 <tr>
+                                    <th class="bulk-select-header">
+                                        <input type="checkbox" id="select-all-users" onchange="toggleSelectAllUsers(this)">
+                                    </th>
                                     <th class="sortable-header" onclick="sortUserTable('name')">
                                         이름 <span class="sort-icon neutral"></span>
                                     </th>
@@ -10693,7 +10831,7 @@
                     const departmentName = user.departments?.name || '미지정';
                     const tags = (user.user_tags || []).map(ut => ut.tags?.name).filter(Boolean);
                     
-                    // 최신 접속일 포맷팅 (정확한 날짜/시간 표시)
+                    // 최신 접속일 포맷팅
                     let lastLoginDisplay = '-';
                     let lastLoginClass = 'text-muted';
                     
@@ -10703,7 +10841,6 @@
                         const diffInHours = Math.floor((now - lastLogin) / (1000 * 60 * 60));
                         const diffInDays = Math.floor(diffInHours / 24);
                         
-                        // 날짜와 시간을 모두 표시
                         const dateStr = lastLogin.toLocaleDateString('ko-KR');
                         const timeStr = lastLogin.toLocaleTimeString('ko-KR', { 
                             hour: '2-digit', 
@@ -10713,35 +10850,39 @@
                         
                         lastLoginDisplay = `${dateStr} ${timeStr}`;
                         
-                        // 최근성에 따라 색상 구분
                         if (diffInHours < 1) {
-                            lastLoginClass = 'text-success'; // 1시간 이내 - 초록색
+                            lastLoginClass = 'text-success';
                         } else if (diffInHours < 24) {
-                            lastLoginClass = 'text-info'; // 하루 이내 - 파란색
+                            lastLoginClass = 'text-info';
                         } else if (diffInDays <= 7) {
-                            lastLoginClass = 'text-warning'; // 일주일 이내 - 주황색
+                            lastLoginClass = 'text-warning';
                         } else {
-                            lastLoginClass = 'text-muted'; // 그 이상 - 회색
+                            lastLoginClass = 'text-muted';
                         }
                     }
-                        
-                        usersHTML += `
-                            <tr>
-                                <td>${user.name || '이름 없음'}</td>
-                                <td>${user.email}</td>
-                                <td>
-                                    <span class="role-badge role-${user.role || 'employee'}">
-                                        ${user.role === 'super_admin' ? '슈퍼관리자' : 
-                                          user.role === 'admin' ? '관리자' : '일반 사용자'}
-                                    </span>
-                                </td>
-                                <td>${departmentName}</td>
-                                <td>${renderTagBadges(tags)}</td>
-                                <td>${hireDate}</td>
-                                <td>${createdDate}</td>
-                                <td>
-                                    <span class="${lastLoginClass}" title="${user.last_login_at ? 
-                                        `상세 정보: ${new Date(user.last_login_at).toLocaleString('ko-KR')}
+                    
+                    usersHTML += `
+                        <tr>
+                            <td class="bulk-select-cell">
+                                <input type="checkbox" class="user-select-checkbox" value="${user.id}" 
+                                       onchange="updateSelectAllCheckbox()" 
+                                       onclick="handleCheckboxClick(event, this)">
+                            </td>
+                            <td>${user.name || '이름 없음'}</td>
+                            <td>${user.email}</td>
+                            <td>
+                                <span class="role-badge role-${user.role || 'employee'}">
+                                    ${user.role === 'super_admin' ? '슈퍼관리자' : 
+                                      user.role === 'admin' ? '관리자' : '일반 사용자'}
+                                </span>
+                            </td>
+                            <td>${departmentName}</td>
+                            <td>${renderTagBadges(tags)}</td>
+                            <td>${hireDate}</td>
+                            <td>${createdDate}</td>
+                            <td>
+                                <span class="${lastLoginClass}" title="${user.last_login_at ? 
+                                    `상세 정보: ${new Date(user.last_login_at).toLocaleString('ko-KR')}
 경과 시간: ${(() => {
     const now = new Date();
     const lastLogin = new Date(user.last_login_at);
@@ -10752,23 +10893,23 @@
     const diffInDays = Math.floor(diffInHours / 24);
     return `${diffInDays}일 전`;
 })()}` : '접속 기록 없음'}">
-                                        ${lastLoginDisplay}
-                                    </span>
-                                </td>
-                                <td>
-                                    <span class="status-badge status-active">활성</span>
-                                </td>
-                                <td>
-                                    <button class="btn-small btn-outline" onclick="editUser('${user.id}')">
-                                        <i class="fas fa-edit"></i> 수정
-                                    </button>
-                                    <button class="btn-small btn-danger" onclick="deleteUser('${user.id}', '${user.email}')">
-                                        <i class="fas fa-trash"></i> 삭제
-                                    </button>
-                                </td>
-                            </tr>
-                        `;
-                    });
+                                    ${lastLoginDisplay}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="status-badge status-active">활성</span>
+                            </td>
+                            <td>
+                                <button class="btn-small btn-outline" onclick="editUser('${user.id}')">
+                                    <i class="fas fa-edit"></i> 수정
+                                </button>
+                                <button class="btn-small btn-danger" onclick="deleteUser('${user.id}', '${user.email}')">
+                                    <i class="fas fa-trash"></i> 삭제
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
 
                 usersHTML += `
                             </tbody>
@@ -10899,63 +11040,32 @@
             }
         }
         
-        // 기존 드롭다운 정렬 함수 (하위 호환성 유지)
+        // 사용자 정렬 함수 (단순화됨 - 더 이상 드롭다운 사용 안 함)
         function sortUserList() {
-            const sortBy = document.getElementById('user-sort-order')?.value || 'created_at';
+            console.log('ℹ️ sortUserList 호출됨 - 현재는 컬럼 헤더 클릭으로만 정렬 가능');
             
             if (!allUsers || allUsers.length === 0) {
                 console.warn('정렬할 사용자 데이터가 없습니다.');
                 return;
             }
             
-            // 드롭다운 선택에 따라 테이블 정렬 실행
-            userSortState.column = sortBy;
-            userSortState.direction = 'desc'; // 기본값을 내림차순으로
+            // 기본 정렬로 최신 가입일 순 적용
+            userSortState.column = 'created_at';
+            userSortState.direction = 'desc';
             
-            sortUserTable(sortBy);
+            sortUserTable('created_at');
         }
         
-        // 필터용 부서 목록 로드
-        async function loadDepartmentFilterOptions() {
-            try {
-                const { data: departments, error } = await window.supabaseClient
-                    .from('departments')
-                    .select('id, name, code')
-                    .order('name');
-
-                if (error) throw error;
-
-                const departmentFilter = document.getElementById('department-filter');
-                if (departmentFilter && departments) {
-                    // 기존 옵션들 제거 (첫 번째 옵션 제외)
-                    while (departmentFilter.children.length > 1) {
-                        departmentFilter.removeChild(departmentFilter.lastChild);
-                    }
-                    
-                    departments.forEach(dept => {
-                        const option = document.createElement('option');
-                        option.value = dept.name;
-                        option.textContent = dept.name;
-                        departmentFilter.appendChild(option);
-                    });
-                }
-            } catch (error) {
-                console.error('❌ 필터용 부서 목록 로드 실패:', error);
-            }
-        }
+        // loadDepartmentFilterOptions 함수 제거됨 (더 이상 필터 사용 안 함)
         
-        // 사용자 관리 페이지 필터링 함수
+        // 사용자 관리 페이지 검색 함수 (단순화됨)
         function filterUserManagement() {
             try {
                 // DOM 요소 존재 확인
                 const searchInput = document.getElementById('user-search');
-                const departmentSelect = document.getElementById('department-filter');
-                const roleSelect = document.getElementById('role-filter');
-                const statusSelect = document.getElementById('status-filter');
-                const tagSelect = document.getElementById('tag-filter');
                 
-                if (!searchInput || !departmentSelect || !roleSelect || !statusSelect || !tagSelect) {
-                    console.warn('⚠️ 필터 요소를 찾을 수 없습니다.');
+                if (!searchInput) {
+                    console.warn('⚠️ 검색 입력 요소를 찾을 수 없습니다.');
                     return;
                 }
                 
@@ -10965,38 +11075,26 @@
                     return;
                 }
                 
-                const searchTerm = (searchInput.value || '').toLowerCase();
-                const departmentFilter = departmentSelect.value || '';
-                const roleFilter = roleSelect.value || '';
-                const statusFilter = statusSelect.value || '';
-                const tagFilter = Array.from(tagSelect.selectedOptions).map(option => option.value);
+                const searchTerm = (searchInput.value || '').toLowerCase().trim();
                 
                 const filteredUsers = allUsers.filter(user => {
-                    // 검색어 필터 (이름, 이메일, 태그 with OR/AND 조건)
-                    const userTagNames = (user.user_tags || []).map(ut => ut.tags?.name).filter(Boolean);
+                    // 검색어가 없으면 모든 사용자 표시
+                    if (!searchTerm) {
+                        return true;
+                    }
                     
-                    const matchesSearch = !searchTerm || 
-                        (user.name && user.name.toLowerCase().includes(searchTerm)) ||
-                        (user.email && user.email.toLowerCase().includes(searchTerm)) ||
-                        matchesTagSearch(userTagNames, searchTerm);
+                    // 이름 또는 이메일로 검색
+                    const matchesName = user.name && user.name.toLowerCase().includes(searchTerm);
+                    const matchesEmail = user.email && user.email.toLowerCase().includes(searchTerm);
                     
-                    // 부서 필터
-                    const matchesDepartment = !departmentFilter || 
-                        (user.departments?.name === departmentFilter);
+                    // 태그로 검색
+                    const userTags = (user.user_tags || []).map(ut => ut.tags?.name).filter(Boolean);
+                    const matchesTag = userTags.some(tag => tag.toLowerCase().includes(searchTerm));
                     
-                    // 권한 필터
-                    const matchesRole = !roleFilter || 
-                        (user.role === roleFilter);
-                    
-                    // 상태 필터 (현재는 모든 사용자가 활성상태로 가정)
-                    const matchesStatus = !statusFilter || statusFilter === '활성';
-                    
-                    // 태그 필터
-                    const matchesTag = tagFilter.length === 0 || 
-                        (user.user_tags || []).some(ut => tagFilter.includes(ut.tags?.name));
-                    
-                    return matchesSearch && matchesDepartment && matchesRole && matchesStatus && matchesTag;
+                    return matchesName || matchesEmail || matchesTag;
                 });
+                
+                console.log(`🔍 검색 결과: "${searchTerm}" -> ${filteredUsers.length}명`);
                 
                 // 필터링된 결과 렌더링
                 renderUserList(filteredUsers);
@@ -11005,7 +11103,7 @@
                 updateUserCounts(filteredUsers.length, allUsers.length);
                 
             } catch (error) {
-                console.error('❌ 필터링 중 오류 발생:', error);
+                console.error('❌ 사용자 검색 중 오류:', error);
             }
         }
         
@@ -11018,29 +11116,21 @@
             if (totalCountEl) totalCountEl.textContent = totalCount;
         }
         
-        // 모든 필터 초기화
+        // 검색창 초기화 (단순화됨)
         function clearAllFilters() {
             try {
                 const searchInput = document.getElementById('user-search');
-                const departmentSelect = document.getElementById('department-filter');
-                const roleSelect = document.getElementById('role-filter');
-                const statusSelect = document.getElementById('status-filter');
-                const tagSelect = document.getElementById('tag-filter');
                 
-                if (searchInput) searchInput.value = '';
-                if (departmentSelect) departmentSelect.value = '';
-                if (roleSelect) roleSelect.value = '';
-                if (statusSelect) statusSelect.value = '';
-                if (tagSelect) {
-                    for (let i = 0; i < tagSelect.options.length; i++) {
-                        tagSelect.options[i].selected = false;
-                    }
+                if (searchInput) {
+                    searchInput.value = '';
+                    console.log('🔄 검색창이 초기화되었습니다.');
                 }
                 
-                // 필터 적용
+                // 검색 다시 적용 (모든 사용자 표시)
                 filterUserManagement();
+                
             } catch (error) {
-                console.error('❌ 필터 초기화 중 오류 발생:', error);
+                console.error('❌ 검색 초기화 중 오류:', error);
             }
         }
         
@@ -11075,9 +11165,19 @@
         }
 
         // 사용자 추가 모달 표시
-        function showAddUserModal() {
+        async function showAddUserModal() {
             document.getElementById('add-user-modal').style.display = 'block';
             document.body.style.overflow = 'hidden';
+            
+            // 태그 목록 로드
+            await loadTagsForUserModal('user-tags-select');
+            
+            // 검색 필드 초기화
+            const searchInput = document.getElementById('user-tags-search');
+            if (searchInput) {
+                searchInput.value = '';
+                filterUserTagOptions('user-tags-select', '');
+            }
         }
 
         // 사용자 추가 모달 숨기기
@@ -11085,6 +11185,13 @@
             document.getElementById('add-user-modal').style.display = 'none';
             document.body.style.overflow = 'auto';
             document.getElementById('add-user-form').reset();
+            
+            // 검색 필드 초기화
+            const searchInput = document.getElementById('user-tags-search');
+            if (searchInput) {
+                searchInput.value = '';
+                filterUserTagOptions('user-tags-select', '');
+            }
         }
 
         // 새 사용자 생성
@@ -11104,6 +11211,7 @@
                 const departmentId = document.getElementById('user-department').value || null;
                 const hireDate = document.getElementById('user-hire-date').value || null;
                 const phone = document.getElementById('user-phone').value.trim() || null;
+                const selectedTagIds = getSelectedTagIds('user-tags-select');
 
                 if (!name || !email || !password) {
                     showAdminAlert('이름, 이메일, 비밀번호는 필수 입력 항목입니다.', 'warning');
@@ -11165,6 +11273,12 @@
                 if (profileError) throw profileError;
 
                 console.log('✅ 사용자 생성 완료:', profile);
+                
+                // 3단계: 태그 저장
+                if (selectedTagIds.length > 0) {
+                    await saveUserTags(authUser.user.id, selectedTagIds);
+                    console.log('✅ 사용자 태그 저장 완료');
+                }
                 
                 showAdminAlert('사용자가 성공적으로 생성되었습니다.', 'success');
                 hideAddUserModal();
@@ -11284,6 +11398,24 @@
                                     <input type="tel" id="edit-user-phone" value="${user.phone || ''}">
                                 </div>
                                 <div class="form-group">
+                                    <label for="edit-user-tags">태그</label>
+                                    <div id="edit-user-tags-container" class="tags-container">
+                                        <div class="selected-tags" id="edit-selected-user-tags"></div>
+                                        <div class="tag-selection">
+                                            <div class="tag-search-container">
+                                                <input type="text" id="edit-user-tags-search" class="form-control" 
+                                                       placeholder="태그 검색..." 
+                                                       onkeyup="filterUserTagOptions('edit-user-tags-select', this.value)">
+                                                <small class="text-muted">검색어를 입력하면 태그 목록이 필터링됩니다.</small>
+                                            </div>
+                                            <select id="edit-user-tags-select" class="form-control" multiple style="height: 120px;">
+                                                <!-- 태그 옵션들이 동적으로 로드됩니다 -->
+                                            </select>
+                                            <small class="text-muted">Ctrl+클릭으로 여러 태그를 선택할 수 있습니다.</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-group">
                                     <label for="edit-user-password">새 비밀번호 (선택사항)</label>
                                     <input type="password" id="edit-user-password" minlength="6">
                                     <small>비밀번호를 변경하려면 새 비밀번호를 입력하세요 (최소 6자)</small>
@@ -11310,6 +11442,17 @@
             
             // 부서 옵션 로드
             await loadDepartmentOptionsForEdit(user.department_id);
+            
+            // 태그 옵션 로드 및 사용자 태그 선택
+            await loadTagsForUserModal('edit-user-tags-select');
+            await loadUserTags(user.id, 'edit-user-tags-select');
+            
+            // 검색 필드 초기화
+            const searchInput = document.getElementById('edit-user-tags-search');
+            if (searchInput) {
+                searchInput.value = '';
+                filterUserTagOptions('edit-user-tags-select', '');
+            }
             
             // 모달 표시
             document.getElementById('edit-user-modal').style.display = 'block';
@@ -11366,6 +11509,7 @@
                 const hireDate = document.getElementById('edit-user-hire-date').value || null;
                 const phone = document.getElementById('edit-user-phone').value.trim() || null;
                 const newPassword = document.getElementById('edit-user-password').value;
+                const selectedTagIds = getSelectedTagIds('edit-user-tags-select');
 
                 if (!name) {
                     showAdminAlert('이름은 필수 입력 항목입니다.', 'warning');
@@ -11396,7 +11540,11 @@
 
                 if (profileError) throw profileError;
 
-                // 2단계: 비밀번호 변경 (선택사항)
+                // 2단계: 태그 저장
+                await saveUserTags(userId, selectedTagIds);
+                console.log('✅ 사용자 태그 업데이트 완료');
+
+                // 3단계: 비밀번호 변경 (선택사항)
                 if (newPassword) {
                     console.log('🔑 비밀번호 업데이트 중...');
                     
@@ -15059,9 +15207,1286 @@
             return tags.map(t => `<span class="badge badge-secondary" style="margin-right:6px; font-size:11px; padding:3px 6px; background-color:#6c757d; color:white; border-radius:3px;">${t}</span>`).join('');
         }
         
-        // 태그 관리 모달 (임시)
+        // 태그 관리 페이지 표시
+        async function showTagManagement() {
+            const contentContainer = document.getElementById('admin-content');
+            contentContainer.innerHTML = `
+                <div class="admin-section-header">
+                    <h4>태그 관리</h4>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" onclick="showAddTagModal()">
+                            <i class="fas fa-plus"></i> 태그 추가
+                        </button>
+                        <button class="btn btn-secondary" onclick="refreshTagList()">
+                            <i class="fas fa-sync-alt"></i> 새로고침
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="loadUsersSection()">
+                            <i class="fas fa-arrow-left"></i> 사용자 관리로 돌아가기
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 태그 검색 -->
+                <div class="search-controls mb-3">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-search"></i>
+                                </span>
+                                <input type="text" id="tag-search" class="form-control" 
+                                       placeholder="태그 이름으로 검색..." 
+                                       onkeyup="filterTags()">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center justify-content-end">
+                                <span class="text-muted small">
+                                    <span id="tag-filtered-count">0</span>개 표시 중 / 
+                                    <span id="tag-total-count">0</span>개 전체
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 태그 목록 -->
+                <div class="admin-content-body">
+                    <div id="tags-loading" class="loading-state">
+                        <div class="loading-pulse"></div>
+                        <span>태그 목록을 불러오는 중...</span>
+                    </div>
+                    
+                    <div id="tags-content" style="display: none;">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th onclick="sortTagTable('name')" style="cursor: pointer;">
+                                            태그 이름 <i class="fas fa-sort"></i>
+                                        </th>
+                                        <th onclick="sortTagTable('description')" style="cursor: pointer;">
+                                            설명 <i class="fas fa-sort"></i>
+                                        </th>
+                                        <th onclick="sortTagTable('created_at')" style="cursor: pointer;">
+                                            생성일 <i class="fas fa-sort"></i>
+                                        </th>
+                                        <th>사용 횟수</th>
+                                        <th>관리</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tags-table-body">
+                                    <!-- 태그 목록이 여기에 표시됩니다 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div id="tags-empty" class="empty-state" style="display: none;">
+                        <i class="fas fa-tags fa-3x"></i>
+                        <h5>등록된 태그가 없습니다</h5>
+                        <p>새 태그를 추가해보세요.</p>
+                        <button class="btn btn-primary" onclick="showAddTagModal()">
+                            <i class="fas fa-plus"></i> 첫 태그 추가하기
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // 태그 목록 로드
+            await loadTagList();
+        }
+        
+        // 태그 관리 모달 (임시 - 하위 호환성)
         function openTagManager() {
-            alert('태그 관리는 이후 상세 편집/모달로 확장 예정입니다. 우선 태그 테이블 생성 후 사용자-태그 연결을 저장합니다.');
+            showTagManagement();
+        }
+        
+        // 태그 목록 로드
+        let allTags = [];
+        let tagSortState = {
+            column: null,
+            direction: 'asc'
+        };
+        
+        async function loadTagList() {
+            try {
+                console.log('🏷️ 태그 목록 로드 중...');
+                
+                const { data: tags, error } = await window.supabaseClient
+                    .from('tags')
+                    .select(`
+                        id,
+                        name,
+                        description,
+                        created_at
+                    `)
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                allTags = tags || [];
+                console.log(`✅ 태그 목록 로드 완료: ${allTags.length}개`);
+                
+                // 사용 횟수 계산
+                await calculateTagUsage();
+                
+                // 태그 목록 렌더링
+                renderTagList(allTags);
+                
+                // UI 상태 업데이트
+                updateTagCounts(allTags.length, allTags.length);
+                
+                const loadingEl = document.getElementById('tags-loading');
+                const contentEl = document.getElementById('tags-content');
+                const emptyEl = document.getElementById('tags-empty');
+                
+                if (loadingEl) loadingEl.style.display = 'none';
+                
+                if (allTags.length === 0) {
+                    if (emptyEl) emptyEl.style.display = 'block';
+                    if (contentEl) contentEl.style.display = 'none';
+                } else {
+                    if (contentEl) contentEl.style.display = 'block';
+                    if (emptyEl) emptyEl.style.display = 'none';
+                }
+                
+            } catch (error) {
+                console.error('❌ 태그 목록 로드 실패:', error);
+                
+                const loadingEl = document.getElementById('tags-loading');
+                if (loadingEl) {
+                    loadingEl.innerHTML = `
+                        <div class="text-danger">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            태그 목록을 불러오는데 실패했습니다: ${error.message}
+                        </div>
+                    `;
+                }
+            }
+        }
+        
+        // 태그 사용 횟수 계산
+        async function calculateTagUsage() {
+            try {
+                // user_tags와 question_tags 테이블에서 사용 횟수 계산
+                const promises = allTags.map(async (tag) => {
+                    const [userTagsResult, questionTagsResult] = await Promise.all([
+                        window.supabaseClient
+                            .from('user_tags')
+                            .select('id', { count: 'exact', head: true })
+                            .eq('tag_id', tag.id),
+                        window.supabaseClient
+                            .from('question_tags')
+                            .select('id', { count: 'exact', head: true })
+                            .eq('tag_id', tag.id)
+                    ]);
+                    
+                    const userCount = userTagsResult.count || 0;
+                    const questionCount = questionTagsResult.count || 0;
+                    
+                    tag.usage_count = userCount + questionCount;
+                    tag.user_usage = userCount;
+                    tag.question_usage = questionCount;
+                });
+                
+                await Promise.all(promises);
+                
+            } catch (error) {
+                console.error('❌ 태그 사용 횟수 계산 실패:', error);
+                // 오류가 있어도 계속 진행
+                allTags.forEach(tag => {
+                    tag.usage_count = 0;
+                    tag.user_usage = 0;
+                    tag.question_usage = 0;
+                });
+            }
+        }
+        
+        // 태그 목록 렌더링
+        function renderTagList(tags) {
+            const tbody = document.getElementById('tags-table-body');
+            if (!tbody) return;
+            
+            if (!tags || tags.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">
+                            등록된 태그가 없습니다.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = tags.map(tag => `
+                <tr>
+                    <td>
+                        <strong>${tag.name}</strong>
+                    </td>
+                    <td>
+                        ${tag.description || '-'}
+                    </td>
+                    <td>
+                        ${new Date(tag.created_at).toLocaleDateString('ko-KR')}
+                    </td>
+                    <td>
+                        <span class="badge badge-info">${tag.usage_count || 0}회</span>
+                        ${tag.user_usage ? `<small class="text-muted">(사용자: ${tag.user_usage})</small>` : ''}
+                        ${tag.question_usage ? `<small class="text-muted">(문제: ${tag.question_usage})</small>` : ''}
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="editTag('${tag.id}')" title="수정">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteTag('${tag.id}', '${tag.name}')" title="삭제">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        // 태그 검색 필터링
+        function filterTags() {
+            const searchInput = document.getElementById('tag-search');
+            if (!searchInput) return;
+            
+            const searchTerm = searchInput.value.toLowerCase().trim();
+            
+            const filteredTags = allTags.filter(tag => {
+                if (!searchTerm) return true;
+                
+                const matchesName = tag.name && tag.name.toLowerCase().includes(searchTerm);
+                const matchesDescription = tag.description && tag.description.toLowerCase().includes(searchTerm);
+                
+                return matchesName || matchesDescription;
+            });
+            
+            console.log(`🔍 태그 검색 결과: "${searchTerm}" -> ${filteredTags.length}개`);
+            
+            renderTagList(filteredTags);
+            updateTagCounts(filteredTags.length, allTags.length);
+        }
+        
+        // 태그 카운트 업데이트
+        function updateTagCounts(filteredCount, totalCount) {
+            const filteredCountEl = document.getElementById('tag-filtered-count');
+            const totalCountEl = document.getElementById('tag-total-count');
+            
+            if (filteredCountEl) filteredCountEl.textContent = filteredCount;
+            if (totalCountEl) totalCountEl.textContent = totalCount;
+        }
+        
+        // 태그 테이블 정렬
+        function sortTagTable(column) {
+            if (tagSortState.column === column) {
+                tagSortState.direction = tagSortState.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                tagSortState.column = column;
+                tagSortState.direction = 'asc';
+            }
+            
+            const sortedTags = [...allTags].sort((a, b) => {
+                let valueA = a[column];
+                let valueB = b[column];
+                
+                // 날짜 처리
+                if (column === 'created_at') {
+                    valueA = new Date(valueA);
+                    valueB = new Date(valueB);
+                }
+                
+                // null/undefined 처리
+                if (valueA == null) valueA = '';
+                if (valueB == null) valueB = '';
+                
+                if (typeof valueA === 'string') {
+                    valueA = valueA.toLowerCase();
+                    valueB = valueB.toLowerCase();
+                }
+                
+                let result = 0;
+                if (valueA < valueB) result = -1;
+                else if (valueA > valueB) result = 1;
+                
+                return tagSortState.direction === 'desc' ? -result : result;
+            });
+            
+            renderTagList(sortedTags);
+            
+            // 정렬 표시 업데이트
+            updateTagSortIndicators(column, tagSortState.direction);
+        }
+        
+        // 정렬 표시 업데이트
+        function updateTagSortIndicators(activeColumn, direction) {
+            const headers = document.querySelectorAll('#tags-content th[onclick]');
+            headers.forEach(header => {
+                const icon = header.querySelector('i');
+                if (icon) {
+                    icon.className = 'fas fa-sort';
+                }
+            });
+            
+            const activeHeader = Array.from(headers).find(h => h.onclick.toString().includes(`'${activeColumn}'`));
+            if (activeHeader) {
+                const icon = activeHeader.querySelector('i');
+                if (icon) {
+                    icon.className = direction === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down';
+                }
+            }
+        }
+        
+        // 태그 목록 새로고침
+        function refreshTagList() {
+            loadTagList();
+        }
+        
+        // 사용자 모달용 태그 목록 로드
+        async function loadTagsForUserModal(selectElementId) {
+            try {
+                console.log('🏷️ 사용자 모달용 태그 목록 로드 중...');
+                
+                const { data: tags, error } = await window.supabaseClient
+                    .from('tags')
+                    .select('id, name, description')
+                    .order('name', { ascending: true });
+                
+                if (error) throw error;
+                
+                const selectElement = document.getElementById(selectElementId);
+                if (!selectElement) {
+                    console.warn('⚠️ 태그 선택 요소를 찾을 수 없습니다:', selectElementId);
+                    return;
+                }
+                
+                selectElement.innerHTML = '';
+                
+                tags.forEach(tag => {
+                    const option = document.createElement('option');
+                    option.value = tag.id;
+                    option.textContent = tag.name;
+                    option.title = tag.description || tag.name;
+                    selectElement.appendChild(option);
+                });
+                
+                console.log(`✅ 태그 옵션 로드 완료: ${tags.length}개`);
+                
+            } catch (error) {
+                console.error('❌ 태그 목록 로드 실패:', error);
+            }
+        }
+        
+        // 사용자의 기존 태그 로드 및 선택
+        async function loadUserTags(userId, selectElementId) {
+            try {
+                console.log('🏷️ 사용자 태그 로드 중:', userId);
+                
+                const { data: userTags, error } = await window.supabaseClient
+                    .from('user_tags')
+                    .select(`
+                        tag_id,
+                        tags(id, name)
+                    `)
+                    .eq('user_id', userId);
+                
+                if (error) throw error;
+                
+                const selectElement = document.getElementById(selectElementId);
+                if (!selectElement) {
+                    console.warn('⚠️ 태그 선택 요소를 찾을 수 없습니다:', selectElementId);
+                    return [];
+                }
+                
+                // 기존 선택 초기화
+                Array.from(selectElement.options).forEach(option => {
+                    option.selected = false;
+                });
+                
+                // 사용자 태그 선택
+                const selectedTagIds = [];
+                userTags.forEach(userTag => {
+                    if (userTag.tags) {
+                        selectedTagIds.push(userTag.tag_id);
+                        const option = selectElement.querySelector(`option[value="${userTag.tag_id}"]`);
+                        if (option) {
+                            option.selected = true;
+                        }
+                    }
+                });
+                
+                console.log(`✅ 사용자 태그 로드 완료: ${selectedTagIds.length}개`);
+                return selectedTagIds;
+                
+            } catch (error) {
+                console.error('❌ 사용자 태그 로드 실패:', error);
+                return [];
+            }
+        }
+        
+        // 사용자 태그 저장
+        async function saveUserTags(userId, tagIds) {
+            try {
+                console.log('🏷️ 사용자 태그 저장 중:', userId, tagIds);
+                
+                // 기존 태그 연결 삭제
+                const { error: deleteError } = await window.supabaseClient
+                    .from('user_tags')
+                    .delete()
+                    .eq('user_id', userId);
+                
+                if (deleteError) {
+                    console.warn('⚠️ 기존 태그 삭제 중 오류:', deleteError);
+                }
+                
+                // 새 태그 연결 추가
+                if (tagIds && tagIds.length > 0) {
+                    const userTagInserts = tagIds.map(tagId => ({
+                        user_id: userId,
+                        tag_id: tagId
+                    }));
+                    
+                    const { error: insertError } = await window.supabaseClient
+                        .from('user_tags')
+                        .insert(userTagInserts);
+                    
+                    if (insertError) throw insertError;
+                }
+                
+                console.log('✅ 사용자 태그 저장 완료');
+                
+            } catch (error) {
+                console.error('❌ 사용자 태그 저장 실패:', error);
+                throw error;
+            }
+        }
+        
+        // 선택된 태그 ID 가져오기
+        function getSelectedTagIds(selectElementId) {
+            const selectElement = document.getElementById(selectElementId);
+            if (!selectElement) return [];
+            
+            return Array.from(selectElement.selectedOptions).map(option => option.value);
+        }
+        
+        // 일괄 태그 관리 기능 초기화
+        function initializeBulkTagManagement() {
+            // 일괄 태그 버튼 상태 업데이트
+            updateBulkTagButton();
+            
+            // 체크박스 선택 상태 초기화
+            lastCheckedIndex = -1;
+            
+            // 디버깅: 체크박스 배열 순서 확인
+            debugCheckboxOrder();
+        }
+        
+        // 체크박스 배열 순서 디버깅 함수
+        function debugCheckboxOrder() {
+            const checkboxes = Array.from(document.querySelectorAll('.user-select-checkbox'));
+            console.log('🔍 체크박스 배열 순서 확인:');
+            checkboxes.forEach((checkbox, index) => {
+                const userRow = checkbox.closest('tr');
+                const userName = userRow ? userRow.querySelector('td:nth-child(2)')?.textContent?.trim() : '알 수 없음';
+                console.log(`  인덱스 ${index}: ${userName}`);
+            });
+        }
+        
+        // 일괄 태그 버튼 상태 업데이트
+        function updateBulkTagButton() {
+            const selectedUsers = getSelectedUserIds();
+            const bulkTagBtn = document.getElementById('bulk-tag-btn');
+            
+            if (bulkTagBtn) {
+                if (selectedUsers.length > 0) {
+                    bulkTagBtn.style.display = 'inline-block';
+                    bulkTagBtn.innerHTML = `<i class="fas fa-tags"></i> 일괄 태그 설정 (${selectedUsers.length}명)`;
+                } else {
+                    bulkTagBtn.style.display = 'none';
+                }
+            }
+        }
+        
+        // 선택된 사용자 ID 목록 가져오기
+        function getSelectedUserIds() {
+            const checkboxes = document.querySelectorAll('.user-select-checkbox:checked');
+            return Array.from(checkboxes).map(cb => cb.value);
+        }
+        
+        // 전체 선택/해제 토글
+        function toggleSelectAllUsers(checkbox) {
+            const userCheckboxes = document.querySelectorAll('.user-select-checkbox');
+            const newState = checkbox.checked;
+            
+            userCheckboxes.forEach(cb => {
+                cb.checked = newState;
+                
+                // checked 속성 설정/제거
+                if (newState) {
+                    cb.setAttribute('checked', 'checked');
+                } else {
+                    cb.removeAttribute('checked');
+                }
+                
+                // 행 하이라이트 업데이트
+                const userRow = cb.closest('tr');
+                if (userRow) {
+                    if (newState) {
+                        userRow.classList.add('selected-row');
+                        userRow.style.backgroundColor = '#e3f2fd';
+                    } else {
+                        userRow.classList.remove('selected-row');
+                        userRow.style.backgroundColor = '';
+                    }
+                }
+                
+                // DOM 업데이트를 위한 이벤트 발생
+                cb.dispatchEvent(new Event('change', { bubbles: true }));
+                cb.dispatchEvent(new Event('input', { bubbles: true }));
+            });
+            
+            updateBulkTagButton();
+        }
+        
+        // 체크박스 클릭 이벤트 핸들러
+        let lastCheckedIndex = -1;
+        
+        function handleCheckboxClick(event, checkbox) {
+            const checkboxes = Array.from(document.querySelectorAll('.user-select-checkbox'));
+            const currentIndex = checkboxes.indexOf(checkbox);
+            
+            // 디버깅: 실제 체크박스와 사용자 정보 확인
+            const userRow = checkbox.closest('tr');
+            const userName = userRow ? userRow.querySelector('td:nth-child(2)')?.textContent?.trim() : '알 수 없음';
+            
+            console.log(`🔍 체크박스 클릭: 인덱스 ${currentIndex}, 사용자: ${userName}, Ctrl: ${event.ctrlKey}, Shift: ${event.shiftKey}, lastCheckedIndex: ${lastCheckedIndex}`);
+            
+            // 시프트키나 Ctrl키가 눌린 경우에만 기본 동작 방지
+            if (event.shiftKey || event.ctrlKey) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            
+            // Ctrl+클릭: 추가 선택/해제
+            if (event.ctrlKey) {
+                // 현재 상태의 반대로 토글
+                const newState = !checkbox.checked;
+                checkbox.checked = newState;
+                
+                // checked 속성 설정/제거
+                if (newState) {
+                    checkbox.setAttribute('checked', 'checked');
+                } else {
+                    checkbox.removeAttribute('checked');
+                }
+                
+                // DOM 업데이트를 위한 이벤트 발생
+                checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+                checkbox.dispatchEvent(new Event('input', { bubbles: true }));
+                
+                // 행 하이라이트 업데이트
+                if (userRow) {
+                    if (newState) {
+                        userRow.classList.add('selected-row');
+                        userRow.style.backgroundColor = '#e3f2fd';
+                    } else {
+                        userRow.classList.remove('selected-row');
+                        userRow.style.backgroundColor = '';
+                    }
+                }
+                
+                // 강제로 체크박스 시각적 상태 업데이트
+                setTimeout(() => {
+                    if (checkbox.checked !== newState) {
+                        checkbox.checked = newState;
+                        if (newState) {
+                            checkbox.setAttribute('checked', 'checked');
+                        } else {
+                            checkbox.removeAttribute('checked');
+                        }
+                        console.log(`🔄 체크박스 ${currentIndex} (${userName}) 강제 재설정 - ${newState ? '선택' : '해제'}`);
+                    }
+                }, 10);
+                
+                lastCheckedIndex = currentIndex;
+                console.log(`✅ Ctrl+클릭: 체크박스 ${currentIndex} (${userName}) ${newState ? '선택' : '해제'}, lastCheckedIndex 업데이트`);
+                updateSelectAllCheckbox();
+                return;
+            }
+            
+            // Shift+클릭: 범위 선택
+            if (event.shiftKey && lastCheckedIndex !== -1) {
+                
+                const startIndex = Math.min(lastCheckedIndex, currentIndex);
+                const endIndex = Math.max(lastCheckedIndex, currentIndex);
+                
+                console.log(`🎯 Shift+클릭: 범위 선택 ${startIndex} ~ ${endIndex} (총 ${endIndex - startIndex + 1}개)`);
+                
+                // 범위 내 모든 체크박스를 체크 상태로 설정 (항상 선택)
+                for (let i = startIndex; i <= endIndex; i++) {
+                    const targetCheckbox = checkboxes[i];
+                    const targetRow = targetCheckbox.closest('tr');
+                    const targetUserName = targetRow ? targetRow.querySelector('td:nth-child(2)')?.textContent?.trim() : '알 수 없음';
+                    
+                    // 체크박스 상태 설정 (강제)
+                    targetCheckbox.checked = true;
+                    targetCheckbox.setAttribute('checked', 'checked');
+                    
+                    // DOM 강제 업데이트를 위한 이벤트 발생
+                    targetCheckbox.dispatchEvent(new Event('change', { bubbles: true }));
+                    targetCheckbox.dispatchEvent(new Event('input', { bubbles: true }));
+                    
+                    // 행 하이라이트 강제 적용
+                    if (targetRow) {
+                        targetRow.style.backgroundColor = '#e3f2fd';
+                        targetRow.classList.add('selected-row');
+                    }
+                    
+                                    // 강제로 체크박스 시각적 상태 업데이트
+                setTimeout(() => {
+                    if (!targetCheckbox.checked) {
+                        targetCheckbox.checked = true;
+                        targetCheckbox.setAttribute('checked', 'checked');
+                        console.log(`🔄 체크박스 ${i} (${targetUserName}) 강제 재설정`);
+                    }
+                }, 10);
+                
+                // 추가 안전장치: 체크박스 상태 강제 설정
+                setTimeout(() => {
+                    targetCheckbox.checked = true;
+                    targetCheckbox.setAttribute('checked', 'checked');
+                    targetCheckbox.dispatchEvent(new Event('change', { bubbles: true }));
+                }, 50);
+                    
+                    console.log(`✅ 체크박스 ${i} (${targetUserName}) 선택됨 - DOM 업데이트 완료`);
+                }
+                
+                updateSelectAllCheckbox();
+                return;
+            }
+            
+            // 일반 클릭: 브라우저 기본 동작 후 추가 처리
+            // 브라우저가 체크박스 상태를 변경한 후에 처리
+            setTimeout(() => {
+                const currentState = checkbox.checked;
+                
+                // checked 속성 설정/제거
+                if (currentState) {
+                    checkbox.setAttribute('checked', 'checked');
+                } else {
+                    checkbox.removeAttribute('checked');
+                }
+                
+                // 행 하이라이트 업데이트
+                if (userRow) {
+                    if (currentState) {
+                        userRow.classList.add('selected-row');
+                        userRow.style.backgroundColor = '#e3f2fd';
+                    } else {
+                        userRow.classList.remove('selected-row');
+                        userRow.style.backgroundColor = '';
+                    }
+                }
+                
+                lastCheckedIndex = currentIndex;
+                console.log(`📝 일반 클릭: 체크박스 ${currentIndex} (${userName}) ${currentState ? '선택' : '해제'}, lastCheckedIndex 업데이트`);
+            }, 0);
+        }
+        
+        // 개별 체크박스 상태 변경 시 전체 선택 체크박스 업데이트
+        function updateSelectAllCheckbox() {
+            const userCheckboxes = document.querySelectorAll('.user-select-checkbox');
+            const selectAllCheckbox = document.getElementById('select-all-users');
+            
+            if (selectAllCheckbox) {
+                const checkedCount = document.querySelectorAll('.user-select-checkbox:checked').length;
+                const totalCount = userCheckboxes.length;
+                
+                if (checkedCount === 0) {
+                    selectAllCheckbox.checked = false;
+                    selectAllCheckbox.indeterminate = false;
+                    
+                    // 모든 행 하이라이트 제거
+                    userCheckboxes.forEach(cb => {
+                        const userRow = cb.closest('tr');
+                        if (userRow) {
+                            userRow.classList.remove('selected-row');
+                            userRow.style.backgroundColor = '';
+                        }
+                    });
+                } else if (checkedCount === totalCount) {
+                    selectAllCheckbox.checked = true;
+                    selectAllCheckbox.indeterminate = false;
+                } else {
+                    selectAllCheckbox.checked = false;
+                    selectAllCheckbox.indeterminate = true;
+                }
+            }
+            
+            updateBulkTagButton();
+        }
+        
+        // 일괄 태그 설정 모달 표시
+        async function showBulkTagModal() {
+            const selectedUserIds = getSelectedUserIds();
+            if (selectedUserIds.length === 0) {
+                showAlert('선택된 사용자가 없습니다.', 'warning');
+                return;
+            }
+            
+            const modalHtml = `
+                <div class="modal" id="bulk-tag-modal" style="display: flex;">
+                    <div class="modal-content" style="max-width: 600px;">
+                        <div class="modal-header">
+                            <h5>일괄 태그 설정</h5>
+                            <button type="button" class="close" onclick="hideBulkTagModal()">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i>
+                                <strong>선택된 사용자:</strong> ${selectedUserIds.length}명
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>태그 설정 방식</label>
+                                <div class="radio-group">
+                                    <label class="radio-label">
+                                        <input type="radio" name="bulk-tag-mode" value="add" checked>
+                                        <span class="radio-custom"></span>
+                                        태그 추가 (기존 태그 유지)
+                                    </label>
+                                    <label class="radio-label">
+                                        <input type="radio" name="bulk-tag-mode" value="replace">
+                                        <span class="radio-custom"></span>
+                                        태그 교체 (기존 태그 삭제 후 새 태그 설정)
+                                    </label>
+                                    <label class="radio-label">
+                                        <input type="radio" name="bulk-tag-mode" value="remove">
+                                        <span class="radio-custom"></span>
+                                        태그 제거 (선택한 태그만 삭제)
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="bulk-tags-select">태그 선택</label>
+                                <div class="tag-selection">
+                                    <div class="tag-search-container">
+                                        <input type="text" id="bulk-tags-search" class="form-control" 
+                                               placeholder="태그 검색..." 
+                                               onkeyup="filterUserTagOptions('bulk-tags-select', this.value)">
+                                        <small class="text-muted">검색어를 입력하면 태그 목록이 필터링됩니다.</small>
+                                    </div>
+                                    <select id="bulk-tags-select" class="form-control" multiple style="height: 120px;">
+                                        <!-- 태그 옵션들이 동적으로 로드됩니다 -->
+                                    </select>
+                                    <small class="text-muted">Ctrl+클릭으로 여러 태그를 선택할 수 있습니다.</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" onclick="hideBulkTagModal()">취소</button>
+                            <button type="button" class="btn btn-primary" onclick="applyBulkTags()">
+                                <i class="fas fa-save"></i> 적용
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // 기존 모달 제거
+            const existingModal = document.getElementById('bulk-tag-modal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            // 새 모달 추가
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            // 태그 목록 로드
+            await loadTagsForUserModal('bulk-tags-select');
+            
+            // 검색 필드 초기화
+            const searchInput = document.getElementById('bulk-tags-search');
+            if (searchInput) {
+                searchInput.value = '';
+                filterUserTagOptions('bulk-tags-select', '');
+            }
+        }
+        
+        // 일괄 태그 모달 숨기기
+        function hideBulkTagModal() {
+            const modal = document.getElementById('bulk-tag-modal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+        
+        // 일괄 태그 적용
+        async function applyBulkTags() {
+            const selectedUserIds = getSelectedUserIds();
+            const selectedTagIds = getSelectedTagIds('bulk-tags-select');
+            const mode = document.querySelector('input[name="bulk-tag-mode"]:checked').value;
+            
+            if (selectedUserIds.length === 0) {
+                showAlert('선택된 사용자가 없습니다.', 'warning');
+                return;
+            }
+            
+            if (mode !== 'remove' && selectedTagIds.length === 0) {
+                showAlert('선택된 태그가 없습니다.', 'warning');
+                return;
+            }
+            
+            const applyBtn = document.querySelector('#bulk-tag-modal .btn-primary');
+            const originalText = applyBtn.innerHTML;
+            
+            try {
+                applyBtn.disabled = true;
+                applyBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 적용 중...';
+                
+                console.log(`🏷️ 일괄 태그 적용 중: ${selectedUserIds.length}명, ${selectedTagIds.length}개 태그, 모드: ${mode}`);
+                
+                let processedCount = 0;
+                let errorCount = 0;
+                
+                for (const userId of selectedUserIds) {
+                    try {
+                        if (mode === 'add') {
+                            // 태그 추가 모드
+                            await addTagsToUser(userId, selectedTagIds);
+                        } else if (mode === 'replace') {
+                            // 태그 교체 모드
+                            await saveUserTags(userId, selectedTagIds);
+                        } else if (mode === 'remove') {
+                            // 태그 제거 모드
+                            await removeTagsFromUser(userId, selectedTagIds);
+                        }
+                        processedCount++;
+                    } catch (error) {
+                        console.error(`❌ 사용자 ${userId} 태그 적용 실패:`, error);
+                        errorCount++;
+                    }
+                }
+                
+                console.log(`✅ 일괄 태그 적용 완료: ${processedCount}명 성공, ${errorCount}명 실패`);
+                
+                if (errorCount === 0) {
+                    showAlert(`${processedCount}명의 사용자에게 태그가 성공적으로 적용되었습니다.`, 'success');
+                } else {
+                    showAlert(`${processedCount}명 성공, ${errorCount}명 실패했습니다.`, 'warning');
+                }
+                
+                hideBulkTagModal();
+                await loadUserList(); // 목록 새로고침
+                
+            } catch (error) {
+                console.error('❌ 일괄 태그 적용 실패:', error);
+                showAlert(`일괄 태그 적용에 실패했습니다: ${error.message}`, 'error');
+            } finally {
+                applyBtn.innerHTML = originalText;
+                applyBtn.disabled = false;
+            }
+        }
+        
+        // 사용자에게 태그 추가 (기존 태그 유지)
+        async function addTagsToUser(userId, tagIds) {
+            if (!tagIds || tagIds.length === 0) return;
+            
+            // 기존 태그 확인
+            const { data: existingTags, error: fetchError } = await window.supabaseClient
+                .from('user_tags')
+                .select('tag_id')
+                .eq('user_id', userId);
+            
+            if (fetchError) throw fetchError;
+            
+            const existingTagIds = existingTags.map(t => t.tag_id);
+            const newTagIds = tagIds.filter(tagId => !existingTagIds.includes(tagId));
+            
+            if (newTagIds.length > 0) {
+                const userTagInserts = newTagIds.map(tagId => ({
+                    user_id: userId,
+                    tag_id: tagId
+                }));
+                
+                const { error: insertError } = await window.supabaseClient
+                    .from('user_tags')
+                    .insert(userTagInserts);
+                
+                if (insertError) throw insertError;
+            }
+        }
+        
+        // 사용자에서 태그 제거
+        async function removeTagsFromUser(userId, tagIds) {
+            if (!tagIds || tagIds.length === 0) {
+                // 모든 태그 제거
+                const { error } = await window.supabaseClient
+                    .from('user_tags')
+                    .delete()
+                    .eq('user_id', userId);
+                
+                if (error) throw error;
+            } else {
+                // 선택된 태그만 제거
+                const { error } = await window.supabaseClient
+                    .from('user_tags')
+                    .delete()
+                    .eq('user_id', userId)
+                    .in('tag_id', tagIds);
+                
+                if (error) throw error;
+            }
+        }
+        
+        // 사용자 태그 옵션 필터링
+        function filterUserTagOptions(selectElementId, searchTerm) {
+            const selectElement = document.getElementById(selectElementId);
+            if (!selectElement) return;
+            
+            const searchLower = searchTerm.toLowerCase().trim();
+            const options = Array.from(selectElement.options);
+            
+            options.forEach(option => {
+                const tagName = option.textContent.toLowerCase();
+                const matchesSearch = !searchTerm || tagName.includes(searchLower);
+                
+                // 검색어와 일치하지 않는 옵션은 숨김
+                option.style.display = matchesSearch ? '' : 'none';
+                
+                // 검색어가 있으면 하이라이트 효과 추가
+                if (searchTerm && matchesSearch) {
+                    option.style.backgroundColor = '#fff3cd';
+                } else {
+                    option.style.backgroundColor = '';
+                }
+            });
+            
+            // 검색 결과가 없을 때 안내 메시지 표시
+            const visibleOptions = options.filter(option => option.style.display !== 'none');
+            const noResultsMessage = selectElement.querySelector('.no-results-message');
+            
+            if (visibleOptions.length === 0 && searchTerm) {
+                if (!noResultsMessage) {
+                    const message = document.createElement('option');
+                    message.className = 'no-results-message';
+                    message.disabled = true;
+                    message.textContent = `"${searchTerm}"에 해당하는 태그가 없습니다.`;
+                    message.style.fontStyle = 'italic';
+                    message.style.color = '#6c757d';
+                    selectElement.appendChild(message);
+                }
+            } else if (noResultsMessage) {
+                noResultsMessage.remove();
+            }
+        }
+        
+        // 태그 추가 모달 표시
+        function showAddTagModal() {
+            const modalHtml = `
+                <div class="modal" id="tag-modal" style="display: flex;">
+                    <div class="modal-content" style="max-width: 500px;">
+                        <div class="modal-header">
+                            <h5>새 태그 추가</h5>
+                            <button type="button" class="close" onclick="hideTagModal()">&times;</button>
+                        </div>
+                        <form id="tag-form">
+                            <div class="modal-body">
+                                <div class="form-group">
+                                    <label for="tag-name">태그 이름 *</label>
+                                    <input type="text" id="tag-name" class="form-control" required 
+                                           placeholder="태그 이름을 입력하세요" maxlength="50">
+                                    <small class="text-muted">최대 50자까지 입력 가능합니다.</small>
+                                </div>
+                                <div class="form-group">
+                                    <label for="tag-description">설명</label>
+                                    <textarea id="tag-description" class="form-control" rows="3" 
+                                             placeholder="태그에 대한 설명을 입력하세요 (선택사항)" maxlength="200"></textarea>
+                                    <small class="text-muted">최대 200자까지 입력 가능합니다.</small>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" onclick="hideTagModal()">취소</button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-plus"></i> 추가
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            
+            // 기존 모달 제거
+            const existingModal = document.getElementById('tag-modal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            // 새 모달 추가
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            // 폼 이벤트 리스너
+            document.getElementById('tag-form').addEventListener('submit', handleAddTag);
+            
+            // 첫 번째 입력 필드에 포커스
+            setTimeout(() => {
+                document.getElementById('tag-name').focus();
+            }, 100);
+        }
+        
+        // 태그 수정 모달 표시
+        function editTag(tagId) {
+            const tag = allTags.find(t => t.id === tagId);
+            if (!tag) {
+                showAlert('태그를 찾을 수 없습니다.', 'error');
+                return;
+            }
+            
+            const modalHtml = `
+                <div class="modal" id="tag-modal" style="display: flex;">
+                    <div class="modal-content" style="max-width: 500px;">
+                        <div class="modal-header">
+                            <h5>태그 수정</h5>
+                            <button type="button" class="close" onclick="hideTagModal()">&times;</button>
+                        </div>
+                        <form id="tag-form">
+                            <input type="hidden" id="tag-id" value="${tag.id}">
+                            <div class="modal-body">
+                                <div class="form-group">
+                                    <label for="tag-name">태그 이름 *</label>
+                                    <input type="text" id="tag-name" class="form-control" required 
+                                           placeholder="태그 이름을 입력하세요" maxlength="50" value="${tag.name}">
+                                    <small class="text-muted">최대 50자까지 입력 가능합니다.</small>
+                                </div>
+                                <div class="form-group">
+                                    <label for="tag-description">설명</label>
+                                    <textarea id="tag-description" class="form-control" rows="3" 
+                                             placeholder="태그에 대한 설명을 입력하세요 (선택사항)" maxlength="200">${tag.description || ''}</textarea>
+                                    <small class="text-muted">최대 200자까지 입력 가능합니다.</small>
+                                </div>
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i>
+                                    <strong>사용 현황:</strong> ${tag.usage_count || 0}곳에서 사용 중
+                                    ${tag.user_usage ? `(사용자: ${tag.user_usage}, 문제: ${tag.question_usage})` : ''}
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" onclick="hideTagModal()">취소</button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> 수정
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            
+            // 기존 모달 제거
+            const existingModal = document.getElementById('tag-modal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            // 새 모달 추가
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            // 폼 이벤트 리스너
+            document.getElementById('tag-form').addEventListener('submit', handleEditTag);
+            
+            // 첫 번째 입력 필드에 포커스
+            setTimeout(() => {
+                document.getElementById('tag-name').focus();
+            }, 100);
+        }
+        
+        // 태그 모달 숨기기
+        function hideTagModal() {
+            const modal = document.getElementById('tag-modal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+        
+        // 태그 추가 처리
+        async function handleAddTag(event) {
+            event.preventDefault();
+            
+            const submitBtn = event.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            
+            try {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 추가 중...';
+                
+                const name = document.getElementById('tag-name').value.trim();
+                const description = document.getElementById('tag-description').value.trim();
+                
+                if (!name) {
+                    showAlert('태그 이름을 입력해주세요.', 'warning');
+                    return;
+                }
+                
+                // 중복 체크
+                const existingTag = allTags.find(tag => tag.name.toLowerCase() === name.toLowerCase());
+                if (existingTag) {
+                    showAlert('이미 존재하는 태그입니다.', 'warning');
+                    return;
+                }
+                
+                console.log('🏷️ 새 태그 추가 중:', name);
+                
+                const { data, error } = await window.supabaseClient
+                    .from('tags')
+                    .insert([{
+                        name: name,
+                        description: description || null
+                    }])
+                    .select()
+                    .single();
+                
+                if (error) throw error;
+                
+                console.log('✅ 태그 추가 성공:', data);
+                showAlert('태그가 성공적으로 추가되었습니다.', 'success');
+                
+                hideTagModal();
+                await loadTagList();
+                
+            } catch (error) {
+                console.error('❌ 태그 추가 실패:', error);
+                showAlert(`태그 추가에 실패했습니다: ${error.message}`, 'error');
+            } finally {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        }
+        
+        // 태그 수정 처리
+        async function handleEditTag(event) {
+            event.preventDefault();
+            
+            const submitBtn = event.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            
+            try {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 수정 중...';
+                
+                const tagId = document.getElementById('tag-id').value;
+                const name = document.getElementById('tag-name').value.trim();
+                const description = document.getElementById('tag-description').value.trim();
+                
+                if (!name) {
+                    showAlert('태그 이름을 입력해주세요.', 'warning');
+                    return;
+                }
+                
+                // 중복 체크 (자신 제외)
+                const existingTag = allTags.find(tag => tag.id !== tagId && tag.name.toLowerCase() === name.toLowerCase());
+                if (existingTag) {
+                    showAlert('이미 존재하는 태그입니다.', 'warning');
+                    return;
+                }
+                
+                console.log('🏷️ 태그 수정 중:', tagId, name);
+                
+                const { data, error } = await window.supabaseClient
+                    .from('tags')
+                    .update({
+                        name: name,
+                        description: description || null
+                    })
+                    .eq('id', tagId)
+                    .select()
+                    .single();
+                
+                if (error) throw error;
+                
+                console.log('✅ 태그 수정 성공:', data);
+                showAlert('태그가 성공적으로 수정되었습니다.', 'success');
+                
+                hideTagModal();
+                await loadTagList();
+                
+            } catch (error) {
+                console.error('❌ 태그 수정 실패:', error);
+                showAlert(`태그 수정에 실패했습니다: ${error.message}`, 'error');
+            } finally {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        }
+        
+        // 태그 삭제
+        async function deleteTag(tagId, tagName) {
+            const tag = allTags.find(t => t.id === tagId);
+            if (!tag) {
+                showAlert('태그를 찾을 수 없습니다.', 'error');
+                return;
+            }
+            
+            // 사용 중인 태그인지 확인
+            const usageCount = tag.usage_count || 0;
+            
+            let confirmMessage = `"${tagName}" 태그를 삭제하시겠습니까?`;
+            
+            if (usageCount > 0) {
+                confirmMessage += `\n\n⚠️ 주의: 이 태그는 현재 ${usageCount}곳에서 사용 중입니다.`;
+                if (tag.user_usage > 0) {
+                    confirmMessage += `\n- 사용자: ${tag.user_usage}명`;
+                }
+                if (tag.question_usage > 0) {
+                    confirmMessage += `\n- 문제: ${tag.question_usage}개`;
+                }
+                confirmMessage += `\n\n태그를 삭제하면 모든 연결이 해제됩니다.`;
+            }
+            
+            confirmMessage += `\n\n이 작업은 되돌릴 수 없습니다.`;
+            
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+            
+            try {
+                console.log('🗑️ 태그 삭제 중:', tagId, tagName);
+                
+                // 트랜잭션으로 관련 데이터 모두 삭제
+                const { error: userTagsError } = await window.supabaseClient
+                    .from('user_tags')
+                    .delete()
+                    .eq('tag_id', tagId);
+                
+                if (userTagsError) {
+                    console.warn('⚠️ 사용자 태그 연결 삭제 중 오류:', userTagsError);
+                }
+                
+                const { error: questionTagsError } = await window.supabaseClient
+                    .from('question_tags')
+                    .delete()
+                    .eq('tag_id', tagId);
+                
+                if (questionTagsError) {
+                    console.warn('⚠️ 문제 태그 연결 삭제 중 오류:', questionTagsError);
+                }
+                
+                const { error: tagError } = await window.supabaseClient
+                    .from('tags')
+                    .delete()
+                    .eq('id', tagId);
+                
+                if (tagError) throw tagError;
+                
+                console.log('✅ 태그 삭제 성공:', tagName);
+                showAlert(`"${tagName}" 태그가 성공적으로 삭제되었습니다.`, 'success');
+                
+                await loadTagList();
+                
+            } catch (error) {
+                console.error('❌ 태그 삭제 실패:', error);
+                showAlert(`태그 삭제에 실패했습니다: ${error.message}`, 'error');
+            }
         }
         
         // 태그 검색 매치 함수 (OR/AND 조건 지원)
