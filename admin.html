@@ -6536,7 +6536,14 @@
 
         async function loadQuestionsForExam() {
             try {
-                const { data: questions, error } = await window.supabaseClient
+                // 필터 값들 가져오기
+                const categoryFilter = document.getElementById('category-filter')?.value || '';
+                const difficultyFilter = document.getElementById('difficulty-filter')?.value || '';
+                const searchFilter = document.getElementById('search-filter')?.value.toLowerCase() || '';
+                
+                console.log('🔍 시험지 생성 필터 적용:', { categoryFilter, difficultyFilter, searchFilter });
+                
+                let query = window.supabaseClient
                     .from('questions')
                     .select(`
                         id,
@@ -6547,15 +6554,39 @@
                         category_id,
                         created_at,
                         categories(name)
-                    `)
-                    .order('created_at', { ascending: false });
+                    `);
+                
+                // 카테고리 필터 적용
+                if (categoryFilter) {
+                    query = query.eq('category_id', categoryFilter);
+                }
+                
+                // 난이도 필터 적용
+                if (difficultyFilter) {
+                    query = query.eq('difficulty', parseInt(difficultyFilter));
+                }
+                
+                // 검색어 필터는 클라이언트 측에서 처리 (title, content 검색)
+                const { data: questions, error } = await query.order('created_at', { ascending: false });
                 
                 if (error) throw error;
+                
+                // 검색어 필터링 (클라이언트 측)
+                let filteredQuestions = questions;
+                if (searchFilter) {
+                    filteredQuestions = questions.filter(question => 
+                        question.title.toLowerCase().includes(searchFilter) ||
+                        question.content.toLowerCase().includes(searchFilter) ||
+                        (question.categories?.name && question.categories.name.toLowerCase().includes(searchFilter))
+                    );
+                }
+                
+                console.log(`✅ 필터링된 문제 수: ${filteredQuestions.length}개 (전체: ${questions.length}개)`);
                 
                 // 문제 통계 정보 가져오기
                 const questionStats = await getQuestionStatistics();
                 
-                displayQuestionsForExam(questions, questionStats);
+                displayQuestionsForExam(filteredQuestions, questionStats);
             } catch (error) {
                 console.error('문제 로드 오류:', error);
                 document.getElementById('questions-list').innerHTML = '<p class="text-danger">문제를 불러오는 중 오류가 발생했습니다.</p>';
@@ -6826,20 +6857,59 @@
         }
 
         function setupExamFormEventListeners() {
-            // 필터 이벤트 리스너
-            document.getElementById('category-filter').addEventListener('change', filterQuestions);
-            document.getElementById('difficulty-filter').addEventListener('change', filterQuestions);
-            document.getElementById('search-filter').addEventListener('input', filterQuestions);
+            console.log('🔧 시험지 생성 폼 이벤트 리스너 설정 중...');
+            
+            // 필터 이벤트 리스너 - null 체크 포함
+            const categoryFilter = document.getElementById('category-filter');
+            const difficultyFilter = document.getElementById('difficulty-filter');
+            const searchFilter = document.getElementById('search-filter');
+            const examForm = document.getElementById('exam-form');
+            
+            if (categoryFilter) {
+                categoryFilter.addEventListener('change', filterQuestionsForExam);
+                console.log('✅ 카테고리 필터 이벤트 리스너 설정됨');
+            } else {
+                console.warn('⚠️ category-filter 요소를 찾을 수 없습니다');
+            }
+            
+            if (difficultyFilter) {
+                difficultyFilter.addEventListener('change', filterQuestionsForExam);
+                console.log('✅ 난이도 필터 이벤트 리스너 설정됨');
+            } else {
+                console.warn('⚠️ difficulty-filter 요소를 찾을 수 없습니다');
+            }
+            
+            if (searchFilter) {
+                searchFilter.addEventListener('input', filterQuestionsForExam);
+                console.log('✅ 검색 필터 이벤트 리스너 설정됨');
+            } else {
+                console.warn('⚠️ search-filter 요소를 찾을 수 없습니다');
+            }
             
             // 폼 제출 이벤트 리스너
-            document.getElementById('exam-form').addEventListener('submit', handleExamFormSubmit);
+            if (examForm) {
+                examForm.addEventListener('submit', handleExamFormSubmit);
+                console.log('✅ 시험지 폼 제출 이벤트 리스너 설정됨');
+            } else {
+                console.warn('⚠️ exam-form 요소를 찾을 수 없습니다');
+            }
+            
+            console.log('✅ 시험지 생성 폼 이벤트 리스너 설정 완료');
         }
 
-        async function filterQuestions() {
+        async function filterQuestionsForExam() {
             // 필터링 로직 구현
-            const categoryFilter = document.getElementById('category-filter').value;
-            const difficultyFilter = document.getElementById('difficulty-filter').value;
-            const searchFilter = document.getElementById('search-filter').value.toLowerCase();
+            const categoryFilterElement = document.getElementById('category-filter');
+            const difficultyFilterElement = document.getElementById('difficulty-filter');
+            const searchFilterElement = document.getElementById('search-filter');
+            
+            // null 체크
+            if (!categoryFilterElement || !difficultyFilterElement || !searchFilterElement) {
+                console.warn('시험지 생성 필터 요소를 찾을 수 없습니다.');
+                return;
+            }
+            
+            console.log('🔍 시험지 생성 필터 변경됨');
             
             // 문제 목록 다시 로드하여 필터 적용
             await loadQuestionsForExam();
@@ -9705,8 +9775,24 @@
         }
         // 채점 문제 필터링
         function filterGradingQuestions() {
-            // TODO: 필터링 로직 구현
-            console.log('채점 문제 필터링...');
+            const statusFilterElement = document.getElementById('grading-status-filter');
+            const categoryFilterElement = document.getElementById('grading-category-filter');
+            const searchElement = document.getElementById('grading-search');
+            
+            // null 체크
+            if (!statusFilterElement || !categoryFilterElement || !searchElement) {
+                console.warn('채점 필터 요소를 찾을 수 없습니다.');
+                return;
+            }
+            
+            const statusFilter = statusFilterElement.value;
+            const categoryFilter = categoryFilterElement.value;
+            const searchFilter = searchElement.value.toLowerCase();
+            
+            console.log('🔍 채점 문제 필터링:', { statusFilter, categoryFilter, searchFilter });
+            
+            // TODO: 실제 필터링 로직 구현 필요
+            // 현재는 로그만 출력
         }
         async function loadStatsSection() {
             const contentContainer = document.getElementById('admin-content');
@@ -9786,10 +9872,10 @@
                 </div>
                             <div id="questions-content" style="display: none;">
                                 <div class="stats-filters">
-                                    <select id="question-category-filter" onchange="filterQuestions()">
+                                    <select id="question-category-filter" onchange="filterQuestionsStats()">
                                         <option value="">전체 카테고리</option>
                                     </select>
-                                    <select id="question-difficulty-filter" onchange="filterQuestions()">
+                                    <select id="question-difficulty-filter" onchange="filterQuestionsStats()">
                                         <option value="">전체 난이도</option>
                                         <option value="1">매우 쉬움</option>
                                         <option value="2">쉬움</option>
@@ -12459,9 +12545,18 @@
         let allQuestionsData = [];
         let allUsersData = [];
 
-        function filterQuestions() {
-            const categoryFilter = document.getElementById('question-category-filter').value;
-            const difficultyFilter = document.getElementById('question-difficulty-filter').value;
+        function filterQuestionsStats() {
+            const categoryFilterElement = document.getElementById('question-category-filter');
+            const difficultyFilterElement = document.getElementById('question-difficulty-filter');
+            
+            // null 체크 추가
+            if (!categoryFilterElement || !difficultyFilterElement) {
+                console.warn('통계 필터 요소를 찾을 수 없습니다.');
+                return;
+            }
+            
+            const categoryFilter = categoryFilterElement.value;
+            const difficultyFilter = difficultyFilterElement.value;
             
             console.log('🔍 문제 필터링 시작:', { categoryFilter, difficultyFilter });
             console.log('📊 전체 문제 데이터:', allQuestionsData.length, '개');
@@ -12546,8 +12641,11 @@
         }
 
         function resetQuestionFilters() {
-            document.getElementById('question-category-filter').value = '';
-            document.getElementById('question-difficulty-filter').value = '';
+            const categoryFilterElement = document.getElementById('question-category-filter');
+            const difficultyFilterElement = document.getElementById('question-difficulty-filter');
+            
+            if (categoryFilterElement) categoryFilterElement.value = '';
+            if (difficultyFilterElement) difficultyFilterElement.value = '';
             
             // 원본 데이터로 복원
             updateQuestionsStatsTable(allQuestionsData);
@@ -14322,23 +14420,84 @@
             }
         }
 
-        // 시험 공개 함수
+        // 시험 공개 함수 (개선된 버전)
         async function publishExam(examId) {
             try {
                 console.log('🌐 시험 공개 중...', examId);
                 
-                // 간단한 모달 없이 prompt로 예약 공개/마감 입력 (YYYY-MM-DDTHH:mm)
-                const schedule = prompt('공개 시각을 입력하세요. 즉시 공개하려면 비워두세요. (예: 2025-09-01T09:00)');
-                const closeAt = prompt('마감 시각을 입력하세요. 설정하지 않으려면 비워두세요. (예: 2025-09-30T23:59)');
+                // 먼저 기존 시험 정보 조회
+                const { data: exam, error: fetchError } = await window.supabaseClient
+                    .from('exams')
+                    .select('title, start_time, end_time')
+                    .eq('id', examId)
+                    .single();
                 
-                const toIsoOrNull = (val) => {
-                    if (!val) return null;
-                    const d = new Date(val);
-                    return isNaN(d.getTime()) ? null : d.toISOString();
-                };
-                const start_time = toIsoOrNull(schedule);
-                const end_time = toIsoOrNull(closeAt);
+                if (fetchError) throw fetchError;
                 
+                let start_time = null;
+                let end_time = null;
+                
+                // 기존에 설정된 start_time과 end_time이 있는지 확인
+                if (exam.start_time || exam.end_time) {
+                    const scheduleInfo = [];
+                    
+                    if (exam.start_time) {
+                        const startDate = new Date(exam.start_time);
+                        scheduleInfo.push(`공개: ${startDate.toLocaleString('ko-KR')}`);
+                    }
+                    if (exam.end_time) {
+                        const endDate = new Date(exam.end_time);
+                        scheduleInfo.push(`마감: ${endDate.toLocaleString('ko-KR')}`);
+                    }
+                    
+                    const useExisting = confirm(
+                        `"${exam.title}" 시험에 이미 설정된 일정이 있습니다:\n\n${scheduleInfo.join('\n')}\n\n기존 일정을 사용하시겠습니까?\n\n확인: 기존 일정 사용\n취소: 새로운 일정 입력`
+                    );
+                    
+                    if (useExisting) {
+                        // 기존 일정 사용
+                        start_time = exam.start_time;
+                        end_time = exam.end_time;
+                        console.log('✅ 기존 설정된 일정 사용:', { start_time, end_time });
+                    } else {
+                        // 새로운 일정 입력
+                        const schedule = prompt('공개 시각을 입력하세요. 즉시 공개하려면 비워두세요. (예: 2025-09-01T09:00)');
+                        const closeAt = prompt('마감 시각을 입력하세요. 설정하지 않으려면 비워두세요. (예: 2025-09-30T23:59)');
+                        
+                        const toIsoOrNull = (val) => {
+                            if (!val) return null;
+                            try {
+                                const d = new Date(val);
+                                return isNaN(d.getTime()) ? null : d.toISOString();
+                            } catch {
+                                return null;
+                            }
+                        };
+                        
+                        start_time = toIsoOrNull(schedule);
+                        end_time = toIsoOrNull(closeAt);
+                        console.log('✅ 새로운 일정 설정:', { start_time, end_time });
+                    }
+                } else {
+                    // 기존 일정이 없는 경우 새로 입력
+                    const schedule = prompt('공개 시각을 입력하세요. 즉시 공개하려면 비워두세요. (예: 2025-09-01T09:00)');
+                    const closeAt = prompt('마감 시각을 입력하세요. 설정하지 않으려면 비워두세요. (예: 2025-09-30T23:59)');
+                    
+                    const toIsoOrNull = (val) => {
+                        if (!val) return null;
+                        try {
+                            const d = new Date(val);
+                            return isNaN(d.getTime()) ? null : d.toISOString();
+                        } catch {
+                            return null;
+                        }
+                    };
+                    
+                    start_time = toIsoOrNull(schedule);
+                    end_time = toIsoOrNull(closeAt);
+                    console.log('✅ 새로운 일정으로 공개:', { start_time, end_time });
+                }
+
                 const payload = { status: 'published' };
                 if (start_time) payload.start_time = start_time;
                 if (end_time) payload.end_time = end_time;
@@ -14492,43 +14651,6 @@
             }
         }
 
-        // 시험 공개 함수
-        async function publishExam(examId) {
-            try {
-                console.log('🌐 시험 공개 중...', examId);
-                
-                // 간단한 모달 없이 prompt로 예약 공개/마감 입력 (YYYY-MM-DDTHH:mm)
-                const schedule = prompt('공개 시각을 입력하세요. 즉시 공개하려면 비워두세요. (예: 2025-09-01T09:00)');
-                const closeAt = prompt('마감 시각을 입력하세요. 설정하지 않으려면 비워두세요. (예: 2025-09-30T23:59)');
-                
-                const toIsoOrNull = (val) => {
-                    if (!val) return null;
-                    const d = new Date(val);
-                    return isNaN(d.getTime()) ? null : d.toISOString();
-                };
-                const start_time = toIsoOrNull(schedule);
-                const end_time = toIsoOrNull(closeAt);
-                
-                const payload = { status: 'published' };
-                if (start_time) payload.start_time = start_time;
-                if (end_time) payload.end_time = end_time;
-                
-                const { error } = await window.supabaseClient
-                    .from('exams')
-                    .update(payload)
-                    .eq('id', examId);
-                
-                if (error) throw error;
-                
-                showAlert(start_time ? '시험 공개가 예약되었습니다.' : '시험이 공개되었습니다!', 'success');
-                loadExamsList();
-                
-            } catch (error) {
-                console.error('❌ 시험 공개 오류:', error);
-                showAlert(`시험 공개에 실패했습니다: ${error.message}`, 'error');
-            }
-        }
-        
         // 시험 비공개 함수
         async function unpublishExam(examId) {
             try {

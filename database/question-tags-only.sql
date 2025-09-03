@@ -50,3 +50,4 @@ INSERT INTO public.tags (name, description) VALUES
 ('기출', '기출문제')
 
 ON CONFLICT (name) DO NOTHING;
+

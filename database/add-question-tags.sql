@@ -33,3 +33,4 @@ ON CONFLICT (question_id, tag_id) DO NOTHING;
 -- alter table public.question_tags enable row level security;
 -- create policy "Allow authenticated read question_tags" on public.question_tags for select using (auth.role() = 'authenticated');
 -- create policy "Allow admin manage question_tags" on public.question_tags for all using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','super_admin')));
+

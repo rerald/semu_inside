@@ -30,3 +30,4 @@ create index if not exists idx_user_tags_tag on public.user_tags (tag_id);
 -- create policy "Allow read tags" on public.tags for select using (auth.role() = 'authenticated');
 -- create policy "Allow admin manage tags" on public.tags for all using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('admin','super_admin')));
 -- Repeat similar policies for public.user_tags.
+

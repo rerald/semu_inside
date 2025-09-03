@@ -126,3 +126,4 @@ GROUP BY q.id, q.title, q.type, q.difficulty
 ORDER BY q.created_at DESC
 LIMIT 20;
 */
+

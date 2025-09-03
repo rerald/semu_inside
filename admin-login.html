@@ -215,10 +215,16 @@
             </button>
         </form>
         
-        <a href="./login.html" class="back-link">
-            <i class="fas fa-arrow-left"></i>
-            일반 로그인으로 돌아가기
-        </a>
+        <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px; align-items: center;">
+            <a href="./login.html" class="back-link">
+                <i class="fas fa-arrow-left"></i>
+                일반 로그인으로 돌아가기
+            </a>
+            <a href="./admin-login.html?auto_login=true" class="back-link" style="font-size: 0.8rem; color: #999;">
+                <i class="fas fa-magic"></i>
+                기존 세션으로 자동 로그인
+            </a>
+        </div>
     </div>
 
     <!-- Supabase 및 공통 스크립트 로드 -->
@@ -288,22 +294,40 @@
                 
                 console.log('✅ semuApp 초기화 완료');
                 
-                // 기존 관리자 세션 확인
-                setTimeout(() => {
-                    if (window.semuApp && window.semuApp.currentUser) {
-                        const user = window.semuApp.currentUser;
-                        console.log('✔ 기존 관리자 세션 발견:', user.email);
-                        
-                        if (user.role === 'super_admin' || user.role === 'admin') {
-                            console.log('✅ 기존 관리자 세션 발견, 관리자 페이지로 이동');
-                            showAlert('이미 관리자로 로그인되어 있습니다.', 'info');
-                            setTimeout(() => {
-                                window.location.href = './admin.html';
-                            }, 1500);
-                            return;
+                // 기존 관리자 세션 확인 (선택적)
+                // 관리자 로그인 페이지에서는 항상 새로 로그인하도록 함
+                // URL 파라미터로 자동 로그인 활성화 가능: ?auto_login=true
+                const urlParams = new URLSearchParams(window.location.search);
+                const autoLoginEnabled = urlParams.get('auto_login') === 'true';
+                
+                if (autoLoginEnabled) {
+                    setTimeout(() => {
+                        if (window.semuApp && window.semuApp.currentUser) {
+                            const user = window.semuApp.currentUser;
+                            console.log('✔ 기존 관리자 세션 발견:', user.email);
+                            
+                            if (user.role === 'super_admin' || user.role === 'admin') {
+                                console.log('✅ 기존 관리자 세션 발견, 관리자 페이지로 이동');
+                                showAlert('이미 관리자로 로그인되어 있습니다.', 'info');
+                                setTimeout(() => {
+                                    window.location.href = './admin.html';
+                                }, 1500);
+                                return;
+                            }
                         }
-                    }
-                }, 1000);
+                    }, 1000);
+                } else {
+                    console.log('🔒 관리자 로그인 페이지: 기존 세션 무시, 새 로그인 필요');
+                    // 기존 세션이 있어도 알림만 표시하고 자동 이동하지 않음
+                    setTimeout(() => {
+                        if (window.semuApp && window.semuApp.currentUser) {
+                            const user = window.semuApp.currentUser;
+                            if (user.role === 'super_admin' || user.role === 'admin') {
+                                showAlert('기존 관리자 세션이 있습니다. 계속하려면 다시 로그인하세요.', 'warning');
+                            }
+                        }
+                    }, 1000);
+                }
                 
             } catch (error) {
                 console.error('❌ 스크립트 로드 실패:', error);
