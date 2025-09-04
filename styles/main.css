@@ -654,9 +654,11 @@ body {
     background-color: #dbeafe;
 }
 
-.option input[type="radio"] {
+.option input[type="radio"],
+.option input[type="checkbox"] {
     width: 20px;
     height: 20px;
+    cursor: pointer;
 }
 
 .subjective-answer {

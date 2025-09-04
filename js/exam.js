@@ -239,11 +239,22 @@ class ExamManager {
             return '<div class="no-options">선택지가 없습니다.</div>';
         }
         
+        // 정답 개수 확인
+        const correctCount = options.filter(option => option.is_correct).length;
+        const isMultipleChoice = correctCount > 1;
+        
+        console.log(`🔍 문제 ${question.id}: 정답 ${correctCount}개, 다중선택: ${isMultipleChoice}`);
+        
         return `
             <div class="answer-options">
                 ${options.map((option, index) => `
                     <label class="option" for="option-${option.id}">
-                        <input type="radio" id="option-${option.id}" name="question-${question.id}" value="${index}" data-option-id="${option.id}" data-is-correct="${option.is_correct}">
+                        <input type="${isMultipleChoice ? 'checkbox' : 'radio'}" 
+                               id="option-${option.id}" 
+                               name="question-${question.id}" 
+                               value="${index}" 
+                               data-option-id="${option.id}" 
+                               data-is-correct="${option.is_correct}">
                         <span class="option-text">${Utils.escapeHtml(option.content)}</span>
                     </label>
                 `).join('')}
@@ -270,12 +281,25 @@ class ExamManager {
         const savedAnswer = this.answers[questionId];
         if (!savedAnswer) return;
 
-        // 객관식 답안 복원 (인덱스 기반)
-        const radioInput = document.querySelector(`input[name="question-${questionId}"][value="${savedAnswer}"]`);
-        if (radioInput) {
-            radioInput.checked = true;
-            radioInput.closest('.option').classList.add('selected');
-            console.log(`🔍 답안 복원: 문제 ${questionId}, 선택지 인덱스 ${savedAnswer}`);
+        // 객관식 답안 복원
+        if (Array.isArray(savedAnswer)) {
+            // 다중 선택 답안 복원 (배열)
+            savedAnswer.forEach(answerIndex => {
+                const checkboxInput = document.querySelector(`input[name="question-${questionId}"][value="${answerIndex}"]`);
+                if (checkboxInput) {
+                    checkboxInput.checked = true;
+                    checkboxInput.closest('.option').classList.add('selected');
+                }
+            });
+            console.log(`🔍 다중 답안 복원: 문제 ${questionId}, 선택된 답안: [${savedAnswer.join(', ')}]`);
+        } else {
+            // 단일 선택 답안 복원 (인덱스)
+            const radioInput = document.querySelector(`input[name="question-${questionId}"][value="${savedAnswer}"]`);
+            if (radioInput) {
+                radioInput.checked = true;
+                radioInput.closest('.option').classList.add('selected');
+                console.log(`🔍 단일 답안 복원: 문제 ${questionId}, 선택지 인덱스 ${savedAnswer}`);
+            }
         }
 
         // 주관식 답안 복원
@@ -289,17 +313,45 @@ class ExamManager {
     setupAnswerEvents(question) {
         if (question.type === 'multiple_choice') {
             // 객관식 이벤트
-            document.querySelectorAll(`input[name="question-${question.id}"]`).forEach(radio => {
-                radio.addEventListener('change', (e) => {
-                    // 선택 상태 시각적 업데이트
-                    document.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
-                    e.target.closest('.option').classList.add('selected');
-                    
-                    // 디버깅 정보 로그
-                    console.log(`🎯 답안 선택: 문제 ${question.id}, 선택지 인덱스 ${e.target.value}, 정답 여부: ${e.target.dataset.isCorrect}`);
-                    
-                    // 답안 저장 (인덱스로 저장)
-                    this.saveAnswer(question.id, e.target.value);
+            document.querySelectorAll(`input[name="question-${question.id}"]`).forEach(input => {
+                input.addEventListener('change', (e) => {
+                    const isMultipleChoice = e.target.type === 'checkbox';
+                    const isChecked = e.target.checked;
+                    const optionId = e.target.dataset.optionId;
+                    const optionContent = e.target.closest('.option').querySelector('.option-text').textContent;
+
+                    if (isMultipleChoice) {
+                        // 다중 선택 (체크박스) 처리
+                        const selectedOptions = [];
+                        document.querySelectorAll(`input[name="question-${question.id}"]:checked`).forEach(checkedInput => {
+                            selectedOptions.push(checkedInput.value);
+                        });
+                        
+                        // 선택 상태 시각적 업데이트
+                        document.querySelectorAll(`input[name="question-${question.id}"]`).forEach(opt => {
+                            const optionElement = opt.closest('.option');
+                            if (opt.checked) {
+                                optionElement.classList.add('selected');
+                            } else {
+                                optionElement.classList.remove('selected');
+                            }
+                        });
+                        
+                        console.log(`🎯 다중 답안 선택: 문제 ${question.id}, 선택된 답안: [${selectedOptions.join(', ')}]`);
+                        
+                        // 답안 저장 (배열로 저장)
+                        this.saveAnswer(question.id, selectedOptions);
+                    } else {
+                        // 단일 선택 (라디오) 처리
+                        // 선택 상태 시각적 업데이트
+                        document.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
+                        e.target.closest('.option').classList.add('selected');
+                        
+                        console.log(`🎯 단일 답안 선택: 문제 ${question.id}, 선택지 ${optionContent}, 정답 여부: ${e.target.dataset.isCorrect}`);
+                        
+                        // 답안 저장 (인덱스로 저장)
+                        this.saveAnswer(question.id, e.target.value);
+                    }
                 });
             });
         } else if (question.type === 'subjective') {
