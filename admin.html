@@ -3455,6 +3455,10 @@
                     <i class="fas fa-tags"></i>
                     카테고리 관리
                 </button>
+                <a href="./admin-avatars.html" class="admin-nav-item">
+                    <i class="fas fa-user-circle"></i>
+                    아바타 관리
+                </a>
             </nav>
         </aside>
 
@@ -10215,19 +10219,19 @@
                                 <span class="input-group-text">
                                     <i class="fas fa-search"></i>
                                 </span>
-                                                            <input type="text" id="user-search" class="form-control"
+                                <input type="text" id="user-search" class="form-control" 
                                    placeholder="이름, 이메일, 태그로 검색..."
-                                   onkeyup="filterUserManagement()">
+                                       onkeyup="filterUserManagement()">
                             </div>
                         </div>
                                                     <div class="col-md-6">
-                                <div class="d-flex align-items-center justify-content-end">
+                            <div class="d-flex align-items-center justify-content-end">
                                     <span class="text-muted small">
-                                        <span id="filtered-count">0</span>명 표시 중 /
-                                        <span id="total-count">0</span>명 전체
-                                    </span>
-                                </div>
+                                    <span id="filtered-count">0</span>명 표시 중 / 
+                                    <span id="total-count">0</span>명 전체
+                                </span>
                             </div>
+                        </div>
                         </div>
                         <div class="row mt-2">
                             <div class="col-12">
@@ -10778,11 +10782,11 @@
                 // 전역 변수에 사용자 데이터 저장
                 allUsers = enrichedProfiles;
 
-                            // 사용자 목록 렌더링
-            renderUserList(allUsers);
-            
-            // 태그 옵션 로드
-            loadTagOptions();
+                // 사용자 목록 렌더링
+                renderUserList(allUsers);
+                
+                // 태그 옵션 로드
+                loadTagOptions();
             
             // 일괄 태그 관리 기능 초기화
             initializeBulkTagManagement();
@@ -10875,29 +10879,29 @@
                             lastLoginClass = 'text-muted';
                         }
                     }
-                    
-                    usersHTML += `
-                        <tr>
+                        
+                        usersHTML += `
+                            <tr>
                             <td class="bulk-select-cell">
                                 <input type="checkbox" class="user-select-checkbox" value="${user.id}" 
                                        onchange="updateSelectAllCheckbox()" 
                                        onclick="handleCheckboxClick(event, this)">
                             </td>
-                            <td>${user.name || '이름 없음'}</td>
-                            <td>${user.email}</td>
-                            <td>
-                                <span class="role-badge role-${user.role || 'employee'}">
-                                    ${user.role === 'super_admin' ? '슈퍼관리자' : 
-                                      user.role === 'admin' ? '관리자' : '일반 사용자'}
-                                </span>
-                            </td>
-                            <td>${departmentName}</td>
-                            <td>${renderTagBadges(tags)}</td>
-                            <td>${hireDate}</td>
-                            <td>${createdDate}</td>
-                            <td>
-                                <span class="${lastLoginClass}" title="${user.last_login_at ? 
-                                    `상세 정보: ${new Date(user.last_login_at).toLocaleString('ko-KR')}
+                                <td>${user.name || '이름 없음'}</td>
+                                <td>${user.email}</td>
+                                <td>
+                                    <span class="role-badge role-${user.role || 'employee'}">
+                                        ${user.role === 'super_admin' ? '슈퍼관리자' : 
+                                          user.role === 'admin' ? '관리자' : '일반 사용자'}
+                                    </span>
+                                </td>
+                                <td>${departmentName}</td>
+                                <td>${renderTagBadges(tags)}</td>
+                                <td>${hireDate}</td>
+                                <td>${createdDate}</td>
+                                <td>
+                                    <span class="${lastLoginClass}" title="${user.last_login_at ? 
+                                        `상세 정보: ${new Date(user.last_login_at).toLocaleString('ko-KR')}
 경과 시간: ${(() => {
     const now = new Date();
     const lastLogin = new Date(user.last_login_at);
@@ -10908,23 +10912,23 @@
     const diffInDays = Math.floor(diffInHours / 24);
     return `${diffInDays}일 전`;
 })()}` : '접속 기록 없음'}">
-                                    ${lastLoginDisplay}
-                                </span>
-                            </td>
-                            <td>
-                                <span class="status-badge status-active">활성</span>
-                            </td>
-                            <td>
-                                <button class="btn-small btn-outline" onclick="editUser('${user.id}')">
-                                    <i class="fas fa-edit"></i> 수정
-                                </button>
-                                <button class="btn-small btn-danger" onclick="deleteUser('${user.id}', '${user.email}')">
-                                    <i class="fas fa-trash"></i> 삭제
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                });
+                                        ${lastLoginDisplay}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="status-badge status-active">활성</span>
+                                </td>
+                                <td>
+                                    <button class="btn-small btn-outline" onclick="editUser('${user.id}')">
+                                        <i class="fas fa-edit"></i> 수정
+                                    </button>
+                                    <button class="btn-small btn-danger" onclick="deleteUser('${user.id}', '${user.email}')">
+                                        <i class="fas fa-trash"></i> 삭제
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    });
 
                 usersHTML += `
                             </tbody>
@@ -14624,14 +14628,14 @@
                         console.log('✅ 기존 설정된 일정 사용:', { start_time, end_time });
                     } else {
                         // 새로운 일정 입력
-                        const schedule = prompt('공개 시각을 입력하세요. 즉시 공개하려면 비워두세요. (예: 2025-09-01T09:00)');
-                        const closeAt = prompt('마감 시각을 입력하세요. 설정하지 않으려면 비워두세요. (예: 2025-09-30T23:59)');
-                        
-                        const toIsoOrNull = (val) => {
-                            if (!val) return null;
+                const schedule = prompt('공개 시각을 입력하세요. 즉시 공개하려면 비워두세요. (예: 2025-09-01T09:00)');
+                const closeAt = prompt('마감 시각을 입력하세요. 설정하지 않으려면 비워두세요. (예: 2025-09-30T23:59)');
+                
+                const toIsoOrNull = (val) => {
+                    if (!val) return null;
                             try {
-                                const d = new Date(val);
-                                return isNaN(d.getTime()) ? null : d.toISOString();
+                    const d = new Date(val);
+                    return isNaN(d.getTime()) ? null : d.toISOString();
                             } catch {
                                 return null;
                             }
@@ -14660,7 +14664,7 @@
                     end_time = toIsoOrNull(closeAt);
                     console.log('✅ 새로운 일정으로 공개:', { start_time, end_time });
                 }
-
+                
                 const payload = { status: 'published' };
                 if (start_time) payload.start_time = start_time;
                 if (end_time) payload.end_time = end_time;
@@ -14813,7 +14817,7 @@
                 return false;
             }
         }
-
+        
         // 시험 비공개 함수
         async function unpublishExam(examId) {
             try {
@@ -14991,11 +14995,11 @@
                                         title="점수 수정">
                                     <i class="fas fa-edit"></i> 수정
                                 </button>
-                                <button class="btn btn-sm btn-danger" 
+                            <button class="btn btn-sm btn-danger" 
                                         onclick="showDeleteExamRecordModal('${session.id}', '${user.name}', '${exam.title}', '${session.status}')"
                                         title="기록 삭제">
-                                    <i class="fas fa-trash"></i> 삭제
-                                </button>
+                                <i class="fas fa-trash"></i> 삭제
+                            </button>
                             </div>
                         </td>
                     </tr>
