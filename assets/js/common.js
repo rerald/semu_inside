@@ -1,4 +1,4 @@
-// 세무인사이드 공통 JavaScript 유틸리티
+// Quizbank 공통 JavaScript 유틸리티
 
 class SemuApp {
     constructor(supabaseClient = null) {
@@ -8,7 +8,7 @@ class SemuApp {
     }
 
     async init() {
-        console.log('🚀 세무인사이드 앱 초기화');
+        console.log('🚀 Quizbank 앱 초기화');
         
         // Supabase 클라이언트가 전달되지 않은 경우에만 초기화
         if (!this.supabaseClient) {
