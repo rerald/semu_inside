@@ -1596,104 +1596,49 @@
                 
                 if (totalParticipants > 0) {
                     const currentScore = this.examData.earnedPoints || 0;
-                    const totalPossibleScore = this.examData.totalPoints || 1;
-                    const currentPercentage = Math.round((currentScore / totalPossibleScore) * 100);
                     
-                    // 유효한 점수 데이터만 필터링
+                    // 🎯 간단한 백분위 계산: (응시인원 - 내 뒤에 사람) ÷ 응시인원 × 100
                     const allValidScores = (this.examScores || []).filter(s => 
                         s.score !== null && s.total_points !== null
                     );
                     
-                    // 사용자별 중복 제거 (같은 사용자가 여러 세션을 가진 경우 최신 것만)
-                    const userScoreMap = new Map();
-                    allValidScores.forEach(session => {
-                        const userId = session.employee_id;
-                        if (!userScoreMap.has(userId) || 
-                            new Date(session.created_at || session.submit_time) > 
-                            new Date(userScoreMap.get(userId).created_at || userScoreMap.get(userId).submit_time)) {
-                            userScoreMap.set(userId, session);
-                        }
-                    });
-                    
-                    // 중복 제거된 최종 점수 배열
-                    const validScores = Array.from(userScoreMap.values());
-                    
-                    if (validScores.length > 0) {
-                        // 원점수를 기준으로 순위 계산 (백분율이 아닌 실제 점수)
-                        const allRawScores = validScores.map(s => s.score || 0);
-                        const currentRawScore = currentScore;
+                    if (allValidScores.length > 0) {
+                        const myScore = currentScore;
+                        const allScores = allValidScores.map(s => s.score || 0);
                         
-                        // 중복 제거를 위해 현재 사용자의 ID 확인
-                        const currentSessionId = this.examData.sessionId;
-                        const currentUserId = this.examData.employeeId || validScores.find(s => s.id === currentSessionId)?.employee_id;
+                        // 내 뒤에 있는 사람 수 (나보다 낮은 점수)
+                        const peopleBelow = allScores.filter(score => score < myScore).length;
                         
-                        // 현재 사용자를 제외한 다른 사용자들의 점수만 계산
-                        const otherScores = validScores
-                            .filter(s => s.employee_id !== currentUserId)  // 자신의 사용자 ID 제외
-                            .map(s => s.score || 0);
+                        // 전체 응시 인원
+                        const totalParticipants = allValidScores.length;
                         
-                        // 점수별 사람 수 계산 (자신 제외)
-                        const lowerScores = otherScores.filter(score => score < currentRawScore).length;
-                        const higherScores = otherScores.filter(score => score > currentRawScore).length;
-                        const equalScores = otherScores.filter(score => score === currentRawScore).length;
+                        // 내 순위 (나보다 높은 점수 + 1)
+                        const peopleAbove = allScores.filter(score => score > myScore).length;
+                        const myRank = peopleAbove + 1;
                         
-                        // 전체 인원은 유니크 사용자 수 (validScores에 이미 자신이 포함됨)
-                        const totalParticipantsIncludingMe = validScores.length;
+                        // 상위 백분위 계산: (응시인원 - 내 뒤에 사람) ÷ 응시인원 × 100
+                        const topPercentile = Math.round(((totalParticipants - peopleBelow) / totalParticipants) * 100);
                         
-                        // 올바른 상위 백분위 계산법
-                        // 상위 몇 % = (나의 순위 / 전체 인원) * 100
-                        
-                        // 1. 자신의 순위 계산 (동점자 처리: 동점자 그룹의 최고 순위 사용)
-                        const myRank = higherScores + 1;  // 나보다 높은 점수 받은 사람 수 + 1
-                        
-                        // 2. 상위 백분위 계산 
-                        const topPercentile = Math.round((myRank / totalParticipantsIncludingMe) * 100);
-                        
-                        // 3. 상위 몇 %에 해당하는지 설명
-                        const topGroupSize = Math.ceil(totalParticipantsIncludingMe * (topPercentile / 100));
-                        const description = `${totalParticipantsIncludingMe}명 중 ${myRank}등 (상위 ${topGroupSize}명)`;
-                        
-                        // 실제 순위 정보 계산
-                        const actualRankRange = equalScores > 0 
-                            ? `${myRank}등~${myRank + equalScores}등 (${equalScores + 1}명 동점)`
-                            : `${myRank}등`;
-                            
-                        console.log('📊 백분위 계산 상세 (수정됨):', {
-                            currentRawScore,
-                            currentPercentage,
-                            currentSessionId,
-                            currentUserId,
-                            
-                            // 중복 제거 관련 정보
-                            originalSessions: allValidScores.length,
-                            uniqueUsers: validScores.length,
-                            deduplicationApplied: allValidScores.length !== validScores.length,
-                            
-                            // 순위 계산 정보
-                            otherParticipants: otherScores.length,
-                            lowerScores,
-                            equalScores, 
-                            higherScores,
-                            totalParticipants: totalParticipantsIncludingMe,
-                            myRank,
-                            actualRankRange,
-                            topPercentile,
-                            topGroupSize,
-                            description,
-                            calculation: `(${myRank} / ${totalParticipantsIncludingMe}) * 100 = ${topPercentile}%`,
-                            note: '사용자 ID 기준으로 중복 제거 후 원점수 기준 순위 계산'
+                        console.log('📊 간단한 백분위 계산:', {
+                            myScore: myScore,
+                            allScores: allScores,
+                            totalParticipants: totalParticipants,
+                            peopleBelow: peopleBelow,
+                            peopleAbove: peopleAbove,
+                            myRank: myRank,
+                            calculation: `(${totalParticipants} - ${peopleBelow}) ÷ ${totalParticipants} × 100 = ${topPercentile}%`,
+                            topPercentile: topPercentile
                         });
                         
                         // 결과 해석 및 시각적 표현
                         let icon = '';
                         let colorClass = '';
                         
-                        // 1명만 시험 본 경우 특별 처리
-                        if (totalParticipantsIncludingMe === 1) {
+                        if (totalParticipants === 1) {
                             percentileInfo = `혼자 응시 (1등, 완주)`;
                             icon = '🎯';
                             colorClass = 'percentile-solo';
-                        } else if (topPercentile <= 10) {
+                        } else if (topPercentile <= 10 || myRank === 1) {
                             percentileInfo = `상위 ${topPercentile}% (${myRank}등, 최상위권)`;
                             icon = '🏆';
                             colorClass = 'percentile-excellent';
