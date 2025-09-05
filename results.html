@@ -989,6 +989,14 @@
                             </div>
                         </div>
                         <p style="color: var(--medium-gray);">전체 평균보다 <strong id="comparison">-</strong></p>
+                        <div id="pointsDisplay" class="points-display" style="margin-top: 15px; padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; color: white; text-align: center;">
+                            <div style="font-size: 14px; opacity: 0.9; margin-bottom: 5px;">획득 포인트</div>
+                            <div style="font-size: 24px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                <i class="fas fa-coins" style="color: #ffd700;"></i>
+                                <span id="earnedPointsDisplay">계산 중...</span>
+                            </div>
+                            <div id="pointsBreakdown" style="font-size: 12px; margin-top: 8px; opacity: 0.8;"></div>
+                        </div>
                     </div>
 
                     <!-- 통계 -->
@@ -1134,7 +1142,7 @@
                 
                 // 로딩 완료 후 UI 업데이트
                 this.hideLoadingState();
-                this.updateUI();
+                await this.updateUI();
             }
 
             updateUserInfo() {
@@ -1414,6 +1422,8 @@
                     });
                     
                     this.examData = {
+                        sessionId: session.id,  // 세션 ID 추가
+                        employeeId: session.employee_id,  // 사용자 ID 추가
                         title: session.exams?.title || '시험 결과',
                         correctAnswers: correctAnswers,
                         incorrectAnswers: incorrectAnswers,
@@ -1501,7 +1511,7 @@
                 });
             }
 
-            updateUI() {
+            async updateUI() {
                 // 데이터가 로드되지 않았으면 UI 업데이트 하지 않음
                 if (!this.isDataLoaded || this.score === null) {
                     console.log('⚠️ 데이터 로드 미완료, UI 업데이트 건너뜀');
@@ -1534,6 +1544,9 @@
                 
                 // 추천사항 표시
                 this.displayRecommendations();
+                
+                // 포인트 정보 표시
+                await this.displayPointsInfo();
             }
 
             updateResultIcon() {
@@ -1586,20 +1599,45 @@
                     const currentPercentage = Math.round((currentScore / totalPossibleScore) * 100);
                     
                     // 유효한 점수 데이터만 필터링
-                    const validScores = (this.examScores || []).filter(s => 
+                    const allValidScores = (this.examScores || []).filter(s => 
                         s.score !== null && s.total_points !== null
                     );
                     
+                    // 사용자별 중복 제거 (같은 사용자가 여러 세션을 가진 경우 최신 것만)
+                    const userScoreMap = new Map();
+                    allValidScores.forEach(session => {
+                        const userId = session.employee_id;
+                        if (!userScoreMap.has(userId) || 
+                            new Date(session.created_at || session.submit_time) > 
+                            new Date(userScoreMap.get(userId).created_at || userScoreMap.get(userId).submit_time)) {
+                            userScoreMap.set(userId, session);
+                        }
+                    });
+                    
+                    // 중복 제거된 최종 점수 배열
+                    const validScores = Array.from(userScoreMap.values());
+                    
                     if (validScores.length > 0) {
-                        // 모든 참가자의 백분율 점수 계산
-                        const allPercentages = validScores.map(s => 
-                            Math.round((s.score / s.total_points) * 100)
-                        );
+                        // 원점수를 기준으로 순위 계산 (백분율이 아닌 실제 점수)
+                        const allRawScores = validScores.map(s => s.score || 0);
+                        const currentRawScore = currentScore;
                         
-                        // 점수별 사람 수 계산
-                        const lowerScores = allPercentages.filter(score => score < currentPercentage).length;
-                        const equalScores = allPercentages.filter(score => score === currentPercentage).length;
-                        const higherScores = allPercentages.filter(score => score > currentPercentage).length;
+                        // 중복 제거를 위해 현재 사용자의 ID 확인
+                        const currentSessionId = this.examData.sessionId;
+                        const currentUserId = this.examData.employeeId || validScores.find(s => s.id === currentSessionId)?.employee_id;
+                        
+                        // 현재 사용자를 제외한 다른 사용자들의 점수만 계산
+                        const otherScores = validScores
+                            .filter(s => s.employee_id !== currentUserId)  // 자신의 사용자 ID 제외
+                            .map(s => s.score || 0);
+                        
+                        // 점수별 사람 수 계산 (자신 제외)
+                        const lowerScores = otherScores.filter(score => score < currentRawScore).length;
+                        const higherScores = otherScores.filter(score => score > currentRawScore).length;
+                        const equalScores = otherScores.filter(score => score === currentRawScore).length;
+                        
+                        // 전체 인원은 유니크 사용자 수 (validScores에 이미 자신이 포함됨)
+                        const totalParticipantsIncludingMe = validScores.length;
                         
                         // 올바른 상위 백분위 계산법
                         // 상위 몇 % = (나의 순위 / 전체 인원) * 100
@@ -1608,37 +1646,53 @@
                         const myRank = higherScores + 1;  // 나보다 높은 점수 받은 사람 수 + 1
                         
                         // 2. 상위 백분위 계산 
-                        const topPercentile = Math.round((myRank / validScores.length) * 100);
+                        const topPercentile = Math.round((myRank / totalParticipantsIncludingMe) * 100);
                         
                         // 3. 상위 몇 %에 해당하는지 설명
-                        const topGroupSize = Math.ceil(validScores.length * (topPercentile / 100));
-                        const description = `${validScores.length}명 중 ${myRank}등 (상위 ${topGroupSize}명)`;
+                        const topGroupSize = Math.ceil(totalParticipantsIncludingMe * (topPercentile / 100));
+                        const description = `${totalParticipantsIncludingMe}명 중 ${myRank}등 (상위 ${topGroupSize}명)`;
                         
                         // 실제 순위 정보 계산
-                        const actualRankRange = equalScores > 1 
-                            ? `${myRank}등~${higherScores + equalScores}등 (${equalScores}명 동점)`
+                        const actualRankRange = equalScores > 0 
+                            ? `${myRank}등~${myRank + equalScores}등 (${equalScores + 1}명 동점)`
                             : `${myRank}등`;
                             
-                        console.log('📊 백분위 계산 상세:', {
+                        console.log('📊 백분위 계산 상세 (수정됨):', {
+                            currentRawScore,
                             currentPercentage,
+                            currentSessionId,
+                            currentUserId,
+                            
+                            // 중복 제거 관련 정보
+                            originalSessions: allValidScores.length,
+                            uniqueUsers: validScores.length,
+                            deduplicationApplied: allValidScores.length !== validScores.length,
+                            
+                            // 순위 계산 정보
+                            otherParticipants: otherScores.length,
                             lowerScores,
                             equalScores, 
                             higherScores,
-                            totalParticipants: validScores.length,
+                            totalParticipants: totalParticipantsIncludingMe,
                             myRank,
                             actualRankRange,
                             topPercentile,
                             topGroupSize,
                             description,
-                            calculation: `(${myRank} / ${validScores.length}) * 100 = ${topPercentile}%`,
-                            verification: `32명 중 상위 ${topPercentile}%는 상위 ${Math.ceil(32 * topPercentile / 100)}명에 해당`
+                            calculation: `(${myRank} / ${totalParticipantsIncludingMe}) * 100 = ${topPercentile}%`,
+                            note: '사용자 ID 기준으로 중복 제거 후 원점수 기준 순위 계산'
                         });
                         
                         // 결과 해석 및 시각적 표현
                         let icon = '';
                         let colorClass = '';
                         
-                        if (topPercentile <= 10) {
+                        // 1명만 시험 본 경우 특별 처리
+                        if (totalParticipantsIncludingMe === 1) {
+                            percentileInfo = `혼자 응시 (1등, 완주)`;
+                            icon = '🎯';
+                            colorClass = 'percentile-solo';
+                        } else if (topPercentile <= 10) {
                             percentileInfo = `상위 ${topPercentile}% (${myRank}등, 최상위권)`;
                             icon = '🏆';
                             colorClass = 'percentile-excellent';
@@ -1858,6 +1912,205 @@
                 }
                 
                 return recommendations;
+            }
+
+            async displayPointsInfo() {
+                try {
+                    // sessionStorage에서 포인트 정보 가져오기
+                    const pointRewardData = sessionStorage.getItem('examPointReward');
+                    const earnedPointsElement = document.getElementById('earnedPointsDisplay');
+                    const pointsBreakdownElement = document.getElementById('pointsBreakdown');
+                    
+                    if (pointRewardData) {
+                        const pointBreakdown = JSON.parse(pointRewardData);
+                        console.log('🎯 포인트 정보 표시:', pointBreakdown);
+                        
+                        // 총 획득 포인트 표시
+                        const totalPoints = pointBreakdown.totalPoints || 0;
+                        earnedPointsElement.textContent = `+${totalPoints}P`;
+                        
+                        // 포인트 상세 내역 표시
+                        const breakdownDetails = [];
+                        
+                        if (pointBreakdown.questionPoints > 0) {
+                            breakdownDetails.push(`문제 정답: +${pointBreakdown.questionPoints}P`);
+                        }
+                        
+                        if (pointBreakdown.completionBonus > 0) {
+                            breakdownDetails.push(`완료 보너스: +${pointBreakdown.completionBonus}P`);
+                        }
+                        
+                        if (pointBreakdown.passingBonus > 0) {
+                            breakdownDetails.push(`합격 보너스: +${pointBreakdown.passingBonus}P`);
+                        }
+                        
+                        if (pointBreakdown.difficultyBonus > 0) {
+                            breakdownDetails.push(`난이도 보너스: +${pointBreakdown.difficultyBonus}P`);
+                        }
+                        
+                        if (pointBreakdown.streakBonus > 0) {
+                            breakdownDetails.push(`연속 정답: +${pointBreakdown.streakBonus}P`);
+                        }
+                        
+                        if (pointBreakdown.timeBonus > 0) {
+                            breakdownDetails.push(`시간 보너스: +${pointBreakdown.timeBonus}P`);
+                        }
+                        
+                        pointsBreakdownElement.textContent = breakdownDetails.join(' | ');
+                        
+                        // 🔧 중요: sessionStorage에 데이터가 있어도 데이터베이스 적립 시도
+                        if (!pointBreakdown.dbSaved) {
+                            console.log('💾 sessionStorage 포인트를 데이터베이스에 적립 시도...');
+                            await this.savePointsToDatabase(totalPoints, pointBreakdown);
+                        } else {
+                            console.log('✅ 포인트가 이미 데이터베이스에 저장됨');
+                        }
+                        
+                    } else {
+                        // 포인트 정보가 없는 경우 - 자동으로 계산
+                        console.log('⚠️ 포인트 정보 없음 - 자동 계산 시도');
+                        await this.calculateMissingPoints(earnedPointsElement, pointsBreakdownElement);
+                    }
+                } catch (error) {
+                    console.error('❌ 포인트 정보 표시 오류:', error);
+                    document.getElementById('earnedPointsDisplay').textContent = '오류';
+                    document.getElementById('pointsBreakdown').textContent = '포인트 정보를 불러올 수 없습니다.';
+                }
+            }
+
+            async savePointsToDatabase(totalPoints, pointBreakdown) {
+                try {
+                    // Supabase 클라이언트 및 사용자 정보 확인
+                    const supabaseClient = window.semuApp?.supabaseClient || window.supabaseClient;
+                    const userId = this.examData.employeeId || window.semuApp?.currentUser?.id;
+                    
+                    console.log('🔍 포인트 적립 조건 확인:', {
+                        supabaseClient: !!supabaseClient,
+                        userId: userId,
+                        sessionId: this.examData.sessionId,
+                        totalPoints: totalPoints
+                    });
+                    
+                    if (supabaseClient && userId) {
+                        console.log('💾 데이터베이스에 포인트 적립 시도...');
+                        
+                        const { data, error } = await supabaseClient
+                            .rpc('add_user_points', {
+                                target_user_id: userId,
+                                points_to_add: totalPoints,
+                                description: `시험 완료: ${this.examData.title || '시험'}`,
+                                target_avatar_item_id: null
+                            });
+                            
+                        if (error) {
+                            console.warn('⚠️ 포인트 적립 실패:', error);
+                        } else {
+                            console.log('✅ 포인트 데이터베이스 적립 완료:', data);
+                            
+                            // sessionStorage에 저장 완료 표시
+                            pointBreakdown.dbSaved = true;
+                            sessionStorage.setItem('examPointReward', JSON.stringify(pointBreakdown));
+                        }
+                    } else {
+                        console.warn('⚠️ 포인트 적립 조건 미충족:', {
+                            supabaseClient: !!supabaseClient,
+                            userId: userId
+                        });
+                    }
+                } catch (error) {
+                    console.error('❌ 포인트 DB 저장 오류:', error);
+                }
+            }
+
+            async calculateMissingPoints(earnedPointsElement, pointsBreakdownElement) {
+                try {
+                    console.log('🔄 누락된 포인트 자동 계산 시작...');
+                    
+                    // 기본 포인트 계산 로직
+                    const { correctAnswers, earnedPoints } = this.examData;
+                    let totalPoints = 0;
+                    let breakdown = [];
+                    
+                    // 1. 문제 정답 포인트 (100점 per correct answer)
+                    const questionPoints = correctAnswers * 100;
+                    totalPoints += questionPoints;
+                    breakdown.push(`문제 정답: +${questionPoints}P`);
+                    
+                    // 2. 시험 완료 보너스 (200점)
+                    const completionBonus = 200;
+                    totalPoints += completionBonus;
+                    breakdown.push(`완료 보너스: +${completionBonus}P`);
+                    
+                    // 3. 합격 보너스 (70점 이상이면 300점)
+                    const percentage = this.examData.percentage || this.score;
+                    if (percentage >= 70) {
+                        const passingBonus = 300;
+                        totalPoints += passingBonus;
+                        breakdown.push(`합격 보너스: +${passingBonus}P`);
+                    }
+                    
+                    // UI 업데이트
+                    earnedPointsElement.textContent = `+${totalPoints}P`;
+                    pointsBreakdownElement.textContent = breakdown.join(' | ');
+                    
+                    // sessionStorage에 저장 (향후 사용을 위해)
+                    const pointData = {
+                        totalPoints,
+                        questionPoints,
+                        completionBonus,
+                        passingBonus: percentage >= 70 ? 300 : 0,
+                        difficultyBonus: 0,
+                        streakBonus: 0,
+                        timeBonus: 0,
+                        autoCalculated: true
+                    };
+                    sessionStorage.setItem('examPointReward', JSON.stringify(pointData));
+                    
+                    console.log('✅ 포인트 자동 계산 완료:', pointData);
+                    
+                    // 실제 데이터베이스에 포인트 적립 시도
+                    const supabaseClient = window.semuApp?.supabaseClient || window.supabaseClient;
+                    const userId = this.examData.employeeId || window.semuApp?.currentUser?.id;
+                    
+                    console.log('🔍 포인트 적립 조건 확인:', {
+                        supabaseClient: !!supabaseClient,
+                        userId: userId,
+                        sessionId: this.examData.sessionId,
+                        totalPoints: totalPoints
+                    });
+                    
+                    if (supabaseClient && userId) {
+                        try {
+                            console.log('💾 데이터베이스에 포인트 적립 시도...');
+                            
+                            const { data, error } = await supabaseClient
+                                .rpc('add_user_points', {
+                                    target_user_id: userId,
+                                    points_to_add: totalPoints,
+                                    description: `시험 완료: ${this.examData.title || '시험'}`,
+                                    target_avatar_item_id: null
+                                });
+                                
+                            if (error) {
+                                console.warn('⚠️ 포인트 적립 실패:', error);
+                            } else {
+                                console.log('✅ 포인트 데이터베이스 적립 완료:', data);
+                            }
+                        } catch (dbError) {
+                            console.warn('⚠️ 포인트 DB 적립 오류:', dbError);
+                        }
+                    } else {
+                        console.warn('⚠️ 포인트 적립 조건 미충족:', {
+                            supabaseClient: !!supabaseClient,
+                            userId: userId
+                        });
+                    }
+                    
+                } catch (error) {
+                    console.error('❌ 포인트 자동 계산 실패:', error);
+                    earnedPointsElement.textContent = '계산 실패';
+                    pointsBreakdownElement.textContent = '포인트를 계산할 수 없습니다.';
+                }
             }
 
             showAllQuestions() {

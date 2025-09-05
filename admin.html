@@ -3459,6 +3459,10 @@
                     <i class="fas fa-user-circle"></i>
                     아바타 관리
                 </a>
+                <a href="./points-admin.html" class="admin-nav-item">
+                    <i>🎯</i>
+                    포인트 관리
+                </a>
             </nav>
         </aside>
 
@@ -10205,6 +10209,12 @@
                         <button class="btn btn-info" onclick="showTagManagement()">
                             <i class="fas fa-tags"></i> 태그 관리
                         </button>
+                                                                <button class="btn btn-warning" onclick="showPasswordManagementModal()">
+                            <i class="fas fa-key"></i> 비밀번호 관리
+                        </button>
+                        <button class="btn btn-info" onclick="checkCurrentUserRole()">
+                            <i class="fas fa-user-shield"></i> 내 권한 확인
+                        </button>
                         <button class="btn btn-success" onclick="showBulkTagModal()" id="bulk-tag-btn" style="display: none;">
                             <i class="fas fa-tags"></i> 일괄 태그 설정
                         </button>
@@ -10921,6 +10931,9 @@
                                 <td>
                                     <button class="btn-small btn-outline" onclick="editUser('${user.id}')">
                                         <i class="fas fa-edit"></i> 수정
+                                    </button>
+                                    <button class="btn-small btn-warning" onclick="resetUserPassword('${user.id}', '${user.email}')" title="비밀번호 리셋">
+                                        <i class="fas fa-key"></i> 리셋
                                     </button>
                                     <button class="btn-small btn-danger" onclick="deleteUser('${user.id}', '${user.email}')">
                                         <i class="fas fa-trash"></i> 삭제
@@ -16973,6 +16986,739 @@
                 `;
             }
         }
+
+        // ========================================
+        // 비밀번호 관리 기능 (super_admin 전용)
+        // ========================================
+
+        // 비밀번호 관리 모달 표시
+        async function showPasswordManagementModal() {
+            // 권한 확인 - 여러 방식으로 현재 사용자 정보 확인
+            let currentUser = null;
+            let currentRole = null;
+            
+            // 방법 1: window.semuApp 확인
+            if (window.semuApp && window.semuApp.currentUser) {
+                currentUser = window.semuApp.currentUser;
+                currentRole = currentUser.role;
+            }
+            // 방법 2: window.currentUser 확인
+            else if (window.currentUser) {
+                currentUser = window.currentUser;
+                currentRole = currentUser.role;
+            }
+            // 방법 3: 전역 변수 adminUser 확인
+            else if (typeof adminUser !== 'undefined' && adminUser) {
+                currentUser = adminUser;
+                currentRole = adminUser.role;
+            }
+            // 방법 4: Supabase 세션에서 직접 확인
+            else if (window.supabaseClient) {
+                try {
+                    const { data: { session } } = await window.supabaseClient.auth.getSession();
+                    if (session && session.user) {
+                        const { data: profile } = await window.supabaseClient
+                            .from('profiles')
+                            .select('*')
+                            .eq('id', session.user.id)
+                            .single();
+                        
+                        if (profile) {
+                            currentUser = profile;
+                            currentRole = profile.role;
+                        }
+                    }
+                } catch (error) {
+                    console.error('세션 확인 중 오류:', error);
+                }
+            }
+            
+            if (!currentUser || currentRole !== 'super_admin') {
+                showAlert(`이 기능은 슈퍼관리자만 사용할 수 있습니다.\n현재 권한: ${currentRole || '확인 불가'}`, 'error');
+                return;
+            }
+
+            const modalHtml = `
+                <div id="password-management-modal" class="modal" style="display: block; background: rgba(0,0,0,0.5);">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">
+                                    <i class="fas fa-key"></i> 비밀번호 관리 (Super Admin)
+                                </h5>
+                                <button type="button" class="close-btn" onclick="hidePasswordManagementModal()">&times;</button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-shield-alt"></i>
+                                    <strong>보안 안내:</strong> 보안상 사용자의 실제 비밀번호는 조회할 수 없습니다. 
+                                    대신 아래 기능들을 사용하여 계정을 안전하게 관리하세요.
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h6><i class="fas fa-key"></i> 비밀번호 리셋</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <p>사용자의 비밀번호를 새로운 임시 비밀번호로 변경합니다.</p>
+                                                <div class="form-group">
+                                                    <label for="reset-user-email">사용자 이메일</label>
+                                                    <input type="email" id="reset-user-email" class="form-control" 
+                                                           placeholder="사용자의 이메일을 입력하세요">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label for="new-temp-password">새 임시 비밀번호</label>
+                                                    <div class="input-group">
+                                                        <input type="password" id="new-temp-password" class="form-control" 
+                                                               placeholder="최소 6자 이상" minlength="6">
+                                                        <button class="btn btn-outline-secondary" type="button" onclick="generateRandomPassword()">
+                                                            <i class="fas fa-random"></i> 자동생성
+                                                        </button>
+                                                    </div>
+                                                    <small class="text-muted">영문, 숫자, 특수문자 조합 권장</small>
+                                                </div>
+                                                <button class="btn btn-warning btn-block" onclick="resetUserPasswordByEmail()">
+                                                    <i class="fas fa-key"></i> 비밀번호 리셋
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h6><i class="fas fa-user-lock"></i> 계정 관리</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <p>사용자 계정의 상태를 관리합니다.</p>
+                                                <div class="form-group">
+                                                    <label for="manage-user-email">사용자 이메일</label>
+                                                    <input type="email" id="manage-user-email" class="form-control" 
+                                                           placeholder="관리할 사용자의 이메일">
+                                                </div>
+                                                <div class="btn-group-vertical w-100">
+                                                    <button class="btn btn-info" onclick="sendPasswordResetEmail()">
+                                                        <i class="fas fa-envelope"></i> 비밀번호 재설정 이메일 발송
+                                                    </button>
+                                                    <button class="btn btn-secondary" onclick="showUserAccountInfo()">
+                                                        <i class="fas fa-info-circle"></i> 계정 정보 조회
+                                                    </button>
+                                                    <button class="btn btn-success" onclick="unlockUserAccount()">
+                                                        <i class="fas fa-unlock"></i> 계정 잠금 해제
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row mt-3">
+                                    <div class="col-12">
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h6><i class="fas fa-history"></i> 최근 비밀번호 변경 기록</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div id="password-change-log">
+                                                    <div class="text-center text-muted">
+                                                        <i class="fas fa-clock"></i> 기록을 불러오는 중...
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" onclick="hidePasswordManagementModal()">
+                                    닫기
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // 기존 모달 제거
+            const existingModal = document.getElementById('password-management-modal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+
+            // 새 모달 추가
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            // 최근 변경 기록 로드
+            loadPasswordChangeLog();
+        }
+
+        // 비밀번호 관리 모달 숨기기
+        function hidePasswordManagementModal() {
+            const modal = document.getElementById('password-management-modal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        // 개별 사용자 비밀번호 리셋 (테이블에서 호출)
+        async function resetUserPassword(userId, userEmail) {
+            // 권한 확인 - 여러 방식으로 현재 사용자 정보 확인
+            let currentUser = null;
+            let currentRole = null;
+            
+            // 방법 1: window.semuApp 확인
+            if (window.semuApp && window.semuApp.currentUser) {
+                currentUser = window.semuApp.currentUser;
+                currentRole = currentUser.role;
+                console.log('✅ semuApp에서 사용자 정보 확인:', currentUser);
+            }
+            // 방법 2: window.currentUser 확인 (admin.html에서 사용할 수 있는 변수)
+            else if (window.currentUser) {
+                currentUser = window.currentUser;
+                currentRole = currentUser.role;
+                console.log('✅ window.currentUser에서 정보 확인:', currentUser);
+            }
+            // 방법 3: 전역 변수 adminUser 확인
+            else if (typeof adminUser !== 'undefined' && adminUser) {
+                currentUser = adminUser;
+                currentRole = adminUser.role;
+                console.log('✅ adminUser에서 정보 확인:', currentUser);
+            }
+            // 방법 4: 현재 페이지에 로그인 정보가 있는지 확인
+            else if (window.supabaseClient) {
+                try {
+                    const { data: { session } } = await window.supabaseClient.auth.getSession();
+                    if (session && session.user) {
+                        console.log('✅ Supabase 세션에서 사용자 정보 확인');
+                        // 프로필 정보 조회
+                        const { data: profile } = await window.supabaseClient
+                            .from('profiles')
+                            .select('*')
+                            .eq('id', session.user.id)
+                            .single();
+                        
+                        if (profile) {
+                            currentUser = profile;
+                            currentRole = profile.role;
+                            console.log('✅ 프로필에서 역할 확인:', currentRole);
+                        }
+                    }
+                } catch (error) {
+                    console.error('세션 확인 중 오류:', error);
+                }
+            }
+            
+            if (!currentUser) {
+                showAlert('사용자 정보를 찾을 수 없습니다. 다시 로그인해주세요.', 'error');
+                console.error('❌ 모든 방법으로 사용자 정보를 찾을 수 없음');
+                console.log('디버그 정보:', {
+                    'window.semuApp': !!window.semuApp,
+                    'window.semuApp.currentUser': !!(window.semuApp && window.semuApp.currentUser),
+                    'window.currentUser': !!window.currentUser,
+                    'adminUser': typeof adminUser !== 'undefined' ? !!adminUser : 'undefined',
+                    'window.supabaseClient': !!window.supabaseClient
+                });
+                return;
+            }
+            
+            console.log('현재 사용자 역할:', currentRole);
+            console.log('현재 사용자 정보:', currentUser);
+            
+            if (currentRole !== 'super_admin') {
+                showAlert(`현재 권한: ${currentRole}\n이 기능은 슈퍼관리자(super_admin)만 사용할 수 있습니다.\n\n현재 계정의 역할을 확인해주세요.`, 'error');
+                return;
+            }
+
+            const tempPassword = prompt(`${userEmail} 사용자의 새로운 임시 비밀번호를 입력하세요:`, 'TempPass123!');
+            
+            if (!tempPassword) {
+                return; // 사용자가 취소함
+            }
+
+            if (tempPassword.length < 6) {
+                showAlert('비밀번호는 최소 6자 이상이어야 합니다.', 'error');
+                return;
+            }
+
+            const confirmed = confirm(`정말로 ${userEmail} 사용자의 비밀번호를 리셋하시겠습니까?\n\n새 임시 비밀번호: ${tempPassword}\n\n⚠️ 사용자에게 새 비밀번호를 안전하게 전달해주세요.`);
+            
+            if (!confirmed) {
+                return;
+            }
+
+            try {
+                showAlert('비밀번호를 리셋하고 있습니다...', 'info');
+                
+                // 방법 1: Supabase Admin API 시도
+                let success = false;
+                let errorMessage = '';
+                
+                try {
+                    const { data, error } = await window.supabaseClient.auth.admin.updateUserById(
+                        userId,
+                        { password: tempPassword }
+                    );
+
+                    if (error) {
+                        console.error('Admin API 오류:', error);
+                        errorMessage = error.message;
+                        
+                        // 권한 부족 시 대안 방법 제안 (403 Forbidden 포함)
+                        if (error.message.includes('insufficient privileges') || 
+                            error.message.includes('permission') || 
+                            error.message.includes('Forbidden') ||
+                            error.status === 403) {
+                            
+                            const useEmailReset = confirm(`🔐 Admin API 권한 부족 (Service Role 키 필요)\n\n현재 사용 중인 키: anon 키\n필요한 키: service_role 키\n\n대안 방법:\n1. ✅ 이메일 재설정 링크 발송 (권장)\n2. 🔧 Supabase 대시보드에서 직접 변경\n\n"확인": 이메일 재설정 링크 발송\n"취소": 수동 변경 안내`);
+                            
+                            if (useEmailReset) {
+                                // 이메일 재설정 링크 발송으로 대체
+                                try {
+                                    const { error: emailError } = await window.supabaseClient.auth.resetPasswordForEmail(userEmail, {
+                                        redirectTo: `${window.location.origin}/login.html`
+                                    });
+                                    
+                                    if (emailError) {
+                                        showAlert(`📧 이메일 발송 실패: ${emailError.message}\n\n📋 수동 변경 방법:\n1. https://supabase.com/dashboard 접속\n2. Authentication → Users\n3. ${userEmail} 검색\n4. "Reset Password" 클릭\n5. 새 비밀번호: ${tempPassword}`, 'error');
+                                    } else {
+                                        showAlert(`✅ 비밀번호 재설정 이메일 발송 성공!\n\n📧 발송 대상: ${userEmail}\n📝 안내 사항:\n• 사용자에게 이메일 확인하도록 안내\n• 스팸 폴더도 확인하도록 안내\n• 링크는 1시간 동안 유효\n\n💡 참고: 이메일로 재설정하면 사용자가 직접 새 비밀번호를 설정할 수 있습니다.`, 'success');
+                                        success = true;
+                                    }
+                                } catch (emailError) {
+                                    console.error('이메일 발송 오류:', emailError);
+                                    showAlert(`📧 이메일 발송 중 오류 발생\n\n🔧 수동 변경 방법:\n1. https://supabase.com/dashboard 접속\n2. 프로젝트 선택\n3. Authentication → Users\n4. ${userEmail} 검색\n5. 사용자 클릭 → "Reset Password"\n6. 새 비밀번호 입력: ${tempPassword}\n\n💾 이 정보를 복사해서 사용하세요.`, 'error');
+                                }
+                            } else {
+                                // 수동 변경 안내
+                                showAlert(`🔧 Supabase 대시보드 수동 변경 방법:\n\n1️⃣ 대시보드 접속:\n   https://supabase.com/dashboard\n\n2️⃣ 프로젝트 선택:\n   세무인사이드 프로젝트\n\n3️⃣ 사용자 관리:\n   Authentication → Users → ${userEmail} 검색\n\n4️⃣ 비밀번호 변경:\n   사용자 클릭 → "Reset Password" → ${tempPassword}\n\n📋 새 임시 비밀번호: ${tempPassword}\n\n💡 팁: 이 정보를 복사해서 대시보드에서 사용하세요.`, 'info');
+                                success = true; // 안내 완료로 처리
+                            }
+                            return;
+                        } else {
+                            throw error; // 다른 오류는 catch로 전달
+                        }
+                    } else {
+                        success = true;
+                    }
+                } catch (adminError) {
+                    console.error('Admin API 완전 실패:', adminError);
+                    
+                    // Admin API가 완전히 실패한 경우 대안 제시
+                    const useAlternative = confirm(`❌ Admin API를 사용할 수 없습니다.\n\n대안 방법:\n1. 이메일 재설정 링크 발송\n2. Supabase 대시보드에서 직접 변경\n\n"확인": 이메일 발송 시도\n"취소": 수동 변경 안내`);
+                    
+                    if (useAlternative) {
+                        // 이메일 재설정 시도
+                        try {
+                            const { error: emailError } = await window.supabaseClient.auth.resetPasswordForEmail(userEmail, {
+                                redirectTo: `${window.location.origin}/login.html`
+                            });
+                            
+                            if (emailError) {
+                                showAlert(`이메일 발송 실패: ${emailError.message}`, 'error');
+                            } else {
+                                showAlert(`📧 ${userEmail}로 비밀번호 재설정 링크를 발송했습니다.`, 'success');
+                                success = true;
+                            }
+                        } catch (emailError) {
+                            showAlert('이메일 발송도 실패했습니다. 수동으로 처리해주세요.', 'error');
+                        }
+                    } else {
+                        // 수동 변경 안내
+                        showAlert(`🔧 수동 비밀번호 변경 방법:\n\n1. Supabase 대시보드 접속:\n   https://supabase.com/dashboard\n\n2. Authentication → Users 메뉴\n\n3. ${userEmail} 검색\n\n4. 사용자 클릭 → "Reset Password"\n\n5. 새 비밀번호: ${tempPassword}\n\n이 정보를 복사해서 사용하세요.`, 'info');
+                        success = true; // 안내 완료로 처리
+                    }
+                    return;
+                }
+
+                if (success) {
+                    // 변경 기록 저장
+                    await logPasswordChange(userId, userEmail, 'admin_reset', currentUser);
+                    
+                    showAlert(`✅ ${userEmail} 사용자의 비밀번호가 성공적으로 리셋되었습니다.\n\n임시 비밀번호: ${tempPassword}\n\n사용자에게 안전하게 전달해주세요.`, 'success');
+                }
+                
+            } catch (error) {
+                console.error('비밀번호 리셋 중 예상치 못한 오류:', error);
+                showAlert(`❌ 예상치 못한 오류가 발생했습니다.\n\n오류 내용: ${error.message}\n\n대안:\n1. 브라우저 새로고침 후 재시도\n2. Supabase 대시보드에서 직접 변경\n3. 개발자에게 문의`, 'error');
+            }
+        }
+
+        // 이메일로 비밀번호 리셋
+        async function resetUserPasswordByEmail() {
+            const email = document.getElementById('reset-user-email').value.trim();
+            const newPassword = document.getElementById('new-temp-password').value.trim();
+
+            if (!email || !newPassword) {
+                showAlert('이메일과 새 비밀번호를 모두 입력해주세요.', 'error');
+                return;
+            }
+
+            if (newPassword.length < 6) {
+                showAlert('비밀번호는 최소 6자 이상이어야 합니다.', 'error');
+                return;
+            }
+
+            try {
+                // 사용자 ID 찾기
+                const { data: profiles, error: profileError } = await window.supabaseClient
+                    .from('profiles')
+                    .select('id')
+                    .eq('email', email)
+                    .single();
+
+                if (profileError || !profiles) {
+                    showAlert('해당 이메일의 사용자를 찾을 수 없습니다.', 'error');
+                    return;
+                }
+
+                await resetUserPassword(profiles.id, email);
+                
+                // 폼 리셋
+                document.getElementById('reset-user-email').value = '';
+                document.getElementById('new-temp-password').value = '';
+                
+            } catch (error) {
+                console.error('사용자 조회 오류:', error);
+                showAlert('사용자 조회 중 오류가 발생했습니다.', 'error');
+            }
+        }
+
+        // 랜덤 비밀번호 생성
+        function generateRandomPassword() {
+            const length = 12;
+            const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+            let password = "";
+            
+            for (let i = 0; i < length; i++) {
+                password += charset.charAt(Math.floor(Math.random() * charset.length));
+            }
+            
+            document.getElementById('new-temp-password').value = password;
+            
+            // 생성된 비밀번호를 잠시 표시
+            const input = document.getElementById('new-temp-password');
+            const originalType = input.type;
+            input.type = 'text';
+            
+            setTimeout(() => {
+                input.type = originalType;
+            }, 3000);
+            
+            showAlert('랜덤 비밀번호가 생성되었습니다. 3초 후 숨겨집니다.', 'info');
+        }
+
+        // 비밀번호 재설정 이메일 발송
+        async function sendPasswordResetEmail() {
+            const email = document.getElementById('manage-user-email').value.trim();
+            
+            if (!email) {
+                showAlert('사용자 이메일을 입력해주세요.', 'error');
+                return;
+            }
+
+            try {
+                const { error } = await window.supabaseClient.auth.resetPasswordForEmail(email, {
+                    redirectTo: `${window.location.origin}/login.html`
+                });
+
+                if (error) {
+                    showAlert(`이메일 발송 실패: ${error.message}`, 'error');
+                    return;
+                }
+
+                showAlert(`${email}로 비밀번호 재설정 이메일을 발송했습니다.`, 'success');
+                
+            } catch (error) {
+                console.error('이메일 발송 오류:', error);
+                showAlert('이메일 발송 중 오류가 발생했습니다.', 'error');
+            }
+        }
+
+        // 사용자 계정 정보 조회
+        async function showUserAccountInfo() {
+            const email = document.getElementById('manage-user-email').value.trim();
+            
+            if (!email) {
+                showAlert('사용자 이메일을 입력해주세요.', 'error');
+                return;
+            }
+
+            try {
+                const { data: profile, error } = await window.supabaseClient
+                    .from('profiles')
+                    .select(`
+                        *,
+                        departments (name, code)
+                    `)
+                    .eq('email', email)
+                    .single();
+
+                if (error || !profile) {
+                    showAlert('해당 사용자를 찾을 수 없습니다.', 'error');
+                    return;
+                }
+
+                const infoHtml = `
+                    <div class="user-account-info">
+                        <h6>계정 정보 - ${email}</h6>
+                        <table class="table table-sm">
+                            <tr><td>이름</td><td>${profile.name || '-'}</td></tr>
+                            <tr><td>권한</td><td>${profile.role === 'super_admin' ? '슈퍼관리자' : profile.role === 'admin' ? '관리자' : '일반 사용자'}</td></tr>
+                            <tr><td>부서</td><td>${profile.departments?.name || '미지정'}</td></tr>
+                            <tr><td>입사일</td><td>${profile.hire_date ? new Date(profile.hire_date).toLocaleDateString('ko-KR') : '-'}</td></tr>
+                            <tr><td>가입일</td><td>${new Date(profile.created_at).toLocaleDateString('ko-KR')}</td></tr>
+                            <tr><td>최근 로그인</td><td>${profile.last_login_at ? new Date(profile.last_login_at).toLocaleString('ko-KR') : '기록 없음'}</td></tr>
+                        </table>
+                    </div>
+                `;
+
+                // 기존 정보 영역이 있다면 업데이트, 없다면 추가
+                const existingInfo = document.querySelector('.user-account-info');
+                if (existingInfo) {
+                    existingInfo.outerHTML = infoHtml;
+                } else {
+                    document.querySelector('#password-management-modal .modal-body').insertAdjacentHTML('beforeend', infoHtml);
+                }
+                
+            } catch (error) {
+                console.error('계정 정보 조회 오류:', error);
+                showAlert('계정 정보 조회 중 오류가 발생했습니다.', 'error');
+            }
+        }
+
+        // 계정 잠금 해제 (실제로는 이메일 인증 상태 확인 등)
+        async function unlockUserAccount() {
+            const email = document.getElementById('manage-user-email').value.trim();
+            
+            if (!email) {
+                showAlert('사용자 이메일을 입력해주세요.', 'error');
+                return;
+            }
+
+            // 이 기능은 Supabase의 제한으로 인해 실제 구현이 제한적입니다
+            showAlert('계정 잠금 해제 기능은 Supabase 설정에서 직접 관리해야 합니다.\n\nSupabase 대시보드 → Authentication → Users에서 해당 사용자의 상태를 확인해주세요.', 'info');
+        }
+
+        // 비밀번호 변경 기록 로그
+        async function logPasswordChange(userId, userEmail, changeType, adminUser = null) {
+            try {
+                // 실제 구현에서는 별도의 로그 테이블에 저장
+                console.log(`비밀번호 변경 기록: ${userEmail} (${changeType}) at ${new Date().toISOString()}`);
+                
+                // 관리자 정보 확인
+                let adminInfo = { id: 'unknown', email: 'unknown' };
+                if (adminUser) {
+                    adminInfo = { id: adminUser.id, email: adminUser.email };
+                } else {
+                    // 현재 사용자 정보 찾기
+                    if (window.semuApp && window.semuApp.currentUser) {
+                        adminInfo = { id: window.semuApp.currentUser.id, email: window.semuApp.currentUser.email };
+                    } else if (window.currentUser) {
+                        adminInfo = { id: window.currentUser.id, email: window.currentUser.email };
+                    }
+                }
+                
+                // localStorage에 임시 저장 (실제 서비스에서는 데이터베이스에 저장)
+                const logs = JSON.parse(localStorage.getItem('password_change_logs') || '[]');
+                logs.unshift({
+                    userId,
+                    userEmail,
+                    changeType,
+                    timestamp: new Date().toISOString(),
+                    adminId: adminInfo.id,
+                    adminEmail: adminInfo.email
+                });
+                
+                // 최근 50개만 유지
+                if (logs.length > 50) {
+                    logs.splice(50);
+                }
+                
+                localStorage.setItem('password_change_logs', JSON.stringify(logs));
+                
+            } catch (error) {
+                console.error('비밀번호 변경 기록 저장 오류:', error);
+            }
+        }
+
+        // 비밀번호 변경 기록 로드
+        function loadPasswordChangeLog() {
+            try {
+                const logs = JSON.parse(localStorage.getItem('password_change_logs') || '[]');
+                const logContainer = document.getElementById('password-change-log');
+                
+                if (logs.length === 0) {
+                    logContainer.innerHTML = `
+                        <div class="text-center text-muted">
+                            <i class="fas fa-info-circle"></i> 비밀번호 변경 기록이 없습니다.
+                        </div>
+                    `;
+                    return;
+                }
+
+                const logHtml = `
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>시간</th>
+                                    <th>사용자</th>
+                                    <th>변경 유형</th>
+                                    <th>관리자</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${logs.slice(0, 10).map(log => `
+                                    <tr>
+                                        <td>${new Date(log.timestamp).toLocaleString('ko-KR')}</td>
+                                        <td>${log.userEmail}</td>
+                                        <td>
+                                            <span class="badge ${log.changeType === 'admin_reset' ? 'badge-warning' : 'badge-info'}">
+                                                ${log.changeType === 'admin_reset' ? '관리자 리셋' : '기타'}
+                                            </span>
+                                        </td>
+                                        <td>${log.adminEmail}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                logContainer.innerHTML = logHtml;
+                
+            } catch (error) {
+                console.error('비밀번호 변경 기록 로드 오류:', error);
+                document.getElementById('password-change-log').innerHTML = `
+                    <div class="text-center text-danger">
+                        <i class="fas fa-exclamation-triangle"></i> 기록 로드 중 오류가 발생했습니다.
+                    </div>
+                `;
+            }
+        }
+
+        // 현재 사용자 권한 확인 및 업그레이드
+        async function checkCurrentUserRole() {
+            // 권한 확인 - 여러 방식으로 현재 사용자 정보 확인
+            let currentUser = null;
+            
+            // 방법 1: window.semuApp 확인
+            if (window.semuApp && window.semuApp.currentUser) {
+                currentUser = window.semuApp.currentUser;
+                console.log('✅ semuApp에서 사용자 정보 확인');
+            }
+            // 방법 2: window.currentUser 확인
+            else if (window.currentUser) {
+                currentUser = window.currentUser;
+                console.log('✅ window.currentUser에서 정보 확인');
+            }
+            // 방법 3: 전역 변수 adminUser 확인
+            else if (typeof adminUser !== 'undefined' && adminUser) {
+                currentUser = adminUser;
+                console.log('✅ adminUser에서 정보 확인');
+            }
+            // 방법 4: Supabase 세션에서 직접 확인
+            else if (window.supabaseClient) {
+                try {
+                    console.log('🔍 Supabase 세션에서 사용자 정보 확인 중...');
+                    const { data: { session } } = await window.supabaseClient.auth.getSession();
+                    if (session && session.user) {
+                        const { data: profile } = await window.supabaseClient
+                            .from('profiles')
+                            .select('*')
+                            .eq('id', session.user.id)
+                            .single();
+                        
+                        if (profile) {
+                            currentUser = profile;
+                            console.log('✅ Supabase 세션에서 프로필 확인:', profile);
+                        }
+                    }
+                } catch (error) {
+                    console.error('세션 확인 중 오류:', error);
+                }
+            }
+            
+            if (!currentUser) {
+                showAlert('로그인 정보를 찾을 수 없습니다.\n\n가능한 해결 방법:\n1. 페이지 새로고침\n2. 다시 로그인\n3. 브라우저 캐시 삭제', 'error');
+                console.error('❌ 모든 방법으로 사용자 정보를 찾을 수 없음');
+                return;
+            }
+
+            const user = currentUser;
+            const roleNames = {
+                'employee': '일반 사용자',
+                'admin': '관리자', 
+                'super_admin': '슈퍼관리자'
+            };
+
+            const currentRoleName = roleNames[user.role] || user.role;
+            
+            let message = `📋 현재 계정 정보:\n\n`;
+            message += `이메일: ${user.email}\n`;
+            message += `이름: ${user.name || '미설정'}\n`;
+            message += `권한: ${currentRoleName} (${user.role})\n`;
+            message += `부서: ${user.department || '미지정'}\n`;
+            
+            if (user.role !== 'super_admin') {
+                message += `\n⚠️ 비밀번호 관리 기능을 사용하려면 슈퍼관리자 권한이 필요합니다.\n\n`;
+                message += `권한을 업그레이드하시겠습니까?`;
+                
+                const upgrade = confirm(message);
+                if (upgrade) {
+                    upgradeToSuperAdmin(user.id, user.email);
+                }
+            } else {
+                message += `\n✅ 슈퍼관리자 권한이 있습니다. 모든 기능을 사용할 수 있습니다.`;
+                showAlert(message, 'success');
+            }
+        }
+
+        // 슈퍼관리자 권한으로 업그레이드
+        async function upgradeToSuperAdmin(userId, userEmail) {
+            try {
+                showAlert('권한을 업그레이드하고 있습니다...', 'info');
+                
+                const { data, error } = await window.supabaseClient
+                    .from('profiles')
+                    .update({ role: 'super_admin' })
+                    .eq('id', userId);
+
+                if (error) {
+                    console.error('권한 업그레이드 오류:', error);
+                    showAlert(`권한 업그레이드 실패: ${error.message}\n\n수동으로 데이터베이스에서 변경해주세요:\nUPDATE profiles SET role = 'super_admin' WHERE email = '${userEmail}';`, 'error');
+                    return;
+                }
+
+                // 현재 사용자 정보 업데이트 (가능한 모든 곳에서)
+                if (window.semuApp && window.semuApp.currentUser) {
+                    window.semuApp.currentUser.role = 'super_admin';
+                }
+                if (window.currentUser) {
+                    window.currentUser.role = 'super_admin';
+                }
+                if (typeof adminUser !== 'undefined' && adminUser) {
+                    adminUser.role = 'super_admin';
+                }
+                
+                showAlert(`✅ 권한이 슈퍼관리자로 업그레이드되었습니다!\n\n이제 비밀번호 관리 기능을 사용할 수 있습니다.\n\n페이지를 새로고침합니다...`, 'success');
+                
+                // 페이지 새로고침으로 권한 반영
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+                
+            } catch (error) {
+                console.error('권한 업그레이드 중 오류:', error);
+                showAlert(`권한 업그레이드 중 오류가 발생했습니다.\n\n수동 방법:\n1. Supabase 대시보드 → Database → profiles 테이블\n2. ${userEmail} 계정 찾기\n3. role 컬럼을 'super_admin'으로 변경`, 'error');
+            }
+        }
+
+        // ========================================
+        // 비밀번호 관리 기능 끝
+        // ========================================
     </script>
 </body>
 </html>

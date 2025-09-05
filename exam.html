@@ -601,11 +601,12 @@
         </div>
     </div>
 
-    <!-- Supabase -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
+    <!-- Supabase - 동적 로드 방식으로 변경 -->
     
     <!-- 공통 스크립트 -->
     <script src="./assets/js/common.js"></script>
+    <script src="./js/config.js"></script>
+    <script src="./js/point-reward.js"></script>
     
     <script>
         // 시험 응시 페이지 전용 스크립트
@@ -798,6 +799,9 @@
                     console.log('✅ 시험 데이터 로드 완료:', this.examData.title);
                     console.log('📋 문제 수:', questions.length);
                     
+                    // 포인트 매니저 초기화 (시험 데이터 로드 후)
+                    await this.initializePointManager();
+                    
                 } catch (error) {
                     console.error('❌ 시험 데이터 로드 실패:', error);
                     
@@ -810,6 +814,32 @@
                     } else {
                         alert('시험 데이터를 불러올 수 없습니다. 다시 시도해주세요.');
                     }
+                }
+            }
+
+            async initializePointManager() {
+                try {
+                    console.log('🎯 포인트 매니저 초기화 시작...');
+                    
+                    // PointRewardManager 클래스 확인
+                    if (typeof PointRewardManager === 'undefined') {
+                        console.warn('⚠️ PointRewardManager 클래스를 찾을 수 없음');
+                        return;
+                    }
+                    
+                    // GPT_CONFIG 확인
+                    if (typeof GPT_CONFIG === 'undefined') {
+                        console.warn('⚠️ GPT_CONFIG가 정의되지 않음');
+                        return;
+                    }
+                    
+                    // 포인트 매니저 인스턴스 생성
+                    window.pointRewardManager = new PointRewardManager();
+                    console.log('✅ 포인트 매니저 초기화 완료');
+                    
+                } catch (error) {
+                    console.error('❌ 포인트 매니저 초기화 실패:', error);
+                    // 포인트 매니저 실패는 시험 진행에 영향주지 않도록 함
                 }
             }
 
@@ -1726,9 +1756,9 @@
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('📚 시험 페이지 DOM 로드 완료');
             
-            // Supabase 초기화 대기
+            // Supabase 초기화 대기 (개선된 로직)
             let attempts = 0;
-            const maxAttempts = 50;
+            const maxAttempts = 25; // 대기 시간 단축 (5초)
             
             while (attempts < maxAttempts && (!window.semuApp || !window.supabaseClient)) {
                 console.log('⏳ Supabase 초기화 대기 중...', attempts);
@@ -1740,8 +1770,39 @@
                 console.log('✅ Supabase 초기화 완료, 시험 페이지 생성');
                 examPage = new ExamPage();
             } else {
-                console.error('❌ Supabase 초기화 실패');
-                alert('시스템 초기화에 실패했습니다. 페이지를 새로고침해주세요.');
+                console.warn('⚠️ Supabase 초기화 타임아웃, 기본 모드로 시험 시작');
+                
+                // 기본 모드로 시험 페이지 생성 (mock 데이터 사용)
+                try {
+                    // 최소한의 mock semuApp 생성
+                    if (!window.semuApp) {
+                        window.semuApp = {
+                            currentUser: { id: 'mock-user', email: 'test@example.com' },
+                            supabaseClient: null
+                        };
+                    }
+                    
+                    // mock supabaseClient 생성
+                    if (!window.supabaseClient) {
+                        window.supabaseClient = {
+                            auth: {
+                                getUser: async () => ({ data: { user: { id: 'mock-user', email: 'test@example.com' } }, error: null }),
+                                getSession: async () => ({ data: { session: { user: { id: 'mock-user' } } }, error: null })
+                            },
+                            from: (table) => ({
+                                select: () => ({ eq: () => ({ single: async () => ({ data: null, error: new Error('Mock mode') }) }) }),
+                                insert: () => ({ error: new Error('Mock mode') }),
+                                update: () => ({ eq: () => ({ error: new Error('Mock mode') }) })
+                            })
+                        };
+                    }
+                    
+                    console.log('🧪 Mock 모드로 시험 페이지 생성');
+                    examPage = new ExamPage();
+                } catch (error) {
+                    console.error('❌ Mock 모드 초기화 실패:', error);
+                    alert('시스템 초기화에 실패했습니다. 페이지를 새로고침해주세요.');
+                }
             }
         });
 

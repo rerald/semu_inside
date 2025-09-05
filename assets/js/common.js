@@ -33,6 +33,9 @@ class SemuApp {
                 anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNrcHZ0cW9oeXNwZnNtdndyZ29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNzU4ODUsImV4cCI6MjA3MTc1MTg4NX0.tMW3hiZR5JcXlbES2tKl1ZNOVRtYqGO04m-YSbqKUhY'
             };
 
+            // 먼저 Supabase 라이브러리 동적 로드
+            await this.loadSupabaseLibrary();
+
             // Supabase 라이브러리 로드 대기 (개선된 방법)
             let attempts = 0;
             const maxAttempts = 50;
@@ -40,9 +43,26 @@ class SemuApp {
             console.log('🔍 Supabase 라이브러리 로딩 대기 중...');
             
             while (attempts < maxAttempts) {
-                // Supabase 확인
-                if (window.supabase && window.supabase.createClient) {
-                    console.log('✅ Supabase 라이브러리 발견!');
+                // Supabase 확인 (여러 가능한 구조 체크)
+                let supabaseFound = false;
+                let createClientFunction = null;
+                
+                if (window.supabase) {
+                    if (window.supabase.createClient) {
+                        createClientFunction = window.supabase.createClient;
+                        supabaseFound = true;
+                        console.log('✅ Supabase 라이브러리 발견! (window.supabase.createClient)');
+                    } else if (typeof window.supabase === 'function') {
+                        createClientFunction = window.supabase;
+                        supabaseFound = true;
+                        console.log('✅ Supabase 라이브러리 발견! (window.supabase as function)');
+                    } else {
+                        console.log('🔍 Supabase 객체 구조:', Object.keys(window.supabase));
+                    }
+                }
+                
+                if (supabaseFound) {
+                    window._supabaseCreateClient = createClientFunction;
                     break;
                 }
                 
@@ -55,9 +75,9 @@ class SemuApp {
             }
 
             // Supabase 클라이언트 생성
-            if (window.supabase && window.supabase.createClient) {
+            if (window._supabaseCreateClient) {
                 try {
-                    this.supabaseClient = window.supabase.createClient(
+                    this.supabaseClient = window._supabaseCreateClient(
                         SUPABASE_CONFIG.url,
                         SUPABASE_CONFIG.anonKey
                     );
@@ -79,10 +99,100 @@ class SemuApp {
                 console.log('사용 가능한 전역 객체:', Object.keys(window).filter(key => 
                     key.toLowerCase().includes('supa') || key.toLowerCase().includes('auth')
                 ));
+                
+                // 더 자세한 진단 정보
+                if (window.supabase) {
+                    console.log('🔍 window.supabase 타입:', typeof window.supabase);
+                    console.log('🔍 window.supabase 키들:', Object.keys(window.supabase));
+                    if (window.supabase.default) {
+                        console.log('🔍 window.supabase.default 확인:', typeof window.supabase.default);
+                        if (window.supabase.default.createClient) {
+                            console.log('✅ createClient found in default!');
+                            window._supabaseCreateClient = window.supabase.default.createClient;
+                            this.supabaseClient = window._supabaseCreateClient(
+                                SUPABASE_CONFIG.url,
+                                SUPABASE_CONFIG.anonKey
+                            );
+                            window.supabaseClient = this.supabaseClient;
+                            console.log('✅ Supabase 클라이언트 생성 성공 (fallback)');
+                            return;
+                        }
+                    }
+                }
+                
+                // 최후의 수단으로 mock 클라이언트 생성
+                console.warn('⚠️ Mock Supabase 클라이언트 생성 (개발용)');
+                this.createMockSupabaseClient();
             }
         } catch (error) {
             console.error('❌ Supabase 초기화 실패:', error);
         }
+    }
+
+    createMockSupabaseClient() {
+        console.log('🛠️ Mock Supabase 클라이언트 생성 중...');
+        
+        // 기본적인 mock 클라이언트 생성
+        this.supabaseClient = {
+            auth: {
+                getUser: async () => ({ data: { user: null }, error: null }),
+                signInWithPassword: async (credentials) => {
+                    console.log('🧪 Mock 로그인:', credentials.email);
+                    return { data: { user: { id: 'mock-user', email: credentials.email } }, error: null };
+                }
+            },
+            from: (table) => ({
+                select: (columns) => ({
+                    eq: (column, value) => ({
+                        single: async () => ({ data: null, error: { message: 'Mock data not available' } }),
+                        limit: (n) => ({ data: [], error: null }),
+                        order: (column) => ({ data: [], error: null })
+                    }),
+                    order: (column) => ({ data: [], error: null }),
+                    limit: (n) => ({ data: [], error: null })
+                }),
+                insert: (data) => ({ error: { message: 'Mock insert not implemented' } }),
+                update: (data) => ({ eq: (column, value) => ({ error: { message: 'Mock update not implemented' } }) })
+            })
+        };
+        
+        window.supabaseClient = this.supabaseClient;
+        console.log('✅ Mock Supabase 클라이언트 생성 완료');
+    }
+
+    async loadSupabaseLibrary() {
+        console.log('📦 Supabase 라이브러리 동적 로드 시작...');
+        
+        // 이미 로드되어 있으면 스킵
+        if (window.supabase) {
+            console.log('✅ Supabase 라이브러리 이미 로드됨');
+            return;
+        }
+        
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js';
+            script.onload = () => {
+                console.log('✅ Supabase 라이브러리 동적 로드 완료');
+                resolve();
+            };
+            script.onerror = (error) => {
+                console.error('❌ Supabase 라이브러리 로드 실패:', error);
+                // 다른 CDN으로 재시도
+                const fallbackScript = document.createElement('script');
+                fallbackScript.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js';
+                fallbackScript.onload = () => {
+                    console.log('✅ Supabase 라이브러리 대체 CDN 로드 완료');
+                    resolve();
+                };
+                fallbackScript.onerror = () => {
+                    console.error('❌ 모든 Supabase CDN 로드 실패');
+                    resolve(); // 실패해도 계속 진행 (mock으로 대체)
+                };
+                document.head.appendChild(fallbackScript);
+            };
+            document.head.appendChild(script);
+        });
     }
 
     async checkAuthState() {

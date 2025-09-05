@@ -145,6 +145,116 @@
             white-space: nowrap;
         }
 
+        /* 포인트 섹션 스타일 */
+        .points-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .points-card {
+            background: linear-gradient(135deg, #fff8e1, #fffaf0);
+            border: 1px solid #ffc107;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 3px 15px rgba(255, 193, 7, 0.2);
+            transition: transform 0.2s ease;
+        }
+
+        .points-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255, 193, 7, 0.3);
+        }
+
+        .points-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #f57c00;
+            margin-bottom: 5px;
+        }
+
+        .points-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+            font-weight: 500;
+        }
+
+        .points-history {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e9ecef;
+            overflow: hidden;
+        }
+
+        .points-history-header {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            padding: 15px 20px;
+            border-bottom: 1px solid #dee2e6;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .points-history-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .points-history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            border-bottom: 1px solid #f8f9fa;
+            transition: background-color 0.2s ease;
+        }
+
+        .points-history-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .points-history-item:last-child {
+            border-bottom: none;
+        }
+
+        .history-info {
+            flex: 1;
+        }
+
+        .history-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 3px;
+        }
+
+        .history-date {
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+
+        .history-points {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #28a745;
+        }
+
+        .history-points.negative {
+            color: #dc3545;
+        }
+
+        .no-points-data {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6c757d;
+        }
+
+        .no-points-data i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
         /* 반응형 디자인 */
         @media (max-width: 768px) {
             .profile-layout {
@@ -157,6 +267,16 @@
             }
             
             .category-performance {
+                grid-template-columns: 1fr;
+            }
+
+            .points-summary {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .points-summary {
                 grid-template-columns: 1fr;
             }
         }
@@ -218,11 +338,27 @@
                                 <div class="stat-number" id="ranking">-</div>
                                 <div class="stat-label">전체 순위</div>
                             </div>
+                            <div class="stat-box" style="background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 193, 7, 0.2)); border: 1px solid rgba(255, 215, 0, 0.3);">
+                                <div class="stat-number" id="totalPoints" style="color: #ffc107;">-</div>
+                                <div class="stat-label">🎯 총 포인트</div>
+                            </div>
                         </div>
                     </div>
 
                     <!-- 우측 메인 영역 (80%) -->
                     <div class="profile-main">
+                        <!-- 포인트 획득 내역 섹션 -->
+                        <div class="points-section" style="margin-bottom: 40px;">
+                            <h2 style="margin-bottom: 20px; color: #2c3e50;">🎯 포인트 획득 내역</h2>
+                            <div class="points-summary" id="pointsSummary">
+                                <!-- 포인트 요약 정보가 여기에 표시됩니다 -->
+                            </div>
+                            <div class="points-history" id="pointsHistory">
+                                <!-- 최근 포인트 획득 내역이 여기에 표시됩니다 -->
+                            </div>
+                        </div>
+
+                        <!-- 카테고리별 성과 섹션 -->
                         <h2 style="margin-bottom: 30px; color: #2c3e50;">📊 카테고리별 성과</h2>
                         <div class="category-performance" id="categoryPerformance">
                             <!-- 카테고리별 성과 데이터가 여기에 표시됩니다 -->
@@ -256,9 +392,10 @@
                 // 사용자 정보 로드
                 this.loadUserProfile();
                 
-                // 통계 정보와 카테고리별 성과를 병렬로 로드
+                // 통계 정보, 포인트 정보, 카테고리별 성과를 병렬로 로드
                 await Promise.all([
                     this.loadUserStats(),
+                    this.loadPointsData(),
                     this.loadCategoryPerformance()
                 ]);
                 
@@ -299,6 +436,46 @@
                 console.log('✅ 사용자 인증 확인됨:', window.semuApp.currentUser.email);
                 console.log('✅ 사용자 정보:', window.semuApp.currentUser);
                 return true;
+            }
+
+            async loadPointsData() {
+                try {
+                    console.log('🎯 포인트 정보 로드 시작');
+                    
+                    const userId = window.semuApp.currentUser.id;
+                    
+                    // 사용자의 포인트 정보 조회
+                    const { data: userPoints, error: pointsError } = await window.semuApp.supabaseClient
+                        .from('user_points')
+                        .select('*')
+                        .eq('user_id', userId)
+                        .single();
+
+                    if (pointsError) {
+                        console.log('⚠️ 포인트 정보 없음 또는 오류:', pointsError);
+                        this.showNoPointsData();
+                        return;
+                    }
+
+                    console.log('✅ 포인트 정보 로드됨:', userPoints);
+
+                    // 좌측 사이드바에 총 포인트 표시
+                    const totalPointsElement = document.getElementById('totalPoints');
+                    if (totalPointsElement && userPoints) {
+                        totalPointsElement.textContent = userPoints.points || 0;
+                        console.log('✅ 총 포인트 업데이트:', userPoints.points);
+                    }
+
+                    // 포인트 요약 카드 렌더링
+                    this.renderPointsSummary(userPoints);
+
+                    // 포인트 획득 내역 조회 및 렌더링
+                    await this.loadPointsHistory();
+
+                } catch (error) {
+                    console.error('❌ 포인트 정보 로드 실패:', error);
+                    this.showNoPointsData();
+                }
             }
 
             async loadUserStats() {
@@ -588,9 +765,11 @@
                         console.log(`🏆 ${userStats.name} 순위: ${userRank}/${totalUsers}`);
 
                         if (userRank > 0 && totalUsers > 0) {
+                            // 올바른 상위 백분위 계산: 상위 몇 % = (순위 / 전체) * 100
                             const rankPercent = Math.round((userRank / totalUsers) * 100);
-                            userStats.rankPercent = rankPercent;
-                            console.log(`🏆 ${userStats.name} 상위: ${rankPercent}%`);
+                            // 백분위가 100%를 초과하지 않도록 제한
+                            userStats.rankPercent = Math.min(rankPercent, 100);
+                            console.log(`🏆 ${userStats.name} 상위: ${userStats.rankPercent}% (${userRank}등/${totalUsers}명)`);
                         } else {
                             userStats.rankPercent = 100; // 데이터가 없거나 오류 시 100%
                             console.log(`⚠️ ${userStats.name} 순위 계산 실패, 기본값 100% 설정`);
@@ -658,6 +837,180 @@
                         <div style="color: #adb5bd; font-size: 0.9rem;">시험을 응시하면 여기에 카테고리별 성과가 표시됩니다.</div>
                     </div>
                 `;
+            }
+
+            renderPointsSummary(userPoints) {
+                const container = document.getElementById('pointsSummary');
+                if (!container) return;
+
+                const totalPoints = userPoints?.points || 0;
+                const examPoints = userPoints?.exam_points || 0;
+                const bonusPoints = userPoints?.bonus_points || 0;
+                const usedPoints = userPoints?.used_points || 0;
+
+                container.innerHTML = `
+                    <div class="points-card">
+                        <div class="points-value">${totalPoints}</div>
+                        <div class="points-label">총 보유 포인트</div>
+                    </div>
+                    <div class="points-card">
+                        <div class="points-value">${examPoints}</div>
+                        <div class="points-label">시험 획득 포인트</div>
+                    </div>
+                    <div class="points-card">
+                        <div class="points-value">${bonusPoints}</div>
+                        <div class="points-label">보너스 포인트</div>
+                    </div>
+                    <div class="points-card">
+                        <div class="points-value">${usedPoints}</div>
+                        <div class="points-label">사용한 포인트</div>
+                    </div>
+                `;
+
+                console.log('✅ 포인트 요약 카드 렌더링 완료');
+            }
+
+            async loadPointsHistory() {
+                try {
+                    console.log('📋 포인트 내역 로드 시작');
+                    
+                    const userId = window.semuApp.currentUser.id;
+                    
+                    // 포인트 히스토리 조회 (최근 20개)
+                    const { data: pointsHistory, error: historyError } = await window.semuApp.supabaseClient
+                        .from('point_transactions')
+                        .select('*')
+                        .eq('user_id', userId)
+                        .order('created_at', { ascending: false })
+                        .limit(20);
+
+                    if (historyError) {
+                        console.log('⚠️ 포인트 내역 조회 실패:', historyError);
+                        this.renderEmptyPointsHistory();
+                        return;
+                    }
+
+                    console.log('✅ 포인트 내역 로드됨:', pointsHistory);
+                    this.renderPointsHistory(pointsHistory || []);
+
+                } catch (error) {
+                    console.error('❌ 포인트 내역 로드 실패:', error);
+                    this.renderEmptyPointsHistory();
+                }
+            }
+
+            renderPointsHistory(historyData) {
+                const container = document.getElementById('pointsHistory');
+                if (!container) return;
+
+                if (!historyData || historyData.length === 0) {
+                    this.renderEmptyPointsHistory();
+                    return;
+                }
+
+                let historyHtml = `
+                    <div class="points-history-header">
+                        <i class="fas fa-history"></i> 최근 포인트 활동
+                    </div>
+                    <div class="points-history-list">
+                `;
+
+                historyData.forEach(item => {
+                    const date = new Date(item.created_at).toLocaleString('ko-KR', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+
+                    const pointsClass = item.amount >= 0 ? '' : 'negative';
+                    const pointsText = item.amount >= 0 ? `+${item.amount}` : `${item.amount}`;
+                    const typeIcon = this.getPointsTypeIcon(item.transaction_type);
+
+                    historyHtml += `
+                        <div class="points-history-item">
+                            <div class="history-info">
+                                <div class="history-title">
+                                    ${typeIcon} ${item.description || this.getPointsTypeDescription(item.transaction_type)}
+                                </div>
+                                <div class="history-date">${date}</div>
+                            </div>
+                            <div class="history-points ${pointsClass}">${pointsText}</div>
+                        </div>
+                    `;
+                });
+
+                historyHtml += `
+                    </div>
+                `;
+
+                container.innerHTML = historyHtml;
+                console.log(`✅ 포인트 내역 ${historyData.length}개 렌더링 완료`);
+            }
+
+            renderEmptyPointsHistory() {
+                const container = document.getElementById('pointsHistory');
+                if (!container) return;
+
+                container.innerHTML = `
+                    <div class="points-history">
+                        <div class="points-history-header">
+                            <i class="fas fa-history"></i> 최근 포인트 활동
+                        </div>
+                        <div class="no-points-data">
+                            <i class="fas fa-coins"></i>
+                            <div style="font-size: 1.1rem; margin-bottom: 5px;">아직 포인트 활동이 없습니다.</div>
+                            <div style="font-size: 0.9rem; color: #adb5bd;">시험을 응시하여 포인트를 획득해보세요!</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            showNoPointsData() {
+                // 좌측 사이드바 포인트 표시
+                const totalPointsElement = document.getElementById('totalPoints');
+                if (totalPointsElement) {
+                    totalPointsElement.textContent = '0';
+                }
+
+                // 포인트 요약 카드
+                this.renderPointsSummary(null);
+
+                // 포인트 히스토리
+                this.renderEmptyPointsHistory();
+
+                console.log('✅ 포인트 데이터 없음 상태 표시 완료');
+            }
+
+            getPointsTypeIcon(type) {
+                const icons = {
+                    'earn': '🎯',
+                    'spend': '🛒',
+                    'exam_completion': '📝',
+                    'perfect_score': '🎯',
+                    'daily_bonus': '🎁',
+                    'streak_bonus': '🔥',
+                    'achievement': '🏆',
+                    'purchase': '🛒',
+                    'admin_adjustment': '⚙️'
+                };
+                return icons[type] || '🎯';
+            }
+
+            getPointsTypeDescription(type) {
+                const descriptions = {
+                    'earn': '포인트 획득',
+                    'spend': '포인트 사용',
+                    'exam_completion': '시험 완료',
+                    'perfect_score': '만점 보너스',
+                    'daily_bonus': '일일 보너스',
+                    'streak_bonus': '연속 달성',
+                    'achievement': '업적 달성',
+                    'purchase': '아이템 구매',
+                    'admin_adjustment': '관리자 조정'
+                };
+                return descriptions[type] || '포인트 활동';
             }
 
             loadUserProfile() {

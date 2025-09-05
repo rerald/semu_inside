@@ -776,6 +776,28 @@ class ExamManager {
                 throw updateError;
             }
 
+            // 포인트 지급 로직 추가
+            try {
+                console.log('🎯 포인트 지급 시작...');
+                const userId = this.currentSession.employee_id;
+                
+                if (window.pointRewardManager && userId) {
+                    const pointBreakdown = await window.pointRewardManager.calculateAndAwardPoints(
+                        userId, 
+                        this.currentSession.id
+                    );
+                    
+                    // 포인트 지급 결과 저장 (나중에 결과 페이지에서 표시)
+                    sessionStorage.setItem('examPointReward', JSON.stringify(pointBreakdown));
+                    console.log('✅ 포인트 지급 완료:', pointBreakdown);
+                } else {
+                    console.warn('⚠️ 포인트 매니저 또는 사용자 ID가 없음');
+                }
+            } catch (pointError) {
+                console.error('❌ 포인트 지급 실패:', pointError);
+                // 포인트 지급 실패해도 시험 완료는 정상 처리
+            }
+
         } catch (error) {
             console.error('Calculate total score error:', error);
         }

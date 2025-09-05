@@ -71,6 +71,45 @@ const GPT_CONFIG = {
         위 기준에 따라 평가해주세요.`
     }
     ,
+    
+    // 포인트 지급 설정
+    pointRewardConfig: {
+        // 문제별 포인트 지급
+        perQuestion: {
+            correct: 100,        // 문제 정답 시: 100포인트
+            incorrect: 0         // 문제 오답 시: 0포인트
+        },
+        
+        // 시험 완료 보너스
+        examCompletion: {
+            bonus: 200,          // 시험 완료 시: 200포인트
+            passingBonus: 300    // 합격 시 추가: 300포인트 (총 500포인트)
+        },
+        
+        // 난이도별 추가 포인트
+        difficultyBonus: {
+            1: 0,    // 쉬움: 추가 없음
+            2: 10,   // 보통: +10포인트
+            3: 25,   // 어려움: +25포인트
+            4: 50,   // 매우 어려움: +50포인트
+            5: 100   // 최고 난이도: +100포인트
+        },
+        
+        // 연속 정답 보너스
+        streakBonus: {
+            5: 50,   // 5연속 정답: +50포인트
+            10: 150, // 10연속 정답: +150포인트
+            15: 300  // 15연속 정답: +300포인트
+        },
+        
+        // 시간 보너스 (남은 시간 비율에 따라)
+        timeBonus: {
+            enabled: true,
+            maxBonus: 200,      // 최대 200포인트
+            threshold: 0.5      // 50% 이상 시간 남았을 때 보너스
+        }
+    },
+    
     // 문제 생성 프롬프트 설정
     generationPrompt: {
         system: `당신은 세무/회계 교육용 문제를 만드는 전문 출제자입니다.
@@ -356,3 +395,7 @@ window.examTimer = null;
 
 // 초기화가 완료되었는지 확인하는 플래그
 window.appInitialized = false;
+
+// 전역에서 접근 가능하도록 설정 객체 할당
+window.SUPABASE_CONFIG = SUPABASE_CONFIG;
+window.GPT_CONFIG = GPT_CONFIG;
