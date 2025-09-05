@@ -1916,8 +1916,16 @@
 
             async displayPointsInfo() {
                 try {
-                    // sessionStorage에서 포인트 정보 가져오기
-                    const pointRewardData = sessionStorage.getItem('examPointReward');
+                                    // sessionStorage에서 포인트 정보 가져오기 (시험별 고유 키)
+                const examId = this.examData.sessionId || this.examData.examId || 'default';
+                const pointStorageKey = `examPointReward_${examId}`;
+                const pointRewardData = sessionStorage.getItem(pointStorageKey);
+                
+                console.log('🔍 포인트 캐시 확인:', {
+                    examId: examId,
+                    storageKey: pointStorageKey,
+                    hasCache: !!pointRewardData
+                });
                     const earnedPointsElement = document.getElementById('earnedPointsDisplay');
                     const pointsBreakdownElement = document.getElementById('pointsBreakdown');
                     
@@ -2009,7 +2017,9 @@
                             
                             // sessionStorage에 저장 완료 표시
                             pointBreakdown.dbSaved = true;
-                            sessionStorage.setItem('examPointReward', JSON.stringify(pointBreakdown));
+                            const examId = this.examData.sessionId || this.examData.examId || 'default';
+                            const pointStorageKey = `examPointReward_${examId}`;
+                            sessionStorage.setItem(pointStorageKey, JSON.stringify(pointBreakdown));
                         }
                     } else {
                         console.warn('⚠️ 포인트 적립 조건 미충족:', {
@@ -2031,8 +2041,15 @@
                     let totalPoints = 0;
                     let breakdown = [];
                     
-                    // 1. 문제 정답 포인트 (100점 per correct answer)
-                    const questionPoints = correctAnswers * 100;
+                    // 1. 문제 정답 포인트 (정답 1개당 10점)
+                    console.log('🔍 포인트 계산 상세:', {
+                        correctAnswers: correctAnswers,
+                        totalQuestions: this.totalQuestions || this.total,
+                        score: this.score,
+                        percentage: this.examData.percentage
+                    });
+                    
+                    const questionPoints = correctAnswers * 10;  // 정답 1개당 10점
                     totalPoints += questionPoints;
                     breakdown.push(`문제 정답: +${questionPoints}P`);
                     
@@ -2064,7 +2081,9 @@
                         timeBonus: 0,
                         autoCalculated: true
                     };
-                    sessionStorage.setItem('examPointReward', JSON.stringify(pointData));
+                    const examId = this.examData.sessionId || this.examData.examId || 'default';
+                    const pointStorageKey = `examPointReward_${examId}`;
+                    sessionStorage.setItem(pointStorageKey, JSON.stringify(pointData));
                     
                     console.log('✅ 포인트 자동 계산 완료:', pointData);
                     
