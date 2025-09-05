@@ -1034,18 +1034,33 @@
                     return aCompleted ? 1 : -1; // 미응시(-1)가 응시완료(1)보다 우선
                 }
                 
-                // 2순위: 최신순 정렬 (created_at 기준)
-                const aDate = new Date(a.created_at);
-                const bDate = new Date(b.created_at);
-                return bDate - aDate; // 최신순 (내림차순)
+                // 2순위: 최신순 정렬
+                if (aCompleted && bCompleted) {
+                    // 둘 다 완료된 경우: 응시 완료 시간 기준 최신순
+                    const aSubmittedAt = new Date(aSession.submitted_at || aSession.created_at);
+                    const bSubmittedAt = new Date(bSession.submitted_at || bSession.created_at);
+                    return bSubmittedAt - aSubmittedAt; // 최신순 (내림차순)
+                } else {
+                    // 미응시인 경우: 시험 생성 시간 기준 최신순
+                    const aDate = new Date(a.created_at);
+                    const bDate = new Date(b.created_at);
+                    return bDate - aDate; // 최신순 (내림차순)
+                }
             });
             
-            console.log('📊 정렬된 시험 목록:', sortedPermissions.map(exam => ({
-                title: exam.title,
-                id: exam.id.substring(0, 8),
-                completed: !!exam.exam_sessions?.find(s => s.employee_id === user.id && s.status === 'submitted'),
-                created_at: exam.created_at
-            })));
+            console.log('📊 정렬된 시험 목록:', sortedPermissions.map(exam => {
+                const userSession = exam.exam_sessions?.find(s => s.employee_id === user.id);
+                return {
+                    title: exam.title,
+                    id: exam.id.substring(0, 8),
+                    completed: !!userSession && userSession.status === 'submitted',
+                    created_at: exam.created_at,
+                    submitted_at: userSession?.submitted_at,
+                    sort_key: userSession?.status === 'submitted' 
+                        ? userSession.submitted_at || userSession.created_at
+                        : exam.created_at
+                };
+            }));
 
             const examsHtml = sortedPermissions.map(exam => {
                 const questionCount = exam.exam_questions?.[0]?.count || 0;
