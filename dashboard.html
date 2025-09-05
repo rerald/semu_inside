@@ -1021,7 +1021,33 @@
                 return;
             }
 
-            const examsHtml = permissions.map(exam => {
+            // 🎯 시험 정렬: 1) 미응시 시험 상단, 2) 최신순
+            const sortedPermissions = permissions.sort((a, b) => {
+                const aSession = a.exam_sessions?.find(s => s.employee_id === user.id);
+                const bSession = b.exam_sessions?.find(s => s.employee_id === user.id);
+                
+                // 1순위: 미응시 시험 우선 (응시하지 않은 시험이 상단에)
+                const aCompleted = aSession?.status === 'submitted';
+                const bCompleted = bSession?.status === 'submitted';
+                
+                if (aCompleted !== bCompleted) {
+                    return aCompleted ? 1 : -1; // 미응시(-1)가 응시완료(1)보다 우선
+                }
+                
+                // 2순위: 최신순 정렬 (created_at 기준)
+                const aDate = new Date(a.created_at);
+                const bDate = new Date(b.created_at);
+                return bDate - aDate; // 최신순 (내림차순)
+            });
+            
+            console.log('📊 정렬된 시험 목록:', sortedPermissions.map(exam => ({
+                title: exam.title,
+                id: exam.id.substring(0, 8),
+                completed: !!exam.exam_sessions?.find(s => s.employee_id === user.id && s.status === 'submitted'),
+                created_at: exam.created_at
+            })));
+
+            const examsHtml = sortedPermissions.map(exam => {
                 const questionCount = exam.exam_questions?.[0]?.count || 0;
                 const userSession = exam.exam_sessions?.find(s => s.employee_id === user.id);
                 
