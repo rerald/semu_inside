@@ -98,6 +98,9 @@ class AvatarManager {
             }
 
             this.avatars = avatars || [];
+            
+            // 아바타 보유 현황 로드
+            await this.loadAvatarOwnership();
             console.log(`✅ 아바타 ${this.avatars.length}개 로드됨`);
             
             this.renderAvatars();
@@ -110,6 +113,38 @@ class AvatarManager {
         } catch (error) {
             console.error('아바타 목록 로드 실패:', error);
             this.showError('아바타 목록을 불러오는데 실패했습니다: ' + error.message);
+        }
+    }
+
+    // 아바타 보유 현황 조회
+    async loadAvatarOwnership() {
+        try {
+            console.log('🔄 아바타 보유 현황 로딩 중...');
+            
+            // 각 아바타별 보유자 수 조회
+            for (let avatar of this.avatars) {
+                console.log(`🔍 아바타 "${avatar.name}" (ID: ${avatar.id}) 보유자 조회 중...`);
+                
+                const { data: owners, error } = await this.supabaseClient
+                    .from('user_avatars')
+                    .select('id, user_id, purchased_at, created_at, is_active, profiles(name, email)')
+                    .eq('avatar_item_id', avatar.id);
+                
+                if (error) {
+                    console.warn(`⚠️ 아바타 ${avatar.name} 보유 현황 조회 실패:`, error);
+                    avatar.owners = [];
+                    avatar.ownerCount = 0;
+                } else {
+                    avatar.owners = owners || [];
+                    avatar.ownerCount = owners ? owners.length : 0;
+                    console.log(`✅ 아바타 "${avatar.name}" 보유자 ${avatar.ownerCount}명:`, owners);
+                }
+            }
+            
+            console.log('✅ 아바타 보유 현황 로드 완료');
+            console.log('📊 전체 아바타 보유 현황:', this.avatars.map(a => ({ name: a.name, ownerCount: a.ownerCount })));
+        } catch (error) {
+            console.error('❌ 아바타 보유 현황 로드 실패:', error);
         }
     }
 
@@ -167,6 +202,9 @@ class AvatarManager {
                     <div class="avatar-meta">
                         <div class="avatar-price">${avatar.price.toLocaleString()} 포인트</div>
                         <div class="avatar-rarity rarity-${avatar.rarity}">${this.getRarityText(avatar.rarity)}</div>
+                        <div class="avatar-ownership">
+                            <i class="fas fa-users"></i> 보유자: ${avatar.ownerCount || 0}명
+                        </div>
                     </div>
                     <div class="avatar-actions">
                         <button class="btn btn-primary btn-sm" onclick="avatarManager.editAvatar('${avatar.id}')">
@@ -174,6 +212,9 @@ class AvatarManager {
                         </button>
                         <button class="btn btn-info btn-sm" onclick="avatarManager.previewInShop('${avatar.id}')" title="아바타 상점에서 미리보기">
                             <i class="fas fa-store"></i> 상점
+                        </button>
+                        <button class="btn btn-success btn-sm" onclick="avatarManager.showOwners('${avatar.id}')" title="보유자 목록 보기">
+                            <i class="fas fa-users"></i> 보유자
                         </button>
                         <button class="btn btn-danger btn-sm" onclick="avatarManager.showDeleteModal('${avatar.id}')">
                             <i class="fas fa-trash"></i> 삭제
@@ -220,6 +261,160 @@ class AvatarManager {
             'legendary': '전설'
         };
         return rarityMap[rarity] || rarity;
+    }
+
+    // 보유자 목록 모달 표시
+    showOwners(avatarId) {
+        console.log('🔍 showOwners 호출됨, avatarId:', avatarId);
+        
+        const avatar = this.avatars.find(a => a.id === avatarId);
+        if (!avatar) {
+            console.error('❌ 아바타를 찾을 수 없습니다:', avatarId);
+            return;
+        }
+        
+        console.log('✅ 아바타 찾음:', avatar.name);
+        console.log('📊 보유자 데이터:', avatar.owners);
+        console.log('📊 보유자 수:', avatar.ownerCount);
+        
+        const owners = avatar.owners || [];
+        
+        let ownersHtml = '';
+        if (owners.length === 0) {
+            console.log('📝 보유자가 없음 - 빈 상태 메시지 표시');
+            ownersHtml = `
+                <div style="text-align: center; padding: 40px;">
+                    <i class="fas fa-user-slash" style="font-size: 3rem; color: #6c757d; margin-bottom: 20px;"></i>
+                    <p style="color: #6c757d; margin: 0;">아직 보유자가 없습니다.</p>
+                </div>
+            `;
+        } else {
+            console.log('📝 보유자 목록 생성 중, 보유자 수:', owners.length);
+            ownersHtml = owners.map(owner => `
+                <div class="owner-item" style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 15px;
+                    border-bottom: 1px solid #e9ecef;
+                    background: ${owner.is_active ? '#f8f9fa' : '#fff'};
+                ">
+                    <div>
+                        <div style="font-weight: 600; margin-bottom: 4px;">
+                            ${owner.profiles?.name || '이름 없음'}
+                            ${owner.is_active ? '<span style="color: #28a745; font-size: 0.75rem; margin-left: 8px;">[착용중]</span>' : '<span style="color: #6c757d; font-size: 0.75rem; margin-left: 8px;">[보유중]</span>'}
+                        </div>
+                        <div style="color: #6c757d; font-size: 0.875rem;">${owner.profiles?.email || '이메일 없음'}</div>
+                    </div>
+                    <div style="color: #6c757d; font-size: 0.875rem;">
+                        ${owner.purchased_at ? new Date(owner.purchased_at).toLocaleDateString('ko-KR') : '날짜 없음'}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        const modalHtml = `
+            <div id="ownersModal" class="modal-overlay" style="
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 9999;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            ">
+                <div class="modal-content" style="
+                    background: white;
+                    border-radius: 12px;
+                    max-width: 600px;
+                    width: 90%;
+                    max-height: 80vh;
+                    overflow: hidden;
+                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+                ">
+                    <div class="modal-header" style="
+                        padding: 20px;
+                        border-bottom: 1px solid #e9ecef;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                    ">
+                        <h5 class="modal-title" style="margin: 0; font-size: 1.25rem; font-weight: 600;">
+                            <i class="fas fa-users"></i> ${avatar.name} 보유자 목록
+                        </h5>
+                        <button type="button" class="btn-close" onclick="this.closest('.modal-overlay').remove()" style="
+                            background: none;
+                            border: none;
+                            font-size: 1.5rem;
+                            cursor: pointer;
+                            padding: 0;
+                            width: 30px;
+                            height: 30px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                        ">&times;</button>
+                    </div>
+                    <div class="modal-body" style="padding: 20px;">
+                        <div class="mb-3" style="margin-bottom: 15px;">
+                            <span class="badge bg-primary" style="
+                                background: #007bff;
+                                color: white;
+                                padding: 4px 8px;
+                                border-radius: 4px;
+                                font-size: 0.875rem;
+                            ">총 ${owners.length}명</span>
+                            <span class="badge bg-secondary" style="
+                                background: #6c757d;
+                                color: white;
+                                padding: 4px 8px;
+                                border-radius: 4px;
+                                font-size: 0.875rem;
+                                margin-left: 8px;
+                            ">${avatar.price.toLocaleString()}P</span>
+                        </div>
+                        <div class="owners-list" style="max-height: 400px; overflow-y: auto;">
+                            ${ownersHtml}
+                        </div>
+                    </div>
+                    <div class="modal-footer" style="
+                        padding: 20px;
+                        border-top: 1px solid #e9ecef;
+                        display: flex;
+                        justify-content: flex-end;
+                    ">
+                        <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()" style="
+                            background: #6c757d;
+                            color: white;
+                            border: none;
+                            padding: 8px 16px;
+                            border-radius: 4px;
+                            cursor: pointer;
+                        ">닫기</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // 기존 모달 제거
+        const existingModal = document.getElementById('ownersModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        // 새 모달 추가
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        
+        // 모달 배경 클릭 시 닫기
+        const modal = document.getElementById('ownersModal');
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
     }
 
     updateSummary() {
