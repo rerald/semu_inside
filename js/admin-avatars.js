@@ -172,6 +172,9 @@ class AvatarManager {
                         <button class="btn btn-primary btn-sm" onclick="avatarManager.editAvatar('${avatar.id}')">
                             <i class="fas fa-edit"></i> 수정
                         </button>
+                        <button class="btn btn-info btn-sm" onclick="avatarManager.previewInShop('${avatar.id}')" title="아바타 상점에서 미리보기">
+                            <i class="fas fa-store"></i> 상점
+                        </button>
                         <button class="btn btn-danger btn-sm" onclick="avatarManager.showDeleteModal('${avatar.id}')">
                             <i class="fas fa-trash"></i> 삭제
                         </button>
@@ -221,14 +224,33 @@ class AvatarManager {
 
     updateSummary() {
         const totalAvatars = this.avatars.length;
+        const activeAvatars = this.avatars.filter(a => a.is_active).length;
         const legendaryCount = this.avatars.filter(a => a.rarity === 'legendary').length;
+        const limitedCount = this.avatars.filter(a => a.is_limited).length;
         
-        // TODO: 실제 판매 수 계산
+        // 아바타 상점에서 구매 가능한 아이템 수
+        const availableInShop = this.avatars.filter(a => a.is_active && (!a.is_limited || a.remaining_stock > 0)).length;
+        
+        // TODO: 실제 판매 수 계산 (추후 user_avatars 테이블에서)
         const totalSales = 0;
 
-        document.getElementById('total-avatars').textContent = totalAvatars;
-        document.getElementById('legendary-avatars').textContent = legendaryCount;
-        document.getElementById('total-sales').textContent = totalSales;
+        // 기존 요소들 업데이트
+        const totalElement = document.getElementById('total-avatars');
+        const legendaryElement = document.getElementById('legendary-avatars');
+        const salesElement = document.getElementById('total-sales');
+        
+        if (totalElement) totalElement.textContent = totalAvatars;
+        if (legendaryElement) legendaryElement.textContent = legendaryCount;
+        if (salesElement) salesElement.textContent = totalSales;
+        
+        // 아바타 상점 연동 정보 표시
+        console.log('📊 아바타 상점 연동 정보:', {
+            총_아바타: totalAvatars,
+            활성_아바타: activeAvatars,
+            상점_구매가능: availableInShop,
+            전설급: legendaryCount,
+            한정판: limitedCount
+        });
     }
 
     setupEventListeners() {
@@ -463,11 +485,21 @@ class AvatarManager {
                     .update(avatarData)
                     .eq('id', this.currentEditingAvatar.id);
             } else {
-                // 추가
-                console.log('➕ 새 아바타 추가 중...');
-                result = await this.supabaseClient
-                    .from('avatar_items')
-                    .insert([avatarData]);
+                            // 추가 (created_by 필드 포함)
+            console.log('➕ 새 아바타 추가 중...');
+            
+            // 현재 관리자 정보 추가
+            const { data: { user } } = await this.supabaseClient.auth.getUser();
+            if (user) {
+                avatarData.created_by = user.id;
+            }
+            
+            // 기본적으로 활성 상태로 설정
+            avatarData.is_active = true;
+            
+            result = await this.supabaseClient
+                .from('avatar_items')
+                .insert([avatarData]);
             }
 
             if (result.error) throw result.error;
@@ -555,6 +587,28 @@ class AvatarManager {
     async refreshAvatars() {
         await this.loadAvatars();
         this.showSuccess('아바타 목록이 새로고침되었습니다.');
+    }
+
+    previewInShop(avatarId) {
+        // 아바타 상점에서 해당 아바타 미리보기
+        const avatar = this.avatars.find(a => a.id === avatarId);
+        if (!avatar) {
+            this.showError('아바타를 찾을 수 없습니다.');
+            return;
+        }
+
+        if (!avatar.is_active) {
+            const confirmMessage = `"${avatar.name}"은(는) 현재 비활성 상태입니다.\n아바타 상점에서 구매할 수 없는 상태입니다.\n\n그래도 아바타 상점을 열어보시겠습니까?`;
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+        }
+
+        // 새 탭에서 아바타 상점 열기
+        const avatarShopUrl = `./avatar-shop.html#avatar-${avatarId}`;
+        window.open(avatarShopUrl, '_blank');
+        
+        console.log(`🛒 아바타 상점에서 "${avatar.name}" 미리보기 열기`);
     }
 
     // 이미지 비율에 따른 클래스 설정 (원본 비율 유지)

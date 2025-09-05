@@ -1,0 +1,72 @@
+-- 아바타 상점 샘플 데이터 추가
+-- Supabase SQL Editor에서 실행하세요
+
+-- 기존 샘플 데이터 삭제 (선택사항)
+-- DELETE FROM avatar_items WHERE name LIKE '%아바타%';
+
+-- 다양한 아바타 아이템 추가
+INSERT INTO avatar_items (name, description, price, rarity, image_url, is_active, is_limited, total_supply, remaining_stock) VALUES
+
+-- 기본 아바타들 (무료/저가)
+('기본 아바타', '기본 제공되는 아바타입니다.', 0, 'common', 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iNDAiIGN5PSI0MCIgcj0iMzUiIGZpbGw9IiNGRkQ3QjciLz4KPGNpcmNsZSBjeD0iMzAiIGN5PSIzNSIgcj0iMyIgZmlsbD0iIzMzMzMzMyIvPgo8Y2lyY2xlIGN4PSI1MCIgY3k9IjM1IiByPSIzIiBmaWxsPSIjMzMzMzMzIi8+CjxwYXRoIGQ9Ik0yNSA1MEM1NSA1MCA1NSA1MCA1NSA1MCIgc3Ryb2tlPSIjMzMzMzMzIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4K', true, false, null, null),
+
+('센팍이 아바타', '센팍의 특별한 아바타입니다! 💼', 50, 'common', '/image/센팍.png', true, false, null, null),
+
+('스마일 아바타', '항상 밝은 미소를 띠는 아바타입니다. 😊', 100, 'common', 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iNDAiIGN5PSI0MCIgcj0iMzUiIGZpbGw9IiNGRkZCQjciLz4KPGNpcmNsZSBjeD0iMzAiIGN5PSIzMiIgcj0iMyIgZmlsbD0iIzMzMzMzMyIvPgo8Y2lyY2xlIGN4PSI1MCIgY3k9IjMyIiByPSIzIiBmaWxsPSIjMzMzMzMzIi8+CjxwYXRoIGQ9Ik0yNSA1MEM0MCA2MCA0MCA2MCA1NSA1MCIgc3Ryb2tlPSIjMzMzMzMzIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4K', true, false, null, null),
+
+-- 일반 아바타들
+('쿨한 아바타', '선글라스를 쓴 멋진 아바타입니다. 😎', 200, 'uncommon', 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iNDAiIGN5PSI0MCIgcj0iMzUiIGZpbGw9IiNGRkQ3QjciLz4KPHJlY3QgeD0iMjAiIHk9IjI4IiB3aWR0aD0iNDAiIGhlaWdodD0iMTAiIHJ4PSI1IiBmaWxsPSIjMzMzMzMzIi8+CjxwYXRoIGQ9Ik0yNSA1MEM1NSA1MCA1NSA1MCA1NSA1MCIgc3Ryb2tlPSIjMzMzMzMzIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4K', true, false, null, null),
+
+('공부왕 아바타', '책을 읽고 있는 똑똑한 아바타입니다. 📚', 300, 'uncommon', 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iNDAiIGN5PSI0MCIgcj0iMzUiIGZpbGw9IiNGRkQ3QjciLz4KPGNpcmNsZSBjeD0iMzAiIGN5PSIzNSIgcj0iMyIgZmlsbD0iIzMzMzMzMyIvPgo8Y2lyY2xlIGN4PSI1MCIgY3k9IjM1IiByPSIzIiBmaWxsPSIjMzMzMzMzIi8+CjxyZWN0IHg9IjI2IiB5PSIyOCIgd2lkdGg9IjgiIGhlaWdodD0iOCIgZmlsbD0iIzMzMzMzMyIgcng9IjIiLz4KPHJlY3QgeD0iNDYiIHk9IjI4IiB3aWR0aD0iOCIgaGVpZ2h0PSI4IiBmaWxsPSIjMzMzMzMzIiByeD0iMiIvPgo8cGF0aCBkPSJNMjUgNTBDNTUgNTAgNTUgNTAgNTUgNTAiIHN0cm9rZT0iIzMzMzMzMyIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPHJlY3QgeD0iMzAiIHk9IjU1IiB3aWR0aD0iMjAiIGhlaWdodD0iMTIiIGZpbGw9IiNGRkZGRkYiIHN0cm9rZT0iIzMzMzMzMyIgc3Ryb2tlLXdpZHRoPSIxIi8+Cjwvc3ZnPgo=', true, false, null, null),
+
+-- 희귀 아바타들
+('황금 아바타', '황금빛으로 빛나는 특별한 아바타입니다. ✨', 500, 'rare', 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iNDAiIGN5PSI0MCIgcj0iMzUiIGZpbGw9IiNGRkQ3MDAiLz4KPGNpcmNsZSBjeD0iMzAiIGN5PSIzNSIgcj0iMyIgZmlsbD0iIzMzMzMzMyIvPgo8Y2lyY2xlIGN4PSI1MCIgY3k9IjM1IiByPSIzIiBmaWxsPSIjMzMzMzMzIi8+CjxwYXRoIGQ9Ik0yNSA1MEM1NSA1MCA1NSA1MCA1NSA1MCIgc3Ryb2tlPSIjMzMzMzMzIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8cG9seWdvbiBwb2ludHM9IjQwLDEwIDQ1LDI1IDYwLDI1IDQ4LDM1IDUzLDUwIDQwLDQwIDI3LDUwIDMyLDM1IDIwLDI1IDM1LDI1IiBmaWxsPSIjRkZGRjAwIiBzdHJva2U9IiNGRkQ3MDAiIHN0cm9rZS13aWR0aD0iMSIvPgo8L3N2Zz4K', true, false, null, null),
+
+('로봇 아바타', '미래에서 온 로봇 아바타입니다. 🤖', 800, 'rare', 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3QgeD0iMTAiIHk9IjEwIiB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHJ4PSI1IiBmaWxsPSIjQzBDMEM5Ii8+CjxyZWN0IHg9IjI1IiB5PSIyNSIgd2lkdGg9IjgiIGhlaWdodD0iOCIgZmlsbD0iIzAwRkYwMCIvPgo8cmVjdCB4PSI0NyIgeT0iMjUiIHdpZHRoPSI4IiBoZWlnaHQ9IjgiIGZpbGw9IiMwMEZGMDAiLz4KPHJlY3QgeD0iMzAiIHk9IjQ1IiB3aWR0aD0iMjAiIGhlaWdodD0iNSIgZmlsbD0iIzMzMzMzMyIvPgo8cmVjdCB4PSIxNSIgeT0iNSIgd2lkdGg9IjUiIGhlaWdodD0iMTAiIGZpbGw9IiNDMEMwQzkiLz4KPHJlY3QgeD0iNjAiIHk9IjUiIHdpZHRoPSI1IiBoZWlnaHQ9IjEwIiBmaWxsPSIjQzBDMEM5Ii8+Cjwvc3ZnPgo=', true, false, null, null),
+
+-- 영웅급 아바타들  
+('왕관 아바타', '왕관을 쓴 고귀한 아바타입니다. 👑', 1200, 'epic', 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iNDAiIGN5PSI0NSIgcj0iMzAiIGZpbGw9IiNGRkQ3QjciLz4KPHBvbHlnb24gcG9pbnRzPSIyMCwxNSA2MCwxNSA1NSwyNSAyNSwyNSIgZmlsbD0iI0ZGRDcwMCIgc3Ryb2tlPSIjRkZBNTAwIiBzdHJva2Utd2lkdGg9IjIiLz4KPGNpcmNsZSBjeD0iMzAiIGN5PSIyMCIgcj0iMyIgZmlsbD0iI0ZGMDAwMCIvPgo8Y2lyY2xlIGN4PSI0MCIgY3k9IjE1IiByPSI0IiBmaWxsPSIjRkYwMDAwIi8+CjxjaXJjbGUgY3g9IjUwIiBjeT0iMjAiIHI9IjMiIGZpbGw9IiNGRjAwMDAiLz4KPGNpcmNsZSBjeD0iMzIiIGN5PSI0MCIgcj0iMyIgZmlsbD0iIzMzMzMzMyIvPgo8Y2lyY2xlIGN4PSI0OCIgY3k9IjQwIiByPSIzIiBmaWxsPSIjMzMzMzMzIi8+CjxwYXRoIGQ9Ik0zMCA1NVM1MCA1NSA1MCA1NSIgc3Ryb2tlPSIjMzMzMzMzIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4K', true, false, null, null),
+
+('마법사 아바타', '신비로운 마법의 힘을 가진 아바타입니다. 🧙‍♂️', 1500, 'epic', 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iNDAiIGN5PSI0NSIgcj0iMzAiIGZpbGw9IiNGRkQ3QjciLz4KPHBvbHlnb24gcG9pbnRzPSI0MCw1IDUwLDI1IDMwLDI1IiBmaWxsPSIjNjYzM0ZGIiBzdHJva2U9IiM0NDIyREQiIHN0cm9rZS13aWR0aD0iMiIvPgo8Y2lyY2xlIGN4PSIzMiIgY3k9IjQwIiByPSIzIiBmaWxsPSIjMzMzMzMzIi8+CjxjaXJjbGUgY3g9IjQ4IiBjeT0iNDAiIHI9IjMiIGZpbGw9IiMzMzMzMzMiLz4KPHBhdGggZD0iTTMwIDU1UzUwIDU1IDUwIDU1IiBzdHJva2U9IiMzMzMzMzMiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CjxjaXJjbGUgY3g9IjQwIiBjeT0iMTgiIHI9IjMiIGZpbGw9IiNGRkZGMDAiLz4KPGxpbmUgeDE9IjQwIiB5MT0iMTgiIHgyPSI0NSIgeTI9IjEzIiBzdHJva2U9IiNGRkZGMDAiIHN0cm9rZS13aWR0aD0iMSIvPgo8bGluZSB4MT0iNDAiIHkxPSIxOCIgeDI9IjM1IiB5Mj0iMTMiIHN0cm9rZT0iI0ZGRkYwMCIgc3Ryb2tlLXdpZHRoPSIxIi8+Cjwvc3ZnPgo=', true, false, null, null),
+
+-- 전설급 아바타들 (한정판)
+('무지개 아바타', '모든 색깔의 무지개 빛을 내는 전설의 아바타입니다! 🌈', 2500, 'legendary', 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGRlZnM+CjxsaW5lYXJHcmFkaWVudCBpZD0icmFpbmJvdyIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+CjxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiNGRjAwMDA7c3RvcC1vcGFjaXR5OjEiIC8+CjxzdG9wIG9mZnNldD0iMTYuNjYlIiBzdHlsZT0ic3RvcC1jb2xvcjojRkY4MDAwO3N0b3Atb3BhY2l0eToxIiAvPgo8c3RvcCBvZmZzZXQ9IjMzLjMzJSIgc3R5bGU9InN0b3AtY29sb3I6I0ZGRkYwMDtzdG9wLW9wYWNpdHk6MSIgLz4KPHN0b3Agb2Zmc2V0PSI1MCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwMEZGMDA7c3RvcC1vcGFjaXR5OjEiIC8+CjxzdG9wIG9mZnNldD0iNjYuNjYlIiBzdHlsZT0ic3RvcC1jb2xvcjojMDBGRkZGO3N0b3Atb3BhY2l0eToxIiAvPgo8c3RvcCBvZmZzZXQ9IjgzLjMzJSIgc3R5bGU9InN0b3AtY29sb3I6IzAwNDBGRjtzdG9wLW9wYWNpdHk6MSIgLz4KPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojODAwMEZGO3N0b3Atb3BhY2l0eToxIiAvPgo8L2xpbmVhckdyYWRpZW50Pgo8L2RlZnM+CjxjaXJjbGUgY3g9IjQwIiBjeT0iNDAiIHI9IjM1IiBmaWxsPSJ1cmwoI3JhaW5ib3cpIi8+CjxjaXJjbGUgY3g9IjMwIiBjeT0iMzUiIHI9IjMiIGZpbGw9IiNGRkZGRkYiLz4KPGNpcmNsZSBjeD0iNTAiIGN5PSIzNSIgcj0iMyIgZmlsbD0iI0ZGRkZGRiIvPgo8cGF0aCBkPSJNMjUgNTBDNTUgNTAgNTUgNTAgNTUgNTAiIHN0cm9rZT0iI0ZGRkZGRiIgc3Ryb2tlLXdpZHRoPSIzIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPC9zdmc+Cg==', true, true, 10, 10),
+
+('다이아몬드 아바타', '다이아몬드처럼 빛나는 최고급 아바타입니다! 💎', 5000, 'legendary', 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBvbHlnb24gcG9pbnRzPSI0MCw1IDU1LDIwIDUwLDYwIDMwLDYwIDI1LDIwIiBmaWxsPSIjRTZGM0ZGIiBzdHJva2U9IiNCM0Q5RkYiIHN0cm9rZS13aWR0aD0iMiIvPgo8cG9seWdvbiBwb2ludHM9IjQwLDUgNDUsOCAzNSw4IiBmaWxsPSIjRkZGRkZGIi8+CjxsaW5lIHgxPSI0MCIgeTE9IjUiIHgyPSI0MCIgeTI9IjYwIiBzdHJva2U9IiNCM0Q5RkYiIHN0cm9rZS13aWR0aD0iMSIvPgo8bGluZSB4MT0iMjUiIHkxPSIyMCIgeDI9IjU1IiB5Mj0iMjAiIHN0cm9rZT0iI0IzRDlGRiIgc3Ryb2tlLXdpZHRoPSIxIi8+CjxsaW5lIHgxPSIzMCIgeTE9IjM1IiB4Mj0iNTAiIHkyPSIzNSIgc3Ryb2tlPSIjQjNEOUZGIiBzdHJva2Utd2lkdGg9IjEiLz4KPGNpcmNsZSBjeD0iMzIiIGN5PSI0NSIgcj0iMiIgZmlsbD0iIzMzMzMzMyIvPgo8Y2lyY2xlIGN4PSI0OCIgY3k9IjQ1IiByPSIyIiBmaWxsPSIjMzMzMzMzIi8+CjxwYXRoIGQ9Ik0zNSA1M0M0NSA1MyA0NSA1MyA0NSA1MyIgc3Ryb2tlPSIjMzMzMzMzIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+Cjwvc3ZnPgo=', true, true, 5, 5);
+
+-- 모든 사용자에게 기본 아바타 자동 지급 (선택사항)
+INSERT INTO user_avatars (user_id, avatar_item_id, is_active)
+SELECT 
+    p.id as user_id,
+    ai.id as avatar_item_id,
+    true as is_active
+FROM profiles p
+CROSS JOIN avatar_items ai
+WHERE ai.name = '기본 아바타'
+AND NOT EXISTS (
+    SELECT 1 FROM user_avatars ua 
+    WHERE ua.user_id = p.id
+);
+
+-- 확인 쿼리
+SELECT 
+    name,
+    price,
+    rarity,
+    CASE 
+        WHEN is_limited THEN CONCAT('한정판 (', remaining_stock, '/', total_supply, ')')
+        ELSE '일반'
+    END as availability,
+    is_active
+FROM avatar_items 
+ORDER BY 
+    CASE rarity 
+        WHEN 'common' THEN 1
+        WHEN 'uncommon' THEN 2  
+        WHEN 'rare' THEN 3
+        WHEN 'epic' THEN 4
+        WHEN 'legendary' THEN 5
+    END,
+    price;
+
+SELECT '✅ 아바타 상점 샘플 데이터가 성공적으로 추가되었습니다!' as message;

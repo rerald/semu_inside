@@ -139,8 +139,15 @@
             color: #667eea;
         }
 
-        .back-button {
-            background: linear-gradient(45deg, #667eea, #764ba2);
+        .button-group {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .back-button, .shop-button {
             color: white;
             border: none;
             padding: 12px 30px;
@@ -149,13 +156,22 @@
             cursor: pointer;
             transition: all 0.3s ease;
             text-decoration: none;
-            display: inline-block;
-            margin-top: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        .back-button:hover {
+        .back-button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+        }
+
+        .shop-button {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+        }
+
+        .back-button:hover, .shop-button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
         }
 
         .sparkles {
@@ -230,9 +246,14 @@
             </ul>
         </div>
 
-        <a href="profile.html" class="back-button">
-            <i class="fas fa-arrow-left"></i> 프로필로 돌아가기
-        </a>
+        <div class="button-group">
+            <a href="profile.html" class="back-button">
+                <i class="fas fa-arrow-left"></i> 프로필로 돌아가기
+            </a>
+            <a href="avatar-shop.html" class="shop-button">
+                <i class="fas fa-store"></i> 아바타 상점
+            </a>
+        </div>
     </div>
 
     <script>

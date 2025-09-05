@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>인증 상태 디버그</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid;
+        }
+        .success { border-color: #28a745; background: #d4edda; }
+        .warning { border-color: #ffc107; background: #fff3cd; }
+        .error { border-color: #dc3545; background: #f8d7da; }
+        .info { border-color: #007bff; background: #d1ecf1; }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 인증 상태 디버그</h1>
+        
+        <div id="status-container">
+            <div class="status info">초기화 중...</div>
+        </div>
+        
+        <div class="button-group">
+            <button onclick="checkAuth()">인증 상태 확인</button>
+            <button onclick="checkLocalStorage()">로컬스토리지 확인</button>
+            <button onclick="testSupabase()">Supabase 연결 테스트</button>
+            <button onclick="goToLogin()">로그인 페이지</button>
+            <button onclick="goToAvatarShop()">아바타 상점</button>
+        </div>
+        
+        <div id="debug-info">
+            <h3>디버그 정보</h3>
+            <pre id="debug-output">로딩 중...</pre>
+        </div>
+    </div>
+
+    <script src="assets/js/common.js"></script>
+    <script>
+        let semuApp;
+        
+        async function init() {
+            const statusContainer = document.getElementById('status-container');
+            const debugOutput = document.getElementById('debug-output');
+            
+            try {
+                addStatus('SemuApp 초기화 중...', 'info');
+                semuApp = new SemuApp();
+                await semuApp.init();
+                
+                addStatus('✅ SemuApp 초기화 완료', 'success');
+                await updateDebugInfo();
+                
+            } catch (error) {
+                addStatus(`❌ 초기화 실패: ${error.message}`, 'error');
+                console.error('초기화 오류:', error);
+            }
+        }
+        
+        function addStatus(message, type = 'info') {
+            const statusContainer = document.getElementById('status-container');
+            const statusDiv = document.createElement('div');
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = message;
+            statusContainer.appendChild(statusDiv);
+        }
+        
+        async function updateDebugInfo() {
+            const debugOutput = document.getElementById('debug-output');
+            
+            const info = {
+                '현재 시간': new Date().toISOString(),
+                'window.semuApp 존재': !!window.semuApp,
+                'supabaseClient 존재': !!(window.semuApp && window.semuApp.supabaseClient),
+                'currentUser 존재': !!(window.semuApp && window.semuApp.currentUser),
+                'currentUser 정보': window.semuApp && window.semuApp.currentUser ? {
+                    id: window.semuApp.currentUser.id,
+                    email: window.semuApp.currentUser.email,
+                    name: window.semuApp.currentUser.name,
+                    role: window.semuApp.currentUser.role
+                } : null,
+                '로컬스토리지 토큰': !!localStorage.getItem('sb-skpvtqohyspfsmvwrgoc-auth-token'),
+                'Supabase 라이브러리': !!window.supabase
+            };
+            
+            debugOutput.textContent = JSON.stringify(info, null, 2);
+        }
+        
+        async function checkAuth() {
+            addStatus('인증 상태 확인 중...', 'info');
+            
+            try {
+                if (!semuApp || !semuApp.supabaseClient) {
+                    throw new Error('SemuApp이 초기화되지 않았습니다.');
+                }
+                
+                const { data: { session }, error } = await semuApp.supabaseClient.auth.getSession();
+                
+                if (error) {
+                    throw error;
+                }
+                
+                if (session && session.user) {
+                    addStatus(`✅ 인증됨: ${session.user.email}`, 'success');
+                } else {
+                    addStatus('❌ 인증되지 않음', 'error');
+                }
+                
+                await updateDebugInfo();
+                
+            } catch (error) {
+                addStatus(`❌ 인증 확인 실패: ${error.message}`, 'error');
+                console.error('인증 확인 오류:', error);
+            }
+        }
+        
+        function checkLocalStorage() {
+            addStatus('로컬스토리지 확인 중...', 'info');
+            
+            const keys = [
+                'sb-skpvtqohyspfsmvwrgoc-auth-token',
+                'sb-skpvtqohyspfsmvwrgoc-auth-token-code-verifier',
+                'supabase.auth.token'
+            ];
+            
+            let found = false;
+            keys.forEach(key => {
+                const value = localStorage.getItem(key);
+                if (value) {
+                    addStatus(`✅ 발견: ${key}`, 'success');
+                    found = true;
+                } else {
+                    addStatus(`❌ 없음: ${key}`, 'warning');
+                }
+            });
+            
+            if (!found) {
+                addStatus('⚠️ 인증 토큰이 없습니다. 로그인이 필요합니다.', 'warning');
+            }
+        }
+        
+        async function testSupabase() {
+            addStatus('Supabase 연결 테스트 중...', 'info');
+            
+            try {
+                if (!semuApp || !semuApp.supabaseClient) {
+                    throw new Error('Supabase 클라이언트가 없습니다.');
+                }
+                
+                // 간단한 쿼리 테스트
+                const { data, error } = await semuApp.supabaseClient
+                    .from('profiles')
+                    .select('count', { count: 'exact' })
+                    .limit(1);
+                
+                if (error) {
+                    throw error;
+                }
+                
+                addStatus('✅ Supabase 연결 성공', 'success');
+                
+            } catch (error) {
+                addStatus(`❌ Supabase 연결 실패: ${error.message}`, 'error');
+                console.error('Supabase 테스트 오류:', error);
+            }
+        }
+        
+        function goToLogin() {
+            window.location.href = 'login.html';
+        }
+        
+        function goToAvatarShop() {
+            window.location.href = 'avatar-shop.html';
+        }
+        
+        // 초기화
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🔍 디버그 페이지 로드됨');
+            init();
+        });
+    </script>
+</body>
+</html>
