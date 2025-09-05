@@ -989,6 +989,7 @@
                             </div>
                         </div>
                         <p style="color: var(--medium-gray);">전체 평균보다 <strong id="comparison">-</strong></p>
+                        <!-- 백분위 정보는 JavaScript로 동적 추가됨 -->
                         <div id="pointsDisplay" class="points-display" style="margin-top: 15px; padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; color: white; text-align: center;">
                             <div style="font-size: 14px; opacity: 0.9; margin-bottom: 5px;">획득 포인트</div>
                             <div style="font-size: 24px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 8px;">
@@ -1729,15 +1730,21 @@
                     comparisonElement.style.color = '#6c757d';
                 }
                 
-                // 백분위 정보 추가
+                // 🎯 백분위 정보를 평균 비교 다음에 추가하고, 포인트 섹션을 그 다음으로 이동
                 const percentileElement = document.createElement('p');
                 percentileElement.style.cssText = 'color: var(--medium-gray); margin-top: 10px; font-size: 0.95em; font-weight: 500;';
                 percentileElement.innerHTML = `백분위: <strong style="color: #2c3e50;">${percentile}</strong>`;
+                percentileElement.className = 'percentile-info';
                 
                 const chartContainer = document.querySelector('.chart-container');
-                if (chartContainer && !chartContainer.querySelector('.percentile-info')) {
-                    percentileElement.className = 'percentile-info';
-                    chartContainer.appendChild(percentileElement);
+                const pointsDisplay = document.getElementById('pointsDisplay');
+                
+                if (chartContainer && comparisonElement && pointsDisplay && !chartContainer.querySelector('.percentile-info')) {
+                    // 백분위 정보를 평균 비교 다음에 삽입
+                    comparisonElement.parentElement.insertAdjacentElement('afterend', percentileElement);
+                    
+                    // 포인트 섹션을 백분위 정보 다음으로 이동
+                    percentileElement.insertAdjacentElement('afterend', pointsDisplay);
                 }
             }
 
