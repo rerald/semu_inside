@@ -62,3 +62,4 @@ CREATE POLICY "Service role can manage points" ON user_points
 
 CREATE POLICY "Service role can manage transactions" ON point_transactions
     FOR ALL USING (auth.role() = 'service_role');
+
