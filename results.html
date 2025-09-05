@@ -1922,6 +1922,8 @@
                         if (!pointBreakdown.dbSaved) {
                             console.log('💾 sessionStorage 포인트를 데이터베이스에 적립 시도...');
                             await this.savePointsToDatabase(totalPoints, pointBreakdown);
+                        } else if (pointBreakdown.duplicatePrevented) {
+                            console.log('🛡️ 중복 적립 방지됨 - 이미 동일한 시험으로 포인트 적립됨');
                         } else {
                             console.log('✅ 포인트가 이미 데이터베이스에 저장됨');
                         }
@@ -1943,22 +1945,63 @@
                     // Supabase 클라이언트 및 사용자 정보 확인
                     const supabaseClient = window.semuApp?.supabaseClient || window.supabaseClient;
                     const userId = this.examData.employeeId || window.semuApp?.currentUser?.id;
+                    const examTitle = this.examData.title || '시험';
                     
                     console.log('🔍 포인트 적립 조건 확인:', {
                         supabaseClient: !!supabaseClient,
                         userId: userId,
                         sessionId: this.examData.sessionId,
-                        totalPoints: totalPoints
+                        totalPoints: totalPoints,
+                        examTitle: examTitle
                     });
                     
                     if (supabaseClient && userId) {
+                        // 🛡️ 중복 적립 방지: 이미 적립된 포인트가 있는지 확인
+                        console.log('🛡️ 중복 적립 방지 검사 시작...');
+                        
+                        const { data: existingTransactions, error: checkError } = await supabaseClient
+                            .from('point_transactions')
+                            .select('id, amount, created_at')
+                            .eq('user_id', userId)
+                            .eq('description', `시험 완료: ${examTitle}`)
+                            .order('created_at', { ascending: false })
+                            .limit(1);
+                        
+                        if (checkError) {
+                            console.warn('⚠️ 중복 검사 실패, 적립 중단:', checkError);
+                            return;
+                        }
+                        
+                        if (existingTransactions && existingTransactions.length > 0) {
+                            const existingTransaction = existingTransactions[0];
+                            
+                            console.log('🛡️ 기존 포인트 적립 발견:', {
+                                transactionId: existingTransaction.id,
+                                amount: existingTransaction.amount,
+                                createdAt: existingTransaction.created_at,
+                                examTitle: examTitle
+                            });
+                            
+                            // 동일 시험으로 이미 포인트가 적립되었으면 무조건 중복으로 판단
+                            console.log('✅ 중복 적립 방지: 이미 동일 시험으로 포인트가 적립됨');
+                            
+                            // sessionStorage에 저장 완료 표시
+                            pointBreakdown.dbSaved = true;
+                            pointBreakdown.duplicatePrevented = true;
+                            const examId = this.examData.sessionId || this.examData.examId || 'default';
+                            const pointStorageKey = `examPointReward_${examId}`;
+                            sessionStorage.setItem(pointStorageKey, JSON.stringify(pointBreakdown));
+                            
+                            return;
+                        }
+                        
                         console.log('💾 데이터베이스에 포인트 적립 시도...');
                         
                         const { data, error } = await supabaseClient
                             .rpc('add_user_points', {
                                 target_user_id: userId,
                                 points_to_add: totalPoints,
-                                description: `시험 완료: ${this.examData.title || '시험'}`,
+                                description: `시험 완료: ${examTitle}`,
                                 target_avatar_item_id: null
                             });
                             
@@ -1969,6 +2012,7 @@
                             
                             // sessionStorage에 저장 완료 표시
                             pointBreakdown.dbSaved = true;
+                            pointBreakdown.firstTimeReward = true;
                             const examId = this.examData.sessionId || this.examData.examId || 'default';
                             const pointStorageKey = `examPointReward_${examId}`;
                             sessionStorage.setItem(pointStorageKey, JSON.stringify(pointBreakdown));
@@ -2052,13 +2096,54 @@
                     
                     if (supabaseClient && userId) {
                         try {
+                            const examTitle = this.examData.title || '시험';
+                            
+                            // 🛡️ 중복 적립 방지: 이미 적립된 포인트가 있는지 확인
+                            console.log('🛡️ 자동 계산 - 중복 적립 방지 검사 시작...');
+                            
+                            const { data: existingTransactions, error: checkError } = await supabaseClient
+                                .from('point_transactions')
+                                .select('id, amount, created_at')
+                                .eq('user_id', userId)
+                                .eq('description', `시험 완료: ${examTitle}`)
+                                .order('created_at', { ascending: false })
+                                .limit(1);
+                            
+                            if (checkError) {
+                                console.warn('⚠️ 중복 검사 실패, 적립 중단:', checkError);
+                                return;
+                            }
+                            
+                            if (existingTransactions && existingTransactions.length > 0) {
+                                const existingTransaction = existingTransactions[0];
+                                
+                                console.log('🛡️ 자동 계산 - 기존 포인트 적립 발견:', {
+                                    transactionId: existingTransaction.id,
+                                    amount: existingTransaction.amount,
+                                    createdAt: existingTransaction.created_at,
+                                    examTitle: examTitle
+                                });
+                                
+                                // 동일 시험으로 이미 포인트가 적립되었으면 무조건 중복으로 판단
+                                console.log('✅ 자동 계산 - 중복 적립 방지: 이미 동일 시험으로 포인트가 적립됨');
+                                
+                                // sessionStorage에도 중복 방지 정보 저장
+                                pointData.dbSaved = true;
+                                pointData.duplicatePrevented = true;
+                                const examId = this.examData.sessionId || this.examData.examId || 'default';
+                                const pointStorageKey = `examPointReward_${examId}`;
+                                sessionStorage.setItem(pointStorageKey, JSON.stringify(pointData));
+                                
+                                return;
+                            }
+                            
                             console.log('💾 데이터베이스에 포인트 적립 시도...');
                             
                             const { data, error } = await supabaseClient
                                 .rpc('add_user_points', {
                                     target_user_id: userId,
                                     points_to_add: totalPoints,
-                                    description: `시험 완료: ${this.examData.title || '시험'}`,
+                                    description: `시험 완료: ${examTitle}`,
                                     target_avatar_item_id: null
                                 });
                                 
@@ -2066,6 +2151,13 @@
                                 console.warn('⚠️ 포인트 적립 실패:', error);
                             } else {
                                 console.log('✅ 포인트 데이터베이스 적립 완료:', data);
+                                
+                                // sessionStorage에 성공 정보 업데이트
+                                pointData.dbSaved = true;
+                                pointData.firstTimeReward = true;
+                                const examId = this.examData.sessionId || this.examData.examId || 'default';
+                                const pointStorageKey = `examPointReward_${examId}`;
+                                sessionStorage.setItem(pointStorageKey, JSON.stringify(pointData));
                             }
                         } catch (dbError) {
                             console.warn('⚠️ 포인트 DB 적립 오류:', dbError);
